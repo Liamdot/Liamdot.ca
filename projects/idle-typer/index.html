@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<!--
+  Idle typer template.
+  1. Copy this folder, e.g. projects/_idle-typer -> projects/my-typer
+  2. Change "Idle Typer" (3 places) and fill in the info panel
+  3. Change SAVE_KEY at the top of game.js so each game has its own save
+  4. Add it to /projects.js when you want it on the homepage
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Idle Typer - Liamdot</title>
+  <link rel="icon" href="../../logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../game.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="game-page">
+  <nav class="topbar">
+    <div class="crumbs">
+      <a class="home" href="../../"><img class="logo" src="../../logo.svg" alt=""><span class="home-long">Liamdot</span></a>
+      <span class="sep">/</span>
+      <span class="title">Idle Typer</span>
+    </div>
+
+    <div class="actions">
+      <button id="achievements-btn" aria-expanded="false" aria-controls="achievements" aria-label="Achievements" title="Achievements">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <path d="M6 3h8v5a4 4 0 0 1-8 0V3ZM6 5H3.5v1.5A2.5 2.5 0 0 0 6 9M14 5h2.5v1.5A2.5 2.5 0 0 1 14 9M10 12v3M7 17.2h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button id="info-btn" aria-expanded="false" aria-controls="info-panel" aria-label="Info" title="Info">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <line x1="10" y1="9" x2="10" y2="14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="10" cy="5.9" r="1.2" fill="currentColor"/>
+        </svg>
+      </button>
+      <button id="fullscreen-btn" aria-label="Fullscreen" title="Fullscreen">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <path d="M3 7.5V3h4.5M12.5 3H17v4.5M17 12.5V17h-4.5M7.5 17H3v-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="info-panel" id="info-panel" hidden>
+      <h2>Idle Typer</h2>
+      <p class="meta">made September 2026</p>
+      <p>Type the words on the screen to earn bits. Spend them on things that type for you. Needs a keyboard.</p>
+
+      <h3>Updates</h3>
+      <ul>
+        <li><strong>v0.1</strong> &ndash; first version</li>
+      </ul>
+
+      <button class="reset" id="reset-btn">reset progress</button>
+      <br>
+      <a class="more" href="../../">more stuff &rarr;</a>
+    </div>
+  </nav>
+
+  <main class="stage" id="stage">
+    <div class="typer">
+      <section class="main">
+        <p class="count" id="bits">0 bits</p>
+        <p class="rates">
+          <span id="per-second">0 bits</span>/sec &middot;
+          <span id="per-letter">1 bit</span> per letter
+        </p>
+
+        <!-- keep these spans on one line: the screen shows spaces exactly as written -->
+        <div class="screen" id="screen"><div class="line"><span class="typed" id="typed"></span><span class="cursor"></span><span class="todo" id="todo"></span><span class="upcoming" id="upcoming"></span></div></div>
+        <p class="hint" id="hint"></p>
+      </section>
+
+      <section class="side">
+        <h2>upgrades</h2>
+        <div class="upgrades-window">
+          <div class="upgrade-tiles" id="upgrade-tiles"></div>
+          <p class="upgrade-info" id="upgrade-info"></p>
+        </div>
+
+        <h2>shop</h2>
+        <div id="shop"></div>
+      </section>
+    </div>
+
+    <!-- achievements page: covers the game while open -->
+    <div class="achievements-page" id="achievements" hidden>
+      <div class="achievements-inner">
+        <div class="achievements-header">
+          <h2>achievements <span class="achievement-count" id="achievement-count"></span></h2>
+          <button class="achievements-close" id="achievements-close">close</button>
+        </div>
+        <div class="achievement-list" id="achievement-list"></div>
+      </div>
+    </div>
+
+    <!-- "achievement unlocked" pop-ups appear here -->
+    <div class="popups" id="popups"></div>
+  </main>
+
+  <script src="../../nav.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

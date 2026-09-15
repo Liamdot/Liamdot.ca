@@ -1,0 +1,5 @@
+# macOS folder settings
+.DS_Store
+
+# local Claude / editor settings
+.claude/

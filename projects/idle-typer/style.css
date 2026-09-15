@@ -1,0 +1,418 @@
+/* Styles just for this game. Loaded after the site's style.css and game.css. */
+
+.stage {
+  overflow-y: auto;
+  background: #fbf8f1;
+  color: #222;
+  font-family: Menlo, Consolas, "Courier New", monospace;
+}
+
+.typer {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 32px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 36px 20px;
+}
+
+/* left side: counter + typing screen */
+
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.count {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+
+.rates {
+  margin: 6px 0 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* The screen, left to right: the word you're typing, then the words coming
+   up. Anything too long for the screen fades out on the right. */
+.screen {
+  width: 100%;
+  max-width: 520px;
+  margin-top: 40px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: #222;
+  color: #f1ede4;
+  font-size: 1.4rem;
+  text-align: left;
+  user-select: none;
+}
+
+/* The line of words inside the screen. It's a separate box so the fade only
+   affects the text, not the dark background. */
+.line {
+  overflow: hidden;
+  white-space: pre;
+  -webkit-mask-image: linear-gradient(to right, #000 75%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 75%, transparent 100%);
+}
+
+/* letters you've typed: green if right, red if wrong */
+.typed .ok {
+  color: #7ee08a;
+}
+
+.typed .bad {
+  border-radius: 3px;
+  background: rgba(255, 107, 94, 0.2);
+  color: #ff6b5e;
+}
+
+.upcoming {
+  color: #7d7d7d;
+}
+
+.cursor {
+  display: inline-block;
+  width: 0;
+  height: 1.2em;
+  margin-right: -2px;
+  border-left: 2px solid #7ee08a;
+  vertical-align: -0.25em;
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.hint {
+  min-height: 1.4em; /* keep its space even when empty, so nothing jumps */
+  margin: 10px 0 0;
+  color: #aaa;
+  font-size: 0.85rem;
+  opacity: 0; /* hidden until a reward shows up */
+}
+
+/* reward text: shows for a moment, then fades out */
+.hint.fade {
+  animation: fade-out 1.2s forwards;
+}
+
+@keyframes fade-out {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* right side: upgrades window + shop */
+
+.side h2 {
+  margin: 0 0 12px;
+  color: #888;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+/* upgrades window: a box of small tiles, with details for the hovered one */
+
+.upgrades-window {
+  margin-bottom: 28px;
+  padding: 12px;
+  border: 2px solid #222;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.upgrade-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.upgrade-tile {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 2px solid #222;
+  border-radius: 8px;
+  background: #fbf8f1;
+  color: #222;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.upgrade-tile[hidden] {
+  display: none;
+}
+
+.upgrade-tile:hover {
+  background: #fff3c4;
+}
+
+/* not enough bits yet (not using "disabled", so hovering still shows details) */
+.upgrade-tile.cant-afford {
+  border-color: #d8d2c4;
+  background: none;
+  color: #b5ae9f;
+  cursor: default;
+}
+
+.upgrade-info {
+  min-height: 3.2em;
+  margin: 10px 0 0;
+  color: #777;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.upgrade-tiles:empty + .upgrade-info {
+  margin-top: 0;
+}
+
+.upgrade-info .up-name {
+  color: #222;
+  font-weight: 700;
+}
+
+.upgrade-info .up-cost {
+  float: right;
+  color: #222;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 14px;
+  border: 2px solid #222;
+  border-radius: 10px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item * {
+  pointer-events: none;
+}
+
+.item:hover {
+  background: #fff3c4;
+}
+
+.item:disabled {
+  border-color: #d8d2c4;
+  background: none;
+  cursor: default;
+}
+
+.item:disabled * {
+  color: #b5ae9f !important;
+}
+
+.item .name {
+  font-weight: 700;
+}
+
+.item .owned {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.item .desc,
+.item .cost {
+  color: #777;
+  font-size: 0.8rem;
+}
+
+/* achievements page: covers everything under the nav bar */
+
+.achievements-page {
+  position: fixed;
+  top: 46px; /* height of the nav bar */
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  overflow-y: auto;
+  background: #fbf8f1;
+}
+
+.stage:fullscreen .achievements-page {
+  top: 0; /* no nav bar in fullscreen */
+}
+
+.achievements-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.achievements-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.achievements-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.achievement-count {
+  margin-left: 8px;
+  color: #999;
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+.achievements-close {
+  padding: 4px 12px;
+  border: 2px solid #222;
+  border-radius: 20px;
+  background: none;
+  color: #222;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.achievements-close:hover {
+  background: #fff3c4;
+}
+
+.achievement-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+/* locked achievements look faded, with a dashed border */
+.achievement {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 2px dashed #d8d2c4;
+  border-radius: 10px;
+  color: #b5ae9f;
+}
+
+.achievement.earned {
+  border: 2px solid #222;
+  background: #fff;
+  color: #222;
+}
+
+.a-name {
+  font-weight: 700;
+}
+
+.a-desc {
+  font-size: 0.8rem;
+}
+
+.achievement.earned .a-desc {
+  color: #777;
+}
+
+/* "achievement unlocked" pop-ups in the bottom right */
+
+.popups {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.popup {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #222;
+  color: #f1ede4;
+  animation: popup 3.5s forwards;
+}
+
+.popup-label {
+  color: #7ee08a;
+  font-size: 0.75rem;
+}
+
+.popup-name {
+  font-weight: 700;
+}
+
+@keyframes popup {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  8%,
+  85% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+
+/* reset button inside the info panel (overrides the round icon-button style) */
+
+.info-panel .reset {
+  display: inline-block;
+  width: auto;
+  height: auto;
+  margin-top: 16px;
+  padding: 4px 12px;
+  border: 2px solid #c0392b;
+  border-radius: 20px;
+  color: #c0392b;
+  font-size: 0.85rem;
+}
+
+.info-panel .reset:hover {
+  border-color: #c0392b;
+  background: #c0392b;
+  color: #fff;
+}
+
+@media (max-width: 700px) {
+  .typer {
+    grid-template-columns: 1fr;
+    padding-top: 24px;
+  }
+
+  .screen {
+    font-size: 1.1rem;
+  }
+}

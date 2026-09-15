@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<!--
+  Game page template.
+  1. Copy this folder, e.g. projects/_template -> projects/snake
+  2. Change "Game Title" (3 places) and fill in the info panel
+  3. Replace game.js with your game (or swap the canvas for anything else inside #stage)
+  4. Point the project's url in /projects.js at "projects/snake/"
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game Title - Liamdot</title>
+  <link rel="icon" href="../../logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../game.css">
+</head>
+<body class="game-page">
+  <nav class="topbar">
+    <div class="crumbs">
+      <a class="home" href="../../"><img class="logo" src="../../logo.svg" alt=""><span class="home-long">Liamdot</span></a>
+      <span class="sep">/</span>
+      <span class="title">Game Title</span>
+    </div>
+
+    <div class="actions">
+      <button id="info-btn" aria-expanded="false" aria-controls="info-panel" aria-label="Info" title="Info">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <line x1="10" y1="9" x2="10" y2="14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="10" cy="5.9" r="1.2" fill="currentColor"/>
+        </svg>
+      </button>
+      <button id="fullscreen-btn" aria-label="Fullscreen" title="Fullscreen">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <path d="M3 7.5V3h4.5M12.5 3H17v4.5M17 12.5V17h-4.5M7.5 17H3v-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="info-panel" id="info-panel" hidden>
+      <h2>Game Title</h2>
+      <p class="meta">made September 2026</p>
+      <p>One or two sentences about what this is.</p>
+
+      <h3>Notes</h3>
+      <p>Why you made it, what you learned, anything weird about it.</p>
+
+      <h3>Updates</h3>
+      <ul>
+        <li><strong>v1.1</strong> &ndash; something got fixed</li>
+        <li><strong>v1.0</strong> &ndash; first version</li>
+      </ul>
+
+      <a class="more" href="../../">more stuff &rarr;</a>
+    </div>
+  </nav>
+
+  <main class="stage" id="stage">
+    <canvas id="game"></canvas>
+  </main>
+
+  <script src="../../nav.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

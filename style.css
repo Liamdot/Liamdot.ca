@@ -1,0 +1,230 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0 auto;
+  max-width: 1000px;
+  padding: 48px 20px 32px;
+  background: #fbf8f1;
+  color: #222;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  line-height: 1.4;
+}
+
+a {
+  color: inherit;
+}
+
+a,
+button {
+  cursor: pointer;
+}
+
+/* Tiles and the logo animate their insides on hover. If the mouse hit-tests
+   against those moving pieces, Chrome's cursor flickers between the hand and
+   the arrow. Making the children invisible to the mouse means the link box
+   itself (which never moves) is always what's under the cursor. */
+.tile,
+.wordmark {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.tile *,
+.wordmark * {
+  pointer-events: none;
+}
+
+/* header */
+
+header h1 {
+  margin: 0;
+  font-size: 3.2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+header h1 a {
+  text-decoration: none;
+}
+
+/* inline-block so the whole word is one solid hover area, with no gaps
+   between letters where the cursor drops back to an arrow */
+.wordmark {
+  display: inline-block;
+}
+
+/* "Liamd8t" - the 8 ball stands in for the o */
+
+.wordmark .ball {
+  display: inline-block;
+  width: 0.56em;
+  height: 0.56em;
+  margin: 0 0.035em 0 0.02em;
+  vertical-align: -0.01em;
+}
+
+.wordmark .t {
+  display: inline-block;
+  transform-origin: 70% 90%;
+}
+
+/* on hover the ball rolls into the t, the t wobbles, the ball bounces back */
+
+.wordmark.bump .ball {
+  animation: ball-bump 0.7s;
+}
+
+.wordmark.bump .t {
+  animation: t-wobble 0.7s;
+}
+
+@keyframes ball-bump {
+  0% {
+    transform: translateX(0) rotate(0);
+    animation-timing-function: ease-in;
+  }
+  30% {
+    transform: translateX(0.07em) rotate(28deg);
+    animation-timing-function: ease-out;
+  }
+  55% {
+    transform: translateX(-0.04em) rotate(-16deg);
+    animation-timing-function: ease-in-out;
+  }
+  78% {
+    transform: translateX(0.012em) rotate(5deg);
+  }
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+}
+
+@keyframes t-wobble {
+  0%,
+  28% {
+    transform: rotate(0);
+  }
+  42% {
+    transform: rotate(9deg);
+  }
+  62% {
+    transform: rotate(-4deg);
+  }
+  82% {
+    transform: rotate(1.5deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wordmark.bump .ball,
+  .wordmark.bump .t {
+    animation: none;
+  }
+}
+
+.intro {
+  margin: 6px 0 0;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* project grid */
+
+.grid {
+  display: grid;
+  margin-top: 40px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 28px 22px;
+}
+
+.empty {
+  grid-column: 1 / -1;
+  margin: 24px 0;
+  color: #999;
+}
+
+/* project tiles */
+
+.tile {
+  display: block;
+  text-decoration: none;
+}
+
+.thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.12s ease-out;
+}
+
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tile:hover .thumb {
+  transform: translateY(-4px) rotate(-1deg);
+}
+
+.tile:nth-child(even):hover .thumb {
+  transform: translateY(-4px) rotate(1deg);
+}
+
+.tile h3 {
+  margin: 10px 0 2px;
+  font-size: 1.05rem;
+}
+
+.tile p {
+  margin: 0;
+  color: #777;
+  font-size: 0.9rem;
+}
+
+.badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #ffe45c;
+  color: #222;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge.wip {
+  background: #fff;
+}
+
+/* footer */
+
+footer {
+  margin-top: 72px;
+  color: #999;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  body {
+    padding-top: 32px;
+  }
+
+  header h1 {
+    font-size: 2.4rem;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px 14px;
+  }
+}
