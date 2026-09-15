@@ -57,7 +57,7 @@ const COST_GROWTH = 1.15;
 // Upgrades and achievements both use these to decide when they unlock.
 // Use any mix of them - all of them must be true:
 //
-//   own: "Faster Fingers", count: 5   own at least 5 of a shop item
+//   own: "Keycap", count: 5   own at least 5 of a shop item
 //   wordsTyped: 50                    finished at least 50 words
 //   totalBits: 8192                   earned at least this many bits, ever
 //   upgradesBought: 3                 bought at least 3 upgrades
@@ -88,10 +88,10 @@ const UPGRADES = [
   {
     name: "Ergonomic Keyboard",
     icon: "[_]",
-    desc: "Faster Fingers are twice as good.",
+    desc: "Keycaps are twice as good.",
     cost: 160,
-    unlock: { own: "Faster Fingers", count: 5 },
-    effect: { item: "Faster Fingers", multiply: 2 },
+    unlock: { own: "Keycap", count: 5 },
+    effect: { item: "Keycap", multiply: 2 },
   },
   {
     name: "Overclocked Auto-Typers",
@@ -136,7 +136,7 @@ const ACHIEVEMENTS = [
   { name: "Kilobyte",       desc: "Earn 1 KB in total.",             unlock: { totalBits: 8192 } },
   { name: "Megabyte",       desc: "Earn 1 MB in total.",             unlock: { totalBits: 8 * 1024 ** 2 } },
   { name: "Gigabyte",       desc: "Earn 1 GB in total.",             unlock: { totalBits: 8 * 1024 ** 3 } },
-  { name: "Ten Fingers",    desc: "Own 10 Faster Fingers.",          unlock: { own: "Faster Fingers", count: 10 } },
+  { name: "Ten Fingers",    desc: "Own 10 Keycaps.",          unlock: { own: "Keycap", count: 10 } },
   { name: "Automation",     desc: "Buy your first Auto-Typer.",      unlock: { own: "Auto-Typer", count: 1 } },
   { name: "Shopaholic",     desc: "Buy 3 upgrades.",                 unlock: { upgradesBought: 3 } },
   { name: "Mainframe",      desc: "Finish 1,000 words.",             unlock: { wordsTyped: 1000 }, secret: true },
