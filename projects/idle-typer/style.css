@@ -245,6 +245,11 @@
   font-size: 0.8rem;
 }
 
+/* keep the nav bar (and its info panel) above the achievements page */
+.topbar {
+  z-index: 25;
+}
+
 /* achievements page: covers everything under the nav bar */
 
 .achievements-page {
@@ -329,8 +334,29 @@
   font-weight: 700;
 }
 
+/* how to get it, like "Type 50 words." */
 .a-desc {
   font-size: 0.8rem;
+}
+
+/* optional joke underneath: italic, in quotes, a bit see-through */
+.a-quote {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.a-quote:empty {
+  display: none;
+}
+
+.a-quote::before {
+  content: "\201C"; /* opening curly quote */
+}
+
+.a-quote::after {
+  content: "\201D"; /* closing curly quote */
 }
 
 .achievement.earned .a-desc {

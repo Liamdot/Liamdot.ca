@@ -1,0 +1,194 @@
+/* Styles just for Gate Playground. Loaded after the site's style.css and game.css. */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  background: #1d1d1f;
+}
+
+/* ---- toolbar ---- */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 2px solid #222;
+  background: #fbf8f1;
+}
+
+.palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.part-btn {
+  padding: 5px 10px;
+  border: 2px solid #222;
+  border-radius: 8px;
+  background: #fff;
+  color: #222;
+  font: 700 0.8rem Menlo, Consolas, "Courier New", monospace;
+  cursor: grab;
+  user-select: none;
+  touch-action: none; /* lets you drag it on touch screens */
+}
+
+.part-btn:hover {
+  background: #fff3c4;
+}
+
+.hint {
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.tool-btn {
+  padding: 4px 12px;
+  border: 2px solid #222;
+  border-radius: 20px;
+  background: none;
+  color: #222;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.tool-btn:hover {
+  background: #eee6d6;
+}
+
+.tool-btn:disabled {
+  border-color: #d8d2c4;
+  color: #b5ae9f;
+  background: none;
+  cursor: default;
+}
+
+/* ---- board ---- */
+
+.board-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.board {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+/* wires */
+
+.wire {
+  fill: none;
+  stroke: #4a4a50;
+  stroke-width: 4;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.wire.on {
+  stroke: #7ee08a;
+}
+
+.wire.selected {
+  stroke: #ffe27a;
+}
+
+/* the wire you're dragging out */
+.wire.preview {
+  stroke: #aaa;
+  stroke-dasharray: 6 6;
+}
+
+/* a wide invisible copy of each wire, so they're easy to click */
+.wire-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14;
+  cursor: pointer;
+}
+
+/* parts */
+
+.part {
+  cursor: grab;
+}
+
+.part .body {
+  fill: #2c2c30;
+  stroke: #55555c;
+  stroke-width: 2;
+}
+
+.part.selected .body {
+  stroke: #ffe27a;
+}
+
+.part text {
+  fill: #f1ede4;
+  font: 700 13px Menlo, Consolas, "Courier New", monospace;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+/* IN switch: the light in the middle turns green when it's on */
+.part .light {
+  fill: #3a3a40;
+  pointer-events: none;
+}
+
+.part.on .light {
+  fill: #7ee08a;
+}
+
+.part.INPUT.on text {
+  fill: #1d1d1f;
+}
+
+/* OUT lamp: the whole thing lights up */
+.part.OUTPUT.on .body {
+  fill: #7ee08a;
+  stroke: #b8f5c0;
+}
+
+.part.OUTPUT.on text {
+  fill: #1d1d1f;
+}
+
+/* pins: the little dots you drag wires between */
+.pin {
+  fill: #9a9aa2;
+  stroke: transparent; /* invisible border makes them easier to grab */
+  stroke-width: 10;
+  cursor: crosshair;
+}
+
+.pin:hover {
+  fill: #ffe27a;
+}
+
+.board.wiring,
+.board.wiring .part {
+  cursor: crosshair;
+}
+
+@media (max-width: 700px) {
+  .hint {
+    display: none;
+  }
+}

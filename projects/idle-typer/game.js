@@ -124,22 +124,25 @@ const UPGRADES = [
 // earned. They're listed on the achievements page (the trophy button).
 //
 //   name   - must be different for every achievement (saves use it)
-//   desc   - how to get it
 //   unlock - when you earn it (see "Unlock rules" above)
+//   quote  - optional. A joke shown underneath, in italics and quotes.
 //   secret - optional. If true, it shows as "???" until you earn it.
+//   desc   - optional. How to get it ("Type 50 words.") is written
+//            automatically from the unlock rules. Only add desc if you want
+//            to word it differently.
 const ACHIEVEMENTS = [
-  { name: "Hello, World!",   desc: "Type your first word. We all have to start somewhere.",         unlock: { wordsTyped: 1 } },
-  { name: "Tux Typist",  desc: "Type 50 words. ",                unlock: { wordsTyped: 50 } },
-  { name: "Typeracer",   desc: "Type 250 words. Bet you couldn't beat me at typeracer.",               unlock: { wordsTyped: 250 } },
-  { name: "Monkeytype Master",   desc: "Type 1000 words. You are now better than 1% of Monkeytype users.",               unlock: { wordsTyped: 1000 } },
-  { name: "Byte Me",        desc: "Earn your first byte!",           unlock: { totalBits: 8 } },
-  { name: "Kilobyte",       desc: "Earn 1 KB in total.",             unlock: { totalBits: 8192 } },
-  { name: "Megabyte",       desc: "Earn 1 MB in total.",             unlock: { totalBits: 8 * 1024 ** 2 } },
-  { name: "Gigabyte",       desc: "Earn 1 GB in total.",             unlock: { totalBits: 8 * 1024 ** 3 } },
-  { name: "Ten Fingers",    desc: "Own 10 Keycaps.",          unlock: { own: "Keycap", count: 10 } },
-  { name: "Automation",     desc: "Buy your first Auto-Typer.",      unlock: { own: "Auto-Typer", count: 1 } },
-  { name: "Shopaholic",     desc: "Buy 3 upgrades.",                 unlock: { upgradesBought: 3 } },
-  { name: "Mainframe",      desc: "Finish 1,000 words.",             unlock: { wordsTyped: 1000 }, secret: true },
+  { name: "Hello, World!",     unlock: { wordsTyped: 1 },    quote: "We all have to start somewhere." },
+  { name: "Tux Typist",        unlock: { wordsTyped: 50 } },
+  { name: "Typeracer",         unlock: { wordsTyped: 250 },  quote: "Bet you couldn't beat me at typeracer." },
+  { name: "Monkeytype Master", unlock: { wordsTyped: 1000 }, quote: "You are now better than 1% of Monkeytype users." },
+  { name: "Byte Me",           unlock: { totalBits: 8 } },
+  { name: "Kilobyte",          unlock: { totalBits: 8192 } },
+  { name: "Megabyte",          unlock: { totalBits: 8 * 1024 ** 2 } },
+  { name: "Gigabyte",          unlock: { totalBits: 8 * 1024 ** 3 } },
+  { name: "Ten Fingers",       unlock: { own: "Keycap", count: 10 } },
+  { name: "Automation",        unlock: { own: "Auto-Typer", count: 1 } },
+  { name: "Shopaholic",        unlock: { upgradesBought: 3 } },
+  { name: "Mainframe",         unlock: { wordsTyped: 1000 }, secret: true },
 ];
 
 // ===========================================================================
@@ -202,6 +205,32 @@ function meetsRules(rules) {
   if (rules.upgradesBought !== undefined && bought.length < rules.upgradesBought) return false;
 
   return true;
+}
+
+// Writes out an "unlock" object in words, like "Type 50 words." or
+// "Own 10 Auto-Typers and earn 1 KB in total."
+function rulesText(rules) {
+  const parts = [];
+  if (rules.wordsTyped !== undefined) {
+    parts.push(`type ${plural(rules.wordsTyped, "word")}`);
+  }
+  if (rules.own !== undefined) {
+    parts.push(`own ${plural(rules.count || 1, rules.own)}`);
+  }
+  if (rules.totalBits !== undefined) {
+    parts.push(`earn ${formatBits(rules.totalBits)} in total`);
+  }
+  if (rules.upgradesBought !== undefined) {
+    parts.push(`buy ${plural(rules.upgradesBought, "upgrade")}`);
+  }
+
+  const sentence = parts.join(" and ");
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1) + ".";
+}
+
+// plural(1, "word") -> "1 word", plural(50, "word") -> "50 words"
+function plural(count, thing) {
+  return `${count.toLocaleString()} ${count === 1 ? thing : thing + "s"}`;
 }
 
 // ---- Upgrades ----
@@ -408,7 +437,8 @@ const achievementCards = ACHIEVEMENTS.map(() => {
   card.className = "achievement";
   card.innerHTML = `
     <span class="a-name"></span>
-    <span class="a-desc"></span>`;
+    <span class="a-desc"></span>
+    <span class="a-quote"></span>`;
   achievementListEl.appendChild(card);
   return card;
 });
@@ -476,7 +506,8 @@ function render() {
 
     card.classList.toggle("earned", got);
     card.querySelector(".a-name").textContent = hideIt ? "???" : achievement.name;
-    card.querySelector(".a-desc").textContent = hideIt ? "A secret." : achievement.desc;
+    card.querySelector(".a-desc").textContent = hideIt ? "A secret." : achievement.desc || rulesText(achievement.unlock);
+    card.querySelector(".a-quote").textContent = hideIt ? "" : achievement.quote || "";
   }
 }
 

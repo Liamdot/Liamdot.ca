@@ -21,6 +21,14 @@
 
 const PROJECTS = [
   {
+    title: "Gate Playground",
+    blurb: "Wire up logic gates and see what happens.",
+    date: "2026-09-16",
+    url: "projects/gate-playground/",
+    thumb: "thumbs/gate-playground.svg",
+    badge: "new",
+  },
+  {
     title: "Idle Typer",
     blurb: "Larp as a hacker",
     date: "2026-09-14",
