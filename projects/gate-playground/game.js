@@ -2,13 +2,18 @@
 // Drag logic gates onto the board, wire them together, and flip the switches
 // to see what happens. Inspired by Turing Complete.
 //
+// There are two modes:
+//   Sandbox - build anything you like with every part
+//   Puzzles - levels with a goal, only certain gates allowed, and a Test
+//             button that checks every combination of inputs
+//
 // This file is split into parts:
-//   1. Settings    - the parts you can place, and how each one works
-//   2. State       - everything on the board
+//   1. Settings    - the parts you can place, the sandbox starter, the levels
+//   2. State       - everything on the board, and your puzzle progress
 //   3. Helpers     - grid snapping, pin positions, finding things
-//   4. Simulation  - working out which parts are on
-//   5. Drawing     - turning the board into SVG
-//   6. Input       - dragging, wiring, flipping switches, deleting
+//   4. Simulation  - working out which parts are on, and testing levels
+//   5. Drawing     - turning the board into SVG, plus the puzzle panels
+//   6. Input       - dragging, wiring, flipping switches, deleting, modes
 //   7. Saving
 //
 // Ideas for what to add are at the bottom of the file.
@@ -17,7 +22,7 @@
 // 1. Settings
 // ===========================================================================
 
-// Where the board is saved.
+// Where the board and puzzle progress are saved.
 const SAVE_KEY = "gate-playground-save";
 
 // Parts snap to a grid this many pixels apart.
@@ -45,8 +50,7 @@ const PARTS = {
   XNOR:   { label: "XNOR", inputs: 2, output: true,  logic: (ins) => ins[0] === ins[1] },
 };
 
-// What's on the board the very first time you visit: two switches, an AND
-// gate and a lamp. (The "clear" button empties it.)
+// What's on the sandbox board the very first time you visit.
 const STARTER = {
   parts: [
     { id: 1, type: "INPUT",  x: 100, y: 100, on: true },
@@ -61,16 +65,124 @@ const STARTER = {
   ],
 };
 
+// The puzzles, in order. Each one unlocks when you solve the one before it.
+//
+//   name    - must be different for every level (saves use it)
+//   goal    - what to build
+//   inputs  - labels for the switches you're given, like ["A", "B"]
+//   outputs - labels for the lamps you have to light, like ["Q"]
+//   parts   - which gates you're allowed to place
+//   solve   - the right answer. It gets the switches, like { A: true, B: false },
+//             and returns what each lamp should be, like { Q: true }.
+const LEVELS = [
+  {
+    name: "Wire It Up",
+    goal: "Drag a wire from A's pin to Q's pin, so the lamp copies the switch.",
+    inputs: ["A"], outputs: ["Q"], parts: [],
+    solve: ({ A }) => ({ Q: A }),
+  },
+  {
+    name: "Opposite Day",
+    goal: "Q should be on when A is off, and off when A is on.",
+    inputs: ["A"], outputs: ["Q"], parts: ["NOT"],
+    solve: ({ A }) => ({ Q: !A }),
+  },
+  {
+    name: "Both At Once",
+    goal: "Q turns on only when A and B are both on.",
+    inputs: ["A", "B"], outputs: ["Q"], parts: ["AND"],
+    solve: ({ A, B }) => ({ Q: A && B }),
+  },
+  {
+    name: "Either Will Do",
+    goal: "Q turns on when A or B (or both) are on.",
+    inputs: ["A", "B"], outputs: ["Q"], parts: ["OR"],
+    solve: ({ A, B }) => ({ Q: A || B }),
+  },
+  {
+    name: "NAND Not",
+    goal: "Build a NOT gate using only NAND gates.",
+    inputs: ["A"], outputs: ["Q"], parts: ["NAND"],
+    solve: ({ A }) => ({ Q: !A }),
+  },
+  {
+    name: "NAND And",
+    goal: "Build an AND gate using only NAND gates.",
+    inputs: ["A", "B"], outputs: ["Q"], parts: ["NAND"],
+    solve: ({ A, B }) => ({ Q: A && B }),
+  },
+  {
+    name: "NAND Or",
+    goal: "Build an OR gate using only NAND gates.",
+    inputs: ["A", "B"], outputs: ["Q"], parts: ["NAND"],
+    solve: ({ A, B }) => ({ Q: A || B }),
+  },
+  {
+    name: "One Or The Other",
+    goal: "Build XOR: Q is on when exactly one of A and B is on.",
+    inputs: ["A", "B"], outputs: ["Q"], parts: ["AND", "OR", "NOT"],
+    solve: ({ A, B }) => ({ Q: A !== B }),
+  },
+  {
+    name: "XOR From NAND",
+    goal: "Build XOR again, using only NAND gates. It can be done with 4.",
+    inputs: ["A", "B"], outputs: ["Q"], parts: ["NAND"],
+    solve: ({ A, B }) => ({ Q: A !== B }),
+  },
+  {
+    name: "Majority Vote",
+    goal: "Q is on when at least two of A, B and C are on.",
+    inputs: ["A", "B", "C"], outputs: ["Q"], parts: ["AND", "OR"],
+    solve: ({ A, B, C }) => ({ Q: (A && B) || (A && C) || (B && C) }),
+  },
+  {
+    name: "Half Adder",
+    goal: "Add two bits. SUM is on when exactly one is on. CARRY is on when both are.",
+    inputs: ["A", "B"], outputs: ["SUM", "CARRY"], parts: ["XOR", "AND"],
+    solve: ({ A, B }) => ({ SUM: A !== B, CARRY: A && B }),
+  },
+  {
+    name: "Full Adder",
+    goal: "Add three bits: A, B and a carry-in C. CARRY and SUM together make the total in binary.",
+    inputs: ["A", "B", "C"], outputs: ["SUM", "CARRY"], parts: ["XOR", "AND", "OR"],
+    solve: ({ A, B, C }) => {
+      const total = A + B + C;
+      return { SUM: total % 2 === 1, CARRY: total >= 2 };
+    },
+  },
+  {
+    name: "Multiplexer",
+    goal: "Choose an input: Q copies A when S is off, and copies B when S is on.",
+    inputs: ["A", "B", "S"], outputs: ["Q"], parts: ["AND", "OR", "NOT"],
+    solve: ({ A, B, S }) => ({ Q: S ? B : A }),
+  },
+  {
+    name: "Equal?",
+    goal: "A1 A0 and B1 B0 are two 2-bit numbers. EQ is on when they're the same number.",
+    inputs: ["A1", "A0", "B1", "B0"], outputs: ["EQ"], parts: ["XNOR", "AND"],
+    solve: ({ A1, A0, B1, B0 }) => ({ EQ: A1 === B1 && A0 === B0 }),
+  },
+];
+
 // ===========================================================================
 // 2. State
 // ===========================================================================
 
-let parts = [];     // every part on the board: { id, type, x, y, on, value }
+let parts = [];     // every part on the board: { id, type, x, y, on, value, label, locked }
 let wires = [];     // every wire: { id, from: part id, to: part id, pin: which input pin }
 let nextId = 1;     // the id the next new part or wire gets
 
 let selected = null; // what's selected: { kind: "part" or "wire", id }, or null
 let action = null;   // what the mouse is doing right now: dragging a part, or drawing a wire
+
+let mode = "sandbox";       // "sandbox", or the number of the level you're on (0 = first level)
+let levelSelectOpen = false; // is the list of levels showing?
+let lastTest = null;        // the result of pressing Test, shown in a panel
+
+// Everything that gets saved: the sandbox board, a board for every level
+// you've started, the fewest gates you've solved each level with, and
+// whether you've seen the welcome message.
+let progress = { sandbox: null, levels: {}, solved: {}, seenIntro: false };
 
 // ===========================================================================
 // 3. Helpers
@@ -122,6 +234,36 @@ function isOverBoard(e) {
   return e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
 }
 
+// ---- Puzzles ----
+
+function currentLevel() {
+  return mode === "sandbox" ? null : LEVELS[mode];
+}
+
+// How many gates are on the board (switches and lamps don't count).
+function gateCount() {
+  return parts.filter((part) => part.type !== "INPUT" && part.type !== "OUTPUT").length;
+}
+
+// You can play a level once you've solved the one before it.
+function isUnlocked(index) {
+  return index === 0 || progress.solved[LEVELS[index - 1].name] !== undefined;
+}
+
+// The board a level starts with: its switches down the left, its lamps on the right.
+function levelStartBoard(level) {
+  const width = board.getBoundingClientRect().width || 700;
+  const lampX = Math.max(360, Math.floor((width - 140) / GRID) * GRID);
+  let id = 1;
+  return {
+    parts: [
+      ...level.inputs.map((label, i) => ({ id: id++, type: "INPUT", x: 60, y: 60 + i * 80, label, locked: true })),
+      ...level.outputs.map((label, i) => ({ id: id++, type: "OUTPUT", x: lampX, y: 60 + i * 80, label, locked: true })),
+    ],
+    wires: [],
+  };
+}
+
 // ===========================================================================
 // 4. Simulation
 // ===========================================================================
@@ -157,6 +299,52 @@ function simulate() {
   }
 }
 
+// Tries every combination of the level's switches and compares the lamps to
+// the right answer. With 2 switches that's 4 rows: 00, 01, 10, 11.
+function testLevel() {
+  const level = currentLevel();
+  const switches = level.inputs.map((label) => parts.find((part) => part.type === "INPUT" && part.label === label));
+  const lamps = level.outputs.map((label) => parts.find((part) => part.type === "OUTPUT" && part.label === label));
+  const before = switches.map((part) => part.on);
+
+  const rows = [];
+  const combinations = 2 ** switches.length;
+  for (let combo = 0; combo < combinations; combo++) {
+    // Set each switch from the bits of the combination number.
+    const ins = {};
+    switches.forEach((part, i) => {
+      part.on = Boolean((combo >> (switches.length - 1 - i)) & 1);
+      ins[level.inputs[i]] = part.on;
+    });
+
+    // Start every part from "off", so leftover values can't help.
+    for (const part of parts) part.value = false;
+    simulate();
+
+    const want = level.solve(ins);
+    const got = {};
+    level.outputs.forEach((label, i) => { got[label] = lamps[i].value; });
+    const pass = level.outputs.every((label) => Boolean(want[label]) === got[label]);
+    rows.push({ ins, want, got, pass });
+  }
+
+  // Put the switches back how you had them.
+  switches.forEach((part, i) => { part.on = before[i]; });
+  for (const part of parts) part.value = false;
+  simulate();
+
+  const solved = rows.every((row) => row.pass);
+  const gates = gateCount();
+  if (solved) {
+    const best = progress.solved[level.name];
+    progress.solved[level.name] = best === undefined ? gates : Math.min(best, gates);
+  }
+
+  lastTest = { rows, solved, gates, wrong: rows.filter((row) => !row.pass).length };
+  render();
+  save();
+}
+
 // ===========================================================================
 // 5. Drawing
 // ===========================================================================
@@ -164,7 +352,13 @@ function simulate() {
 const board = document.getElementById("board");
 const layer = document.getElementById("layer");
 const paletteEl = document.getElementById("palette");
+const hintEl = document.getElementById("hint");
 const deleteBtn = document.getElementById("delete-btn");
+const clearBtn = document.getElementById("clear-btn");
+const levelBar = document.getElementById("level-bar");
+const resultsEl = document.getElementById("results");
+const levelSelectEl = document.getElementById("level-select");
+const introEl = document.getElementById("intro");
 
 // A smooth S-shaped wire from point a (an output) to point b (an input).
 function curve(a, b) {
@@ -199,6 +393,13 @@ function partSVG(part) {
       <text x="${w / 2}" y="${h / 2}">${type.label}</text>`;
   }
 
+  // Puzzle switches and lamps have a name beside them.
+  if (part.label) {
+    shape += part.type === "INPUT"
+      ? `<text class="part-label left" x="-10" y="${h / 2}">${part.label}</text>`
+      : `<text class="part-label right" x="${w + 10}" y="${h / 2}">${part.label}</text>`;
+  }
+
   let pins = "";
   for (let pin = 0; pin < type.inputs; pin++) {
     pins += `<circle class="pin" data-part="${part.id}" data-pin="in" data-index="${pin}" cx="0" cy="${GRID * (pin + 1)}" r="5"/>`;
@@ -210,7 +411,7 @@ function partSVG(part) {
   return `<g class="${classes}" data-part="${part.id}" transform="translate(${part.x} ${part.y})">${shape}${pins}</g>`;
 }
 
-function render() {
+function renderBoard() {
   let svg = "";
 
   // Wires first, so parts are drawn on top of them.
@@ -242,7 +443,127 @@ function render() {
   }
 
   layer.innerHTML = svg;
-  deleteBtn.disabled = selected === null;
+
+  // You can't delete a puzzle's switches and lamps.
+  const selectedPart = selected && selected.kind === "part" && partById(selected.id);
+  deleteBtn.disabled = selected === null || Boolean(selectedPart && selectedPart.locked);
+}
+
+// The toolbar buttons: every part in the sandbox, only the allowed gates in a level.
+function renderPalette() {
+  const level = currentLevel();
+  const types = level ? level.parts : Object.keys(PARTS);
+
+  paletteEl.replaceChildren(...types.map((type) => {
+    const button = document.createElement("button");
+    button.className = "part-btn";
+    button.textContent = PARTS[type].label;
+    button.dataset.type = type;
+    return button;
+  }));
+
+  if (level && types.length === 0) {
+    paletteEl.innerHTML = `<span class="no-parts">no gates needed for this one</span>`;
+  }
+
+  hintEl.textContent = level ? "only these gates are allowed" : "drag parts onto the board";
+  clearBtn.textContent = level ? "reset" : "clear";
+
+  for (const button of document.querySelectorAll(".mode-btn")) {
+    button.classList.toggle("active", (button.dataset.mode === "sandbox") === (mode === "sandbox" && !levelSelectOpen));
+  }
+}
+
+// The strip under the toolbar with the level's name, goal and Test button.
+function renderLevelBar() {
+  const level = currentLevel();
+  levelBar.hidden = !level || levelSelectOpen;
+  if (!level) return;
+
+  const best = progress.solved[level.name];
+  document.getElementById("level-name").textContent = `${mode + 1}. ${level.name}`;
+  document.getElementById("level-goal").textContent = level.goal;
+  document.getElementById("level-best").textContent = best === undefined ? "" : `✓ solved · best: ${best} ${best === 1 ? "gate" : "gates"}`;
+}
+
+// The truth table from the last Test.
+function renderResults() {
+  const level = currentLevel();
+  resultsEl.hidden = !level || !lastTest || levelSelectOpen;
+  if (resultsEl.hidden) return;
+
+  const { rows, solved, gates, wrong } = lastTest;
+  const bit = (value) => (value ? 1 : 0);
+  const nextExists = mode + 1 < LEVELS.length;
+
+  const heading = solved
+    ? `<span class="solved-msg">✓ Solved with ${gates} ${gates === 1 ? "gate" : "gates"}!</span>`
+    : `<span class="wrong-msg">✗ ${wrong} of ${rows.length} rows are wrong</span>`;
+
+  const header1 = `<tr>
+    <th colspan="${level.inputs.length}">switches</th>
+    <th class="sep" colspan="${level.outputs.length}">should be</th>
+    <th class="sep" colspan="${level.outputs.length}">you got</th>
+  </tr>`;
+  const labels = (list, first) => list.map((label, i) => `<th class="${i === 0 && first ? "sep" : ""}">${label}</th>`).join("");
+  const header2 = `<tr>${labels(level.inputs, false)}${labels(level.outputs, true)}${labels(level.outputs, true)}</tr>`;
+
+  const body = rows.map((row) => {
+    const cells = (values, extra) => level.outputs.map((label, i) =>
+      `<td class="${i === 0 ? "sep" : ""} ${extra && Boolean(row.want[label]) !== row.got[label] ? "got-wrong" : ""}">${bit(values[label])}</td>`).join("");
+    return `<tr class="${row.pass ? "" : "bad"}">
+      ${level.inputs.map((label) => `<td>${bit(row.ins[label])}</td>`).join("")}
+      ${cells(row.want, false)}
+      ${cells(row.got, true)}
+    </tr>`;
+  }).join("");
+
+  resultsEl.innerHTML = `
+    <div class="results-head">
+      ${heading}
+      <button class="close-btn" id="results-close" aria-label="Close">×</button>
+    </div>
+    <table><thead>${header1}${header2}</thead><tbody>${body}</tbody></table>
+    ${solved && nextExists ? `<button class="test-btn next-btn" id="next-level">next level &rarr;</button>` : ""}
+    ${solved && !nextExists ? `<p class="all-done">That was the last level. Nice work!</p>` : ""}`;
+}
+
+// The list of levels.
+function renderLevelSelect() {
+  levelSelectEl.hidden = !levelSelectOpen;
+  if (!levelSelectOpen) return;
+
+  const solvedCount = LEVELS.filter((level) => progress.solved[level.name] !== undefined).length;
+  const cards = LEVELS.map((level, i) => {
+    const best = progress.solved[level.name];
+    const unlocked = isUnlocked(i);
+    const status = best !== undefined ? `✓ best: ${best} ${best === 1 ? "gate" : "gates"}` : unlocked ? "not solved yet" : "locked";
+    const classes = ["level-card", best !== undefined ? "solved" : "", i === mode ? "current" : ""].join(" ");
+    return `<button class="${classes}" data-level="${i}" ${unlocked ? "" : "disabled"}>
+      <span class="lc-num">Level ${i + 1}</span>
+      <span class="lc-name">${level.name}</span>
+      <span class="lc-status">${status}</span>
+    </button>`;
+  }).join("");
+
+  levelSelectEl.innerHTML = `
+    <div class="ls-inner">
+      <div class="ls-head">
+        <h2>Puzzles</h2>
+        <span class="ls-count">${solvedCount} / ${LEVELS.length} solved</span>
+      </div>
+      <p class="ls-intro">Build each circuit, then press <strong>test</strong> to check it against every combination of switches.</p>
+      <div class="level-grid">${cards}</div>
+    </div>`;
+}
+
+function render() {
+  renderBoard();
+  renderPalette();
+  renderLevelBar();
+  renderResults();
+  renderLevelSelect();
+  introEl.hidden = Boolean(progress.seenIntro);
 }
 
 // Simulate, redraw and save. Call this after anything changes the circuit.
@@ -250,15 +571,6 @@ function changed() {
   simulate();
   render();
   save();
-}
-
-// One toolbar button per part type.
-for (const type in PARTS) {
-  const button = document.createElement("button");
-  button.className = "part-btn";
-  button.textContent = PARTS[type].label;
-  button.dataset.type = type;
-  paletteEl.appendChild(button);
 }
 
 // ===========================================================================
@@ -289,7 +601,7 @@ board.addEventListener("pointerdown", (e) => {
     }
 
     board.classList.add("wiring");
-    render();
+    renderBoard();
     return;
   }
 
@@ -307,20 +619,20 @@ board.addEventListener("pointerdown", (e) => {
       startY: e.clientY,
       moved: false,
     };
-    render();
+    renderBoard();
     return;
   }
 
   // A wire: select it.
   if (target.dataset.wire) {
     selected = { kind: "wire", id: Number(target.dataset.wire) };
-    render();
+    renderBoard();
     return;
   }
 
   // Empty space.
   selected = null;
-  render();
+  renderBoard();
 });
 
 // Pressing a toolbar button makes a new part and starts dragging it.
@@ -372,12 +684,12 @@ window.addEventListener("pointermove", (e) => {
       action.moved = true;
     }
     if (action.moved) moveDraggedPart(e);
-    render();
+    renderBoard();
   }
 
   if (action.kind === "wire") {
     action.pointer = boardPoint(e);
-    render();
+    renderBoard();
   }
 });
 
@@ -445,7 +757,9 @@ function connect(a, b) {
 }
 
 function deletePart(id) {
-  parts = parts.filter((part) => part.id !== id);
+  const part = partById(id);
+  if (!part || part.locked) return; // puzzle switches and lamps stay put
+  parts = parts.filter((p) => p.id !== id);
   wires = wires.filter((wire) => wire.from !== id && wire.to !== id);
   if (selected && selected.kind === "part" && selected.id === id) selected = null;
 }
@@ -456,8 +770,8 @@ function deleteSelected() {
     deletePart(selected.id);
   } else {
     wires = wires.filter((wire) => wire.id !== selected.id);
+    selected = null;
   }
-  selected = null;
   changed();
 }
 
@@ -476,37 +790,123 @@ board.addEventListener("contextmenu", (e) => {
 });
 
 window.addEventListener("keydown", (e) => {
+  if (levelSelectOpen || !progress.seenIntro) return;
   if (e.key === "Delete" || e.key === "Backspace") {
     e.preventDefault(); // some browsers go "back" a page on Backspace
     deleteSelected();
   }
   if (e.key === "Escape") {
     selected = null;
-    render();
+    renderBoard();
   }
 });
 
 deleteBtn.addEventListener("click", deleteSelected);
 
-document.getElementById("clear-btn").addEventListener("click", () => {
-  if (!confirm("Remove everything from the board?")) return;
-  parts = [];
-  wires = [];
+// "clear" in the sandbox, "reset" in a level.
+clearBtn.addEventListener("click", () => {
+  const level = currentLevel();
+  if (!confirm(level ? "Start this level over?" : "Remove everything from the board?")) return;
+  loadBoard(level ? levelStartBoard(level) : { parts: [], wires: [] });
   selected = null;
+  lastTest = null;
   changed();
+});
+
+// ---- Modes and levels ----
+
+// Switches to the sandbox or a level, keeping each one's board separate.
+function switchMode(newMode) {
+  storeBoard();
+  mode = newMode;
+  selected = null;
+  action = null;
+  lastTest = null;
+  levelSelectOpen = false;
+  openBoard();
+  changed();
+}
+
+for (const button of document.querySelectorAll(".mode-btn")) {
+  button.addEventListener("click", () => {
+    if (button.dataset.mode === "sandbox") {
+      levelSelectOpen = false;
+      if (mode !== "sandbox") switchMode("sandbox");
+      else render();
+    } else {
+      levelSelectOpen = true;
+      render();
+    }
+  });
+}
+
+document.getElementById("levels-btn").addEventListener("click", () => {
+  levelSelectOpen = true;
+  render();
+});
+
+document.getElementById("test-btn").addEventListener("click", testLevel);
+
+levelSelectEl.addEventListener("click", (e) => {
+  const card = e.target.closest("[data-level]");
+  if (card && !card.disabled) switchMode(Number(card.dataset.level));
+});
+
+// The welcome message: pick Sandbox or Puzzles.
+introEl.addEventListener("click", (e) => {
+  const choice = e.target.closest("[data-start]");
+  if (!choice) return;
+  progress.seenIntro = true;
+  if (choice.dataset.start === "puzzles") levelSelectOpen = true;
+  render();
+  save();
+});
+
+resultsEl.addEventListener("click", (e) => {
+  if (e.target.id === "results-close") {
+    lastTest = null;
+    render();
+  }
+  if (e.target.id === "next-level") {
+    switchMode(mode + 1);
+  }
 });
 
 // ===========================================================================
 // 7. Saving
 // ===========================================================================
 
+// Copies the board into progress, under the sandbox or the current level.
+function storeBoard() {
+  const data = {
+    parts: parts.map(({ id, type, x, y, on, label, locked }) => ({ id, type, x, y, on, label, locked })),
+    wires,
+  };
+  if (mode === "sandbox") progress.sandbox = data;
+  else progress.levels[LEVELS[mode].name] = data;
+}
+
+// Loads the board for the current mode (or a fresh one if there isn't one).
+function openBoard() {
+  const level = currentLevel();
+  if (!level) {
+    loadBoard(progress.sandbox || STARTER);
+    return;
+  }
+
+  const saved = progress.levels[level.name];
+  loadBoard(saved || levelStartBoard(level));
+
+  // If the level's switches or lamps have changed since it was saved, start it fresh.
+  const hasAll = [...level.inputs.map((label) => ["INPUT", label]), ...level.outputs.map((label) => ["OUTPUT", label])]
+    .every(([type, label]) => parts.some((part) => part.type === type && part.label === label));
+  if (!hasAll) loadBoard(levelStartBoard(level));
+}
+
 function save() {
+  storeBoard();
   try {
-    const data = {
-      parts: parts.map(({ id, type, x, y, on }) => ({ id, type, x, y, on })),
-      wires,
-    };
-    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ mode, ...progress }));
   } catch (e) {
     // saving can fail (e.g. private browsing) - the playground still works
   }
@@ -517,7 +917,10 @@ function save() {
 function loadBoard(data) {
   parts = (data.parts || [])
     .filter((part) => PARTS[part.type])
-    .map((part) => ({ id: part.id, type: part.type, x: part.x, y: part.y, on: Boolean(part.on), value: false }));
+    .map((part) => ({
+      id: part.id, type: part.type, x: part.x, y: part.y, on: Boolean(part.on), value: false,
+      label: part.label, locked: Boolean(part.locked),
+    }));
 
   let highestId = Math.max(0, ...parts.map((part) => part.id), ...(data.wires || []).map((wire) => wire.id || 0));
 
@@ -535,10 +938,23 @@ function loadBoard(data) {
 function load() {
   try {
     const data = JSON.parse(localStorage.getItem(SAVE_KEY));
-    loadBoard(data || STARTER);
+    if (data && data.parts) {
+      // saves from before puzzles existed were just the sandbox board
+      progress.sandbox = data;
+    } else if (data) {
+      progress = {
+        sandbox: data.sandbox || null,
+        levels: data.levels || {},
+        solved: data.solved || {},
+        seenIntro: Boolean(data.seenIntro),
+      };
+      const level = Number.isInteger(data.mode) && LEVELS[data.mode] && isUnlocked(data.mode);
+      mode = level ? data.mode : "sandbox";
+    }
   } catch (e) {
-    loadBoard(STARTER);
+    // broken save - start fresh
   }
+  openBoard();
 }
 
 load();
@@ -549,8 +965,8 @@ render();
 // Ideas to try
 // ===========================================================================
 //
-// - A CLOCK part that turns itself on and off every second
-// - Labels you can type on switches and lamps (A, B, SUM, CARRY...)
-// - Parts with more than one output, like a half adder
-// - Levels: "build XOR using only NAND gates", checked with a truth table
+// - More levels: a 2-bit adder, a decoder, "only NOR gates"
+// - A CLOCK part, and levels that need memory (a latch, a counter)
+// - Labels you can type on sandbox switches and lamps
+// - A star rating for solving a level in the fewest possible gates
 // - Zooming and scrolling around a bigger board

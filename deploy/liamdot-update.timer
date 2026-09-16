@@ -1,0 +1,11 @@
+# Runs liamdot-update.service a minute after boot, then every 5 minutes.
+
+[Unit]
+Description=Update the Liamdot site from GitHub every 5 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

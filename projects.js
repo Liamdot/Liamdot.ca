@@ -21,8 +21,16 @@
 
 const PROJECTS = [
   {
+    title: "Schedulr",
+    blurb: "Create the perfect university schedule",
+    date: "2026-09-16",
+    url: "projects/schedulr/",
+    thumb: "thumbs/schedulr.svg",
+    badge: "new",
+  },
+  {
     title: "Gate Playground",
-    blurb: "Wire up logic gates and see what happens.",
+    blurb: "Wire up logic gates and see what happens",
     date: "2026-09-16",
     url: "projects/gate-playground/",
     thumb: "thumbs/gate-playground.svg",

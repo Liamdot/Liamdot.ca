@@ -1,0 +1,544 @@
+/* Styles just for Schedulr. Loaded after the site's style.css and game.css. */
+
+.stage {
+  overflow-y: auto;
+  background: #fbf8f1;
+  color: #222;
+}
+
+.app {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+.muted {
+  margin: 0 0 12px;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.sub {
+  margin: 32px 0 6px;
+  font-size: 1.1rem;
+}
+
+/* ---- header: tabs + file buttons ---- */
+
+.app-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.tabs,
+.file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tab {
+  padding: 6px 14px;
+  border: 2px solid #222;
+  border-radius: 20px;
+  background: none;
+  color: #222;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tab:hover {
+  background: #eee6d6;
+}
+
+.tab.active {
+  background: #222;
+  color: #fbf8f1;
+}
+
+.pill {
+  display: inline-block;
+  padding: 3px 11px;
+  border: 2px solid #222;
+  border-radius: 20px;
+  background: none;
+  color: #222;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.pill:hover {
+  background: #eee6d6;
+}
+
+.pill:disabled {
+  border-color: #d8d2c4;
+  color: #b5ae9f;
+  background: none;
+  cursor: default;
+}
+
+.pill.danger {
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
+.pill.danger:hover {
+  background: #c0392b;
+  color: #fff;
+}
+
+/* ---- form bits ---- */
+
+.app input:not([type="checkbox"]),
+.app select,
+.app textarea {
+  padding: 4px 7px;
+  border: 1.5px solid #d8d2c4;
+  border-radius: 6px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.app input:focus,
+.app select:focus,
+.app textarea:focus {
+  border-color: #222;
+  outline: none;
+}
+
+.app textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #666;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.add-btn {
+  padding: 6px 12px;
+  border: 2px dashed #bbb3a2;
+  border-radius: 10px;
+  background: none;
+  color: #777;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.add-btn:hover {
+  border-color: #222;
+  color: #222;
+}
+
+.add-btn.small {
+  padding: 3px 10px;
+  font-size: 0.8rem;
+}
+
+.link-btn {
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: #888;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  color: #222;
+  text-decoration: underline;
+}
+
+.icon-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: #999;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: #f3d4cf;
+  color: #c0392b;
+}
+
+.add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---- course cards ---- */
+
+.card {
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 2px solid #222;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.card.off {
+  border-color: #d8d2c4;
+  opacity: 0.6;
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.swatch {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.app input.code {
+  width: 110px;
+  font-weight: 700;
+}
+
+.app input.name {
+  flex: 1;
+  min-width: 160px;
+}
+
+.app input.credits {
+  width: 62px;
+}
+
+.card-head .icon-btn {
+  margin-left: auto;
+}
+
+.prereq {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.prereq input {
+  flex: 1;
+  max-width: 320px;
+}
+
+.sections {
+  margin: 10px 0 8px;
+}
+
+.section {
+  padding: 8px 0 6px;
+  border-top: 1px dashed #e5dfd2;
+}
+
+.section.excluded .meeting,
+.section.excluded .section-head > :not(.toggle):not(.icon-btn) {
+  opacity: 0.45;
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.app input.label {
+  width: 70px;
+}
+
+.meeting,
+.busy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding-left: 12px;
+}
+
+.busy {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 2px solid #d8d2c4;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.days {
+  display: flex;
+  gap: 3px;
+}
+
+.day {
+  min-width: 30px;
+  padding: 3px 0;
+  border: 1.5px solid #d8d2c4;
+  border-radius: 6px;
+  background: #fff;
+  color: #999;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.day.on {
+  border-color: #222;
+  background: #222;
+  color: #fbf8f1;
+}
+
+.empty-note {
+  margin: 0 0 14px;
+  padding: 18px;
+  border: 2px dashed #d8d2c4;
+  border-radius: 12px;
+  color: #999;
+  text-align: center;
+}
+
+/* ---- timetables ---- */
+
+.tt-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin-bottom: 14px;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.tt-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  color: #222;
+  font-weight: 700;
+}
+
+.message {
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f1ece1;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.message.bad {
+  background: #fbe3df;
+  color: #8e2e22;
+}
+
+.message ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.tt-stats {
+  margin: 0 0 18px;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.term {
+  margin-bottom: 26px;
+}
+
+.term h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.term h3 span {
+  margin-left: 6px;
+  color: #999;
+  font-weight: 400;
+}
+
+.week-scroll {
+  overflow-x: auto;
+}
+
+.week {
+  display: grid;
+  grid-template-columns: 52px repeat(var(--days), minmax(84px, 1fr));
+  min-width: 560px;
+  overflow: hidden;
+  border: 2px solid #222;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.week-day {
+  padding: 6px 0;
+  border-bottom: 1.5px solid #e5dfd2;
+  border-left: 1px solid #f1ece1;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.week-corner {
+  border-bottom: 1.5px solid #e5dfd2;
+}
+
+.week-times,
+.week-col {
+  position: relative;
+  height: calc(var(--hours) * var(--hour-px));
+}
+
+.week-col {
+  border-left: 1px solid #f1ece1;
+  background-image: repeating-linear-gradient(to bottom, #f1ece1 0, #f1ece1 1px, transparent 1px, transparent var(--hour-px));
+}
+
+.hour {
+  position: absolute;
+  right: 6px;
+  color: #aaa;
+  font-size: 0.68rem;
+  transform: translateY(-50%);
+}
+
+.block {
+  position: absolute;
+  right: 3px;
+  left: 3px;
+  overflow: hidden;
+  padding: 3px 5px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 6px;
+  color: #222;
+  font-size: 0.7rem;
+  line-height: 1.25;
+}
+
+.block strong {
+  display: block;
+}
+
+.block.busy-block {
+  border-style: dashed;
+  background: repeating-linear-gradient(45deg, #f1f1f1 0, #f1f1f1 6px, #e6e6e6 6px, #e6e6e6 12px);
+  color: #666;
+}
+
+.nothing {
+  padding: 14px;
+  border: 2px dashed #d8d2c4;
+  border-radius: 10px;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.picks {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.picks th {
+  color: #999;
+  font-weight: 400;
+  text-align: left;
+}
+
+.picks th,
+.picks td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #e5dfd2;
+}
+
+/* ---- requirements ---- */
+
+.req-summary {
+  margin-left: 6px;
+  color: #999;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.req {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 2px solid #d8d2c4;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.9rem;
+}
+
+.req.met {
+  border-color: #222;
+}
+
+.req .app-wide {
+  flex: 1;
+  min-width: 200px;
+}
+
+.status {
+  margin-left: auto;
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: #fbe3df;
+  color: #8e2e22;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.status.ok {
+  background: #d9f5dd;
+  color: #256b31;
+}
+
+.prereq-item {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .tt-nav {
+    margin-left: 0;
+  }
+
+  .status {
+    margin-left: 0;
+  }
+}

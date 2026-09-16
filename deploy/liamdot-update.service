@@ -1,0 +1,13 @@
+# Pulls the latest version of the site from GitHub.
+# Run every 5 minutes by liamdot-update.timer.
+# setup-pi.sh replaces PI_USER with your username when it installs this.
+
+[Unit]
+Description=Update the Liamdot site from GitHub
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=PI_USER
+ExecStart=/usr/bin/git -C /var/www/liamdot pull --ff-only --quiet

@@ -44,10 +44,12 @@
         <li>Click an IN switch to flip it between 0 and 1</li>
         <li>Drag a wire off an input pin to disconnect it</li>
         <li>Right-click something (or select it and press Delete) to remove it</li>
+        <li><strong>Puzzles:</strong> build what the level asks for with the gates you're given, then press <em>test</em></li>
       </ul>
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v0.2</strong> &ndash; 14 puzzles</li>
         <li><strong>v0.1</strong> &ndash; first version</li>
       </ul>
 
@@ -57,12 +59,27 @@
 
   <main class="stage" id="stage">
     <div class="toolbar">
+      <div class="modes">
+        <button class="mode-btn active" data-mode="sandbox">Sandbox</button>
+        <button class="mode-btn" data-mode="puzzles">Puzzles</button>
+      </div>
       <!-- a button for every part is added here by game.js -->
       <div class="palette" id="palette"></div>
-      <span class="hint">drag parts onto the board</span>
+      <span class="hint" id="hint">drag parts onto the board</span>
       <span class="spacer"></span>
       <button class="tool-btn" id="delete-btn" disabled>delete</button>
       <button class="tool-btn" id="clear-btn">clear</button>
+    </div>
+
+    <!-- shown while playing a puzzle -->
+    <div class="level-bar" id="level-bar" hidden>
+      <button class="tool-btn" id="levels-btn">&larr; levels</button>
+      <div class="level-text">
+        <strong id="level-name"></strong>
+        <span id="level-goal"></span>
+        <span class="level-best" id="level-best"></span>
+      </div>
+      <button class="test-btn" id="test-btn">test</button>
     </div>
 
     <div class="board-wrap">
@@ -80,6 +97,32 @@
         <!-- wires and parts get drawn in here -->
         <g id="layer"></g>
       </svg>
+
+      <!-- truth table after pressing test -->
+      <div class="results" id="results" hidden></div>
+
+      <!-- the list of puzzles -->
+      <div class="level-select" id="level-select" hidden></div>
+    </div>
+
+    <!-- welcome message, shown the first time you visit -->
+    <div class="intro" id="intro" hidden>
+      <div class="intro-card" role="dialog" aria-labelledby="intro-title">
+        <h2 id="intro-title">Welcome to Gate Playground</h2>
+        <p>Logic gates are the tiny switches every computer is built from. Wire switches into gates and gates into lamps, then watch the signals light up as they flow through.</p>
+        <p class="intro-question">How would you like to start?</p>
+        <div class="intro-choices">
+          <button class="intro-choice" data-start="sandbox">
+            <strong>Sandbox</strong>
+            <span>Every gate, no rules. Build whatever you like.</span>
+          </button>
+          <button class="intro-choice" data-start="puzzles">
+            <strong>Puzzles</strong>
+            <span>14 levels, from your first wire to a working adder.</span>
+          </button>
+        </div>
+        <p class="intro-note">You can switch any time from the toolbar.</p>
+      </div>
     </div>
   </main>
 

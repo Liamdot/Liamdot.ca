@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#ffd6a5"/>
+  <text x="50" y="56" text-anchor="middle" textLength="76" lengthAdjust="spacingAndGlyphs"
+        font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="18" font-weight="800" letter-spacing="-0.5" fill="#222">Schedulr<tspan fill="#c0392b">.</tspan></text>
+</svg>
