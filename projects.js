@@ -21,6 +21,22 @@
 
 const PROJECTS = [
   {
+    title: "Name that Number",
+    blurb: "Watch a neural network guess what you draw",
+    date: "2026-09-17",
+    url: "projects/name-that-number/",
+    thumb: "thumbs/name-that-number.svg",
+    badge: "new",
+  },
+  {
+    title: "Fractal Explorer",
+    blurb: "Zoom forever into the Mandelbrot set",
+    date: "2026-09-17",
+    url: "projects/fractals/",
+    thumb: "thumbs/fractals.png",
+    badge: "new",
+  },
+  {
     title: "Schedulr",
     blurb: "Create the perfect university schedule",
     date: "2026-09-16",

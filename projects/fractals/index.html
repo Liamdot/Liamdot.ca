@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fractal Explorer - Liamdot</title>
+  <link rel="icon" href="../../logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../game.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="game-page">
+  <nav class="topbar">
+    <div class="crumbs">
+      <a class="home" href="../../"><img class="logo" src="../../logo.svg" alt=""><span class="home-long">Liamdot</span></a>
+      <span class="sep">/</span>
+      <span class="title">Fractal Explorer</span>
+    </div>
+
+    <div class="actions">
+      <button id="info-btn" aria-expanded="false" aria-controls="info-panel" aria-label="Info" title="Info">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <line x1="10" y1="9" x2="10" y2="14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="10" cy="5.9" r="1.2" fill="currentColor"/>
+        </svg>
+      </button>
+      <button id="fullscreen-btn" aria-label="Fullscreen" title="Fullscreen">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <path d="M3 7.5V3h4.5M12.5 3H17v4.5M17 12.5V17h-4.5M7.5 17H3v-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="info-panel" id="info-panel" hidden>
+      <h2>Fractal Explorer</h2>
+      <p class="meta">made September 2026</p>
+      <p>Shapes made from one tiny formula, repeated until it either flies off to infinity or doesn't. The colours show how fast each point escaped.</p>
+
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>Scroll</strong> or <strong>pinch</strong> to zoom</li>
+        <li><strong>Drag</strong> to move around</li>
+        <li><strong>Double-click</strong> to zoom in (Shift to zoom out)</li>
+        <li><strong>Right-click</strong> the Mandelbrot set to see that point's Julia set</li>
+        <li><strong>+ / &minus;</strong>, <strong>arrow keys</strong> and <strong>R</strong> (reset) work too</li>
+      </ul>
+
+      <h3>Updates</h3>
+      <ul>
+        <li><strong>v0.1</strong> &ndash; first version</li>
+      </ul>
+
+      <a class="more" href="../../">more stuff &rarr;</a>
+    </div>
+  </nav>
+
+  <main class="stage" id="stage">
+    <canvas id="canvas"></canvas>
+
+    <!-- settings panel, top left -->
+    <div class="panel" id="panel">
+      <button class="panel-toggle" id="panel-toggle" aria-expanded="true">
+        <span>Fractal Explorer</span><span class="chevron" aria-hidden="true">&#9662;</span>
+      </button>
+
+      <div class="panel-body" id="panel-body">
+        <label class="row">fractal
+          <select id="fractal"></select>
+        </label>
+
+        <div class="julia" id="julia-controls" hidden>
+          <div class="row">c =
+            <input id="julia-re" type="number" step="0.001" aria-label="real part of c">
+            <span>+</span>
+            <input id="julia-im" type="number" step="0.001" aria-label="imaginary part of c">
+            <span>i</span>
+          </div>
+          <p class="tip">Tip: right-click the Mandelbrot set to pick c.</p>
+        </div>
+
+        <label class="row">jump to
+          <select id="places"></select>
+        </label>
+
+        <label class="row">colours
+          <select id="palette"></select>
+        </label>
+
+        <label class="row">shift
+          <input id="shift" type="range" min="0" max="1" step="0.005">
+        </label>
+
+        <label class="row">bands
+          <input id="bands" type="range" min="4" max="200" step="1">
+        </label>
+
+        <div class="row">detail
+          <input id="detail" type="range" min="0" max="1000" step="1">
+          <label class="auto"><input id="auto-detail" type="checkbox"> auto</label>
+        </div>
+
+        <div class="buttons">
+          <button class="btn" id="zoom-in" title="Zoom in">+</button>
+          <button class="btn" id="zoom-out" title="Zoom out">&minus;</button>
+          <button class="btn" id="reset">reset</button>
+          <button class="btn" id="save">save image</button>
+          <button class="btn" id="copy-link">copy link</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- position and progress, bottom left -->
+    <div class="readout" id="readout"></div>
+  </main>
+
+  <script src="../../nav.js"></script>
+  <script src="fractal-math.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
