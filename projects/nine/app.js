@@ -14,6 +14,7 @@
 
 let path = [];      // the squares picked so far, like [4, 7]
 let busy = false;   // true while a zoom is playing
+let travelling = false; // true while a run of zooms plays, one after another
 
 const scene = document.getElementById("scene");
 const trail = document.getElementById("trail");
@@ -249,26 +250,29 @@ function tuckInto(layer, box) {
 const growTransform = (box) =>
   `translate(${box.size / 2 - box.centerX}px, ${box.size / 2 - box.centerY}px) scale(${box.grow})`;
 
-function runZoom(zoomer, after) {
+function runZoom(zoomer, ms, after) {
   busy = true;
   let done = false;
 
-  const finish = () => {
-    if (done) return;
-    done = true;
-    zoomer.removeEventListener("transitionend", onEnd);
-    busy = false;
-    after();
-  };
+  return new Promise((resolve) => {
+    const finish = () => {
+      if (done) return;
+      done = true;
+      zoomer.removeEventListener("transitionend", onEnd);
+      busy = false;
+      after();
+      resolve();
+    };
 
-  // Only the zoom itself counts as finished. Without this check, a hover
-  // fading out on one of the squares bubbles up and ends the zoom early.
-  const onEnd = (e) => {
-    if (e.target === zoomer && e.propertyName === "transform") finish();
-  };
+    // Only the zoom itself counts as finished. Without this check, a hover
+    // fading out on one of the squares bubbles up and ends the zoom early.
+    const onEnd = (e) => {
+      if (e.target === zoomer && e.propertyName === "transform") finish();
+    };
 
-  zoomer.addEventListener("transitionend", onEnd);
-  setTimeout(finish, ZOOM_MS + 150); // in case the transition never runs at all
+    zoomer.addEventListener("transitionend", onEnd);
+    setTimeout(finish, ms + 150); // in case the transition never runs at all
+  });
 }
 
 // Going in: the level you're on grows around the square you picked.
@@ -303,7 +307,7 @@ function zoomIn(square) {
   // by the time the zoom lands.
   Store.fetchFor(pathText(nextPath));
 
-  runZoom(zoomer, () => {
+  return runZoom(zoomer, ZOOM_MS, () => {
     path = nextPath;
     updateAddressBar();
     show(path, { focus: true });
@@ -312,8 +316,8 @@ function zoomIn(square) {
 
 // Going back out: the level you're on shrinks back into its square, while the
 // level above it comes into view around it.
-function zoomOut() {
-  if (busy || path.length === 0) return;
+function zoomOut({ ms = ZOOM_MS, quiet = false } = {}) {
+  if (busy || path.length === 0) return Promise.resolve();
   const current = scene.firstElementChild;
   const square = path[path.length - 1];
   const parentPath = path.slice(0, -1);
@@ -329,6 +333,7 @@ function zoomOut() {
 
   const zoomer = document.createElement("div");
   zoomer.className = "zoomer";
+  zoomer.style.setProperty("--zoom-ms", `${ms}ms`);
   zoomer.style.transformOrigin = `${box.centerX}px ${box.centerY}px`;
   zoomer.style.transform = growTransform(box); // start zoomed in...
   tuckInto(current, box);
@@ -339,11 +344,28 @@ function zoomOut() {
   zoomer.classList.add("moving");
   zoomer.style.transform = "none"; // ...and settle back out
 
-  runZoom(zoomer, () => {
+  return runZoom(zoomer, ms, () => {
     path = parentPath;
-    updateAddressBar();
+    // On a run of zooms only the last one is worth a history entry, so the
+    // back button returns to where the run started rather than stepping
+    // through every level again.
+    if (!quiet) updateAddressBar();
     show(path);
   });
+}
+
+// Back up several levels at once: every level in between goes past, a little
+// quicker than a single step so it doesn't turn into a journey.
+async function zoomOutTo(depth) {
+  if (busy || travelling || depth >= path.length) return;
+  const steps = path.length - depth;
+  const ms = steps > 1 ? Math.round(ZOOM_MS * 0.6) : ZOOM_MS;
+
+  travelling = true;
+  for (let step = 0; step < steps; step++) {
+    await zoomOut({ ms, quiet: step < steps - 1 });
+  }
+  travelling = false;
 }
 
 // ===========================================================================
@@ -379,7 +401,7 @@ function complain(why) {
 }
 
 scene.addEventListener("click", async (e) => {
-  if (busy) return;
+  if (busy || travelling) return;
 
   const cell = e.target.closest(".cell");
   if (cell) {
@@ -433,10 +455,8 @@ scene.addEventListener("click", async (e) => {
 // The "Nine · 4 · 7" trail at the top.
 document.querySelector(".path-bar").addEventListener("click", (e) => {
   const crumb = e.target.closest(".crumb");
-  if (!crumb || busy) return;
-  const depth = Number(crumb.dataset.depth);
-  if (depth === path.length - 1) zoomOut(); // one level up gets the animation
-  else goTo(path.slice(0, depth));
+  if (!crumb || busy || travelling) return;
+  zoomOutTo(Number(crumb.dataset.depth));
 });
 
 document.getElementById("random-btn").addEventListener("click", async (e) => {
@@ -444,13 +464,13 @@ document.getElementById("random-btn").addEventListener("click", async (e) => {
   button.disabled = true;
   const spot = await Store.randomPath();
   button.disabled = false;
-  if (spot && !busy) goTo(spot.split(".").map(Number));
+  if (spot && !busy && !travelling) goTo(spot.split(".").map(Number));
 });
 
 // Keys: 1-9 pick a square, Escape or Backspace goes back up.
 window.addEventListener("keydown", (e) => {
   const focused = document.activeElement;
-  if (busy || (focused && focused.closest("input, textarea"))) return;
+  if (busy || travelling || (focused && focused.closest("input, textarea"))) return;
   if (e.key >= "1" && e.key <= "9" && path.length < Store.LEVELS) zoomIn(Number(e.key));
   if ((e.key === "Escape" || e.key === "Backspace") && path.length) {
     e.preventDefault();
@@ -465,8 +485,9 @@ window.addEventListener("popstate", () => {
 
 // If the window changes size mid-zoom the maths would be off, so just redraw.
 window.addEventListener("resize", () => {
-  if (!busy) return;
+  if (!busy && !travelling) return;
   busy = false;
+  travelling = false;
   show(path);
 });
 

@@ -133,8 +133,12 @@
   gap: 10px;
 }
 
-/* holds both levels while zooming, and scales them together */
+/* holds both levels while zooming, and scales them together.
+   --zoom-ms is how long the move takes; app.js shortens it when you're
+   travelling up several levels at once, and every fade below is worked out
+   from it so they stay in step. */
 .zoomer {
+  --zoom-ms: 520ms;
   position: absolute;
   top: 0;
   left: 0;
@@ -143,13 +147,13 @@
 }
 
 .zoomer.moving {
-  transition: transform 0.52s cubic-bezier(0.5, 0, 0.3, 1);
+  transition: transform var(--zoom-ms) cubic-bezier(0.5, 0, 0.3, 1);
 }
 
 /* the level arriving fades up as it grows */
 .zoomer .layer.fade-in {
   opacity: 0;
-  transition: opacity 0.34s ease-out;
+  transition: opacity calc(var(--zoom-ms) * 0.65) ease-out;
 }
 
 .zoomer.moving .layer.fade-in {
@@ -159,7 +163,7 @@
 /* ...and the level leaving fades away as it shrinks */
 .zoomer .layer.fade-out {
   opacity: 1;
-  transition: opacity 0.42s ease-in;
+  transition: opacity calc(var(--zoom-ms) * 0.8) ease-in;
 }
 
 .zoomer.moving .layer.fade-out {
@@ -171,7 +175,7 @@
    taken off the page, instead of vanishing in one frame. */
 .zoomer .layer.fade-out-late {
   opacity: 1;
-  transition: opacity 0.26s ease-in 0.22s;
+  transition: opacity calc(var(--zoom-ms) * 0.5) ease-in calc(var(--zoom-ms) * 0.42);
 }
 
 .zoomer.moving .layer.fade-out-late {
@@ -181,7 +185,7 @@
 /* the number and hint on the square being opened get out of the way */
 .zoomer .cell.opening .num,
 .zoomer .cell.opening .hint {
-  transition: opacity 0.26s ease-out;
+  transition: opacity calc(var(--zoom-ms) * 0.5) ease-out;
 }
 
 .zoomer.moving .cell.opening .num,
@@ -193,7 +197,7 @@
 .zoomer .cell.closing .num,
 .zoomer .cell.closing .hint {
   opacity: 0;
-  transition: opacity 0.34s ease-in 0.12s;
+  transition: opacity calc(var(--zoom-ms) * 0.65) ease-in calc(var(--zoom-ms) * 0.23);
 }
 
 .zoomer.moving .cell.closing .num,
