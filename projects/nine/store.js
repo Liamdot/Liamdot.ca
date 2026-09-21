@@ -24,45 +24,51 @@
 
   // ---- keeping it clean ---------------------------------------------------
   //
-  // Two lists. SLURS are blocked wherever they appear, even inside another
-  // word. RUDE words are only blocked when they stand alone, so "Scunthorpe"
-  // and "classic" don't get caught out.
-  //
   // This runs in the visitor's own browser, so anyone who knows how can get
   // around it - it's here to tell people off politely before they press the
   // button. The copy inside server/worker.js is the one that really counts.
-  const SLURS = [
-    "nigger", "nigga", "faggot", "fag", "tranny", "kike", "spic", "chink",
-    "wetback", "paki", "retard", "coon", "dyke",
-  ];
+  // SLURS are caught even run together with other letters or split across
+  // words ("nig ger"), so only ones long and unusual enough never to turn up
+  // inside an ordinary word go here.
+  const SLURS = ["nigger", "nigga", "faggot", "tranny", "wetback"];
 
-  const RUDE = [
+  // These only count as words of their own, so "Scunthorpe", "classic",
+  // "suspicious", "Pakistan" and "conclusion" are all fine.
+  const WORDS = [
+    // short slurs - too likely to turn up inside innocent words to match anywhere
+    "fag", "kike", "spic", "chink", "paki", "retard", "coon", "dyke",
+    // everything else
     "fuck", "fucking", "fucker", "shit", "bullshit", "bitch", "cunt", "whore",
     "slut", "wanker", "bastard", "dick", "cock", "pussy", "asshole", "arsehole",
     "twat", "prick", "rape", "rapist", "porn", "nazi", "kys",
   ];
 
-  // Undoes the usual tricks: sh1t, ＳＨＩＴ, shiiiit, f*ck, f u c k.
+  // Undoes the usual tricks: sh1t, ＳＨＩＴ, f*ck, f u c k.
   // Stars and hashes become "?", a stand-in for "some letter was hidden here".
   function normalize(text) {
     return String(text)
       .toLowerCase()
-      .normalize("NFKD").replace(/[̀-ͯ]/g, "")       // accents, full-width letters
-      .replace(/[*#%]+/g, "?")                                 // f*ck -> f?ck
+      .normalize("NFKD").replace(/[̀-ͯ]/g, "")        // accents, full-width letters
+      .replace(/[*#%]+/g, "?")                                  // f*ck -> f?ck
       .replace(/[0@]/g, "o").replace(/[1!|]/g, "i").replace(/3/g, "e")
       .replace(/4/g, "a").replace(/[$5]/g, "s").replace(/7/g, "t").replace(/8/g, "b")
-      .replace(/[^a-z?]+/g, " ")                               // everything else splits words
+      .replace(/[^a-z?]+/g, " ")                                // everything else splits words
       .replace(/\b([a-z?])(?: ([a-z?]))+\b/g, (run) => run.replace(/ /g, "")) // f u c k -> fuck
-      .replace(/(.)\1+/g, "$1")                                // shiiiit -> shit
       .trim();
   }
 
-  // Does one word match a banned one, allowing for a hidden letter and the
-  // usual endings?
+  const squash = (word) => word.replace(/(.)\1+/g, "$1");      // shiiiit -> shit
+  const trimRuns = (word) => word.replace(/(.)\1{2,}/g, "$1$1"); // faggggot -> faggot
+
+  // Does one word match a banned one, allowing for stretched letters, a hidden
+  // letter and the usual endings? Stretching only counts when the word is at
+  // least as long as the banned one - otherwise squashing "coon" down to "con"
+  // would catch "cons", and "nigger" would catch "Niger".
   function matches(word, banned) {
-    const endings = [banned, `${banned}s`, `${banned}es`, `${banned}ed`, `${banned}ing`, `${banned}er`];
-    return endings.some((form) => {
+    const forms = [banned, `${banned}s`, `${banned}es`, `${banned}ed`, `${banned}ing`, `${banned}er`];
+    return forms.some((form) => {
       if (word === form) return true;
+      if (word.length >= form.length && squash(word) === squash(form)) return true;
       if (!word.includes("?")) return false;
       // "f?ck" matches "fuck": ? stands for any single letter
       return word.length === form.length && new RegExp(`^${word.replace(/\?/g, "[a-z]")}$`).test(form);
@@ -72,13 +78,12 @@
   // Is this too rude to post? Returns the word it tripped on, or "".
   function blockedWord(text) {
     const spaced = normalize(text);
-    const squashed = spaced.replace(/ /g, "");
-    const words = spaced.split(" ").filter(Boolean);
-    const squash = (word) => word.replace(/(.)\1+/g, "$1");
-
-    const slur = SLURS.find((word) => squashed.includes(squash(word)));
+    const joined = trimRuns(spaced.replace(/ /g, ""));
+    const slur = SLURS.find((word) => joined.includes(word));
     if (slur) return slur;
-    return RUDE.find((banned) => words.some((word) => matches(word, squash(banned)))) || "";
+
+    const words = spaced.split(" ").filter(Boolean);
+    return [...SLURS, ...WORDS].find((banned) => words.some((word) => matches(word, banned))) || "";
   }
 
   // Links invite spam, and there's nowhere sensible for them to go.
