@@ -36,13 +36,16 @@ In the Worker's **Settings → Bindings**:
 
 1. **Add → D1 database.** Variable name `DB` (exactly that, in capitals),
    database `nine`. Deploy.
-2. **Add → Secret.** Name `ADMIN_KEY`, value: a long password you make up.
+The other three live one section over, under **Settings → Variables and
+Secrets → + Add**, each row with a **Type** dropdown:
+
+2. Type **Secret**, name `ADMIN_KEY`, value: a long password you make up.
    This is what lets you delete things — keep it somewhere safe.
-3. **Add → Secret.** Name `SALT`, value: another long random string. It's
+3. Type **Secret**, name `SALT`, value: another long random string. It's
    used to scramble visitors' addresses so the same person can't flood the
    board, without ever storing the addresses themselves.
-4. **Add → Variable** (plain text, not a secret). Name `ALLOWED_ORIGINS`,
-   value: the sites allowed to use it, separated by commas. For example:
+4. Type **Text**, name `ALLOWED_ORIGINS`, value: the sites allowed to use
+   it, separated by commas. For example:
 
    ```
    https://liamdot.ca,http://localhost:8123
@@ -51,6 +54,9 @@ In the Worker's **Settings → Bindings**:
    Leave it out and anything is allowed, which is fine but untidy.
 
 Deploy again after adding them.
+
+If you'd rather keep `ADMIN_KEY` and `SALT` in a **Secrets Store** and bind
+that instead, the Worker takes them that way too — same names either way.
 
 ## 4. Point the site at it
 

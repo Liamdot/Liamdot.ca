@@ -81,6 +81,16 @@ const validPath = (path, exact = LEVELS) =>
 const validPrefix = (path) =>
   path === "" || (typeof path === "string" && /^[1-9](\.[1-9]){0,2}$/.test(path));
 
+// A secret is either set straight on the Worker (Settings -> Variables and
+// Secrets), which gives a plain string, or kept in a Secrets Store, which
+// gives something you have to ask. This takes either.
+async function secret(value, fallback = "") {
+  if (!value) return fallback;
+  if (typeof value === "string") return value;
+  if (typeof value.get === "function") return (await value.get()) || fallback;
+  return fallback;
+}
+
 function cors(request, env) {
   const allowed = (env.ALLOWED_ORIGINS || "*").split(",").map((s) => s.trim());
   const origin = request.headers.get("Origin") || "";
@@ -102,7 +112,7 @@ const json = (data, request, env, status = 200) =>
 // Who someone is, without keeping their address: a one-way scramble of it.
 async function visitorId(request, env) {
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const data = new TextEncoder().encode(ip + (env.SALT || "nine"));
+  const data = new TextEncoder().encode(ip + (await secret(env.SALT, "nine")));
   const digest = await crypto.subtle.digest("SHA-256", data);
   return [...new Uint8Array(digest)].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -242,7 +252,8 @@ async function report(body, request, env) {
 
 async function admin(url, request, env, body) {
   const key = request.headers.get("X-Admin-Key") || url.searchParams.get("key") || "";
-  if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) return json({ error: "no" }, request, env, 401);
+  const expected = await secret(env.ADMIN_KEY);
+  if (!expected || key !== expected) return json({ error: "no" }, request, env, 401);
 
   const action = url.pathname.split("/").pop();
 
