@@ -70,7 +70,9 @@ window.NINE_API = "https://nine.your-name.workers.dev";
 Leave it as `""` and Nine falls back to saving messages in your own browser,
 which is handy while you're working on it.
 
-Then commit and push, and the site is live and shared.
+Then commit and push. From then on every copy of the site - your own on
+localhost, and the real one once it's hosted (see `deploy/`) - shares the
+same messages.
 
 ---
 
