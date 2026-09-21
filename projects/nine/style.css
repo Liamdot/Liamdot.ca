@@ -1,0 +1,377 @@
+/* Styles just for Nine. Loaded after the site's style.css and game.css. */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: #16161a;
+  color: #f1ede4;
+}
+
+/* ---- the trail across the top ---- */
+
+.path-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #2c2c33;
+}
+
+.crumb {
+  padding: 3px 10px;
+  border: none;
+  border-radius: 20px;
+  background: #24242b;
+  color: #cfcbc2;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.crumb:hover {
+  background: #33333c;
+  color: #fff;
+}
+
+.trail {
+  display: flex;
+  gap: 6px;
+}
+
+.trail .crumb {
+  font-family: Menlo, Consolas, "Courier New", monospace;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.counter {
+  color: #74747f;
+  font-size: 0.8rem;
+}
+
+.pill {
+  padding: 4px 12px;
+  border: 1.5px solid #3a3a44;
+  border-radius: 20px;
+  background: none;
+  color: #cfcbc2;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.pill:hover {
+  border-color: #7ee08a;
+  color: #7ee08a;
+}
+
+.pill.strong {
+  border-color: #7ee08a;
+  background: #7ee08a;
+  color: #16161a;
+  font-weight: 700;
+}
+
+.pill.strong:hover {
+  background: #9bf0a5;
+  color: #16161a;
+}
+
+.pill.quiet {
+  border-color: #3a3a44;
+  color: #74747f;
+}
+
+.pill:disabled {
+  border-color: #2c2c33;
+  color: #55555f;
+  cursor: default;
+}
+
+/* ---- the grid ---- */
+
+.stack {
+  /* One square, as big as the space allows: never wider than the window and
+     never taller than what's left under the bars, so nothing gets cut off. */
+  --square: min(100%, 560px, calc(100dvh - 170px));
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding: 20px;
+  /* during a zoom the level you're leaving grows past the edges - let it run
+     off the screen instead of adding scrollbars */
+  overflow: hidden;
+}
+
+.scene {
+  position: relative;
+  width: var(--square);
+  height: var(--square);
+  margin: auto; /* centred, and never clipped at the top */
+}
+
+/* A whole level: either the nine squares or a message. The margin: 0 matters -
+   the site's own stylesheet is loaded first, and a stray margin here would
+   throw the zoom maths off. */
+.layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+.layer.grid-layer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 10px;
+}
+
+/* holds both levels while zooming, and scales them together */
+.zoomer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.zoomer.moving {
+  transition: transform 0.52s cubic-bezier(0.5, 0, 0.3, 1);
+}
+
+/* the level arriving fades up as it grows */
+.zoomer .layer.fade-in {
+  opacity: 0;
+  transition: opacity 0.34s ease-out;
+}
+
+.zoomer.moving .layer.fade-in {
+  opacity: 1;
+}
+
+/* ...and the level leaving fades away as it shrinks */
+.zoomer .layer.fade-out {
+  opacity: 1;
+  transition: opacity 0.42s ease-in;
+}
+
+.zoomer.moving .layer.fade-out {
+  opacity: 0;
+}
+
+/* Zooming in, the level you're leaving sticks around while it spreads out
+   past the edges, and only fades near the end - so it's gone before it's
+   taken off the page, instead of vanishing in one frame. */
+.zoomer .layer.fade-out-late {
+  opacity: 1;
+  transition: opacity 0.26s ease-in 0.22s;
+}
+
+.zoomer.moving .layer.fade-out-late {
+  opacity: 0;
+}
+
+/* the number and hint on the square being opened get out of the way */
+.zoomer .cell.opening .num,
+.zoomer .cell.opening .hint {
+  transition: opacity 0.26s ease-out;
+}
+
+.zoomer.moving .cell.opening .num,
+.zoomer.moving .cell.opening .hint {
+  opacity: 0;
+}
+
+/* coming back out, they fade in again */
+.zoomer .cell.closing .num,
+.zoomer .cell.closing .hint {
+  opacity: 0;
+  transition: opacity 0.34s ease-in 0.12s;
+}
+
+.zoomer.moving .cell.closing .num,
+.zoomer.moving .cell.closing .hint {
+  opacity: 1;
+}
+
+/* nothing inside should move or react on its own during a zoom */
+.zoomer .cell {
+  transition: none;
+  pointer-events: none;
+}
+
+.zoomer .cell:hover {
+  border-color: #2f2f38;
+  transform: none;
+}
+
+.cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0;
+  border: 1.5px solid #2f2f38;
+  border-radius: 12px;
+  /* --fill is set in app.js: how much is written below this square */
+  background: rgba(126, 224, 138, calc(var(--fill, 0) * 0.16));
+  color: #cfcbc2;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.15s, background 0.2s;
+}
+
+.cell:hover {
+  border-color: #7ee08a;
+  transform: scale(1.03);
+}
+
+.num {
+  color: #55555f;
+  font: 700 1.6rem Menlo, Consolas, "Courier New", monospace;
+}
+
+.cell:hover .num {
+  color: #cfcbc2;
+}
+
+.hint {
+  color: #6a6a75;
+  font-size: 0.75rem;
+}
+
+.cell-written {
+  border-color: #3f7a4a;
+  background: rgba(126, 224, 138, 0.14);
+}
+
+.cell-written .hint {
+  color: #7ee08a;
+}
+
+.cell-empty .hint {
+  color: #55555f;
+}
+
+/* ---- the message at the end of a path ---- */
+
+/* the message fills the square the grid was in, so the last zoom lands inside it */
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  padding: 22px;
+  border: 1.5px solid #3f7a4a;
+  border-radius: 14px;
+  background: #1c1c21;
+}
+
+.note-path {
+  margin: 0;
+  color: #55555f;
+  font: 0.8rem Menlo, Consolas, "Courier New", monospace;
+  letter-spacing: 0.08em;
+}
+
+/* the message (or the form) sits in the middle of the square */
+.note-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+}
+
+.note-text {
+  margin: 0 0 12px;
+  overflow-y: auto;
+  font-size: 1.4rem;
+  line-height: 1.45;
+  white-space: pre-wrap; /* keep the line breaks people type */
+}
+
+.note-text.long {
+  font-size: 1.05rem;
+}
+
+.note-by {
+  margin: 0;
+  color: #74747f;
+  font-size: 0.85rem;
+}
+
+.note-intro {
+  margin: 0 0 12px;
+  color: #a5a19a;
+  font-size: 0.95rem;
+}
+
+.note textarea,
+.note input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #3a3a44;
+  border-radius: 10px;
+  background: #16161a;
+  color: #f1ede4;
+  font: inherit;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+.note textarea:focus,
+.note input:focus {
+  border-color: #7ee08a;
+  outline: none;
+}
+
+.note-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.note-row input {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.left {
+  color: #74747f;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.why {
+  margin: 10px 0 0;
+  color: #ff8d82;
+  font-size: 0.85rem;
+}
+
+.why[hidden] {
+  display: none;
+}
+
+.note-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 520px) {
+  .counter {
+    display: none;
+  }
+}

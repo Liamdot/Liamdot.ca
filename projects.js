@@ -6,7 +6,6 @@
 //   date   - when it came out, "YYYY-MM-DD"
 //   url    - where the tile links (e.g. "projects/my-game/")
 //   thumb  - square image (svg, png, gif...)
-//   badge  - optional: "new" or "wip"
 //
 // Example:
 //
@@ -16,17 +15,22 @@
 //     date: "2026-09-14",
 //     url: "projects/my-game/",
 //     thumb: "thumbs/my-game.png",
-//     badge: "new",
 //   },
 
 const PROJECTS = [
+  {
+    title: "Nine",
+    blurb: "A recursive maze of hidden messages, written by you",
+    date: "2026-09-20",
+    url: "projects/nine/",
+    thumb: "thumbs/nine.svg",
+  },
   {
     title: "Name that Number",
     blurb: "Watch a neural network guess what you draw",
     date: "2026-09-17",
     url: "projects/name-that-number/",
     thumb: "thumbs/name-that-number.svg",
-    badge: "new",
   },
   {
     title: "Fractal Explorer",
@@ -34,7 +38,6 @@ const PROJECTS = [
     date: "2026-09-17",
     url: "projects/fractals/",
     thumb: "thumbs/fractals.png",
-    badge: "new",
   },
   {
     title: "Schedulr",
@@ -42,7 +45,6 @@ const PROJECTS = [
     date: "2026-09-16",
     url: "projects/schedulr/",
     thumb: "thumbs/schedulr.svg",
-    badge: "new",
   },
   {
     title: "Gate Playground",
@@ -50,7 +52,6 @@ const PROJECTS = [
     date: "2026-09-16",
     url: "projects/gate-playground/",
     thumb: "thumbs/gate-playground.svg",
-    badge: "new",
   },
   {
     title: "Idle Typer",
@@ -58,6 +59,5 @@ const PROJECTS = [
     date: "2026-09-14",
     url: "projects/idle-typer/",
     thumb: "thumbs/idle-typer.svg",
-    badge: "wip",
   },
 ];

@@ -12,8 +12,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 8px 10px;
+  padding: 8px 12px;
   border-bottom: 2px solid #222;
   background: #fbf8f1;
 }
@@ -21,28 +21,49 @@
 .palette {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px 12px;
+}
+
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.group-name {
+  margin-right: 2px;
+  color: #aaa;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .part-btn {
-  padding: 5px 10px;
+  padding: 4px 8px;
   border: 2px solid #222;
   border-radius: 8px;
   background: #fff;
   color: #222;
-  font: 700 0.8rem Menlo, Consolas, "Courier New", monospace;
+  font: 700 0.75rem Menlo, Consolas, "Courier New", monospace;
   cursor: grab;
   user-select: none;
-  touch-action: none; /* lets you drag it on touch screens */
+  touch-action: none;
 }
 
 .part-btn:hover {
   background: #fff3c4;
 }
 
-.hint {
+.chip-btn {
+  border-style: dashed;
+  background: #f3ecff;
+}
+
+.no-parts {
   color: #999;
   font-size: 0.85rem;
+  font-style: italic;
 }
 
 .spacer {
@@ -71,135 +92,26 @@
   cursor: default;
 }
 
-/* ---- board ---- */
+/* time controls */
 
-.board-wrap {
-  position: relative;
-  flex: 1;
-  min-height: 0;
+.time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 4px;
+  border-radius: 20px;
+  background: #f1ece1;
 }
 
-.board {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  touch-action: none;
-  user-select: none;
+.time input[type="range"] {
+  width: 74px;
+  accent-color: #222;
 }
 
-/* wires */
-
-.wire {
-  fill: none;
-  stroke: #4a4a50;
-  stroke-width: 4;
-  stroke-linecap: round;
-  pointer-events: none;
-}
-
-.wire.on {
-  stroke: #7ee08a;
-}
-
-.wire.selected {
-  stroke: #ffe27a;
-}
-
-/* the wire you're dragging out */
-.wire.preview {
-  stroke: #aaa;
-  stroke-dasharray: 6 6;
-}
-
-/* a wide invisible copy of each wire, so they're easy to click */
-.wire-hit {
-  fill: none;
-  stroke: transparent;
-  stroke-width: 14;
-  cursor: pointer;
-}
-
-/* parts */
-
-.part {
-  cursor: grab;
-}
-
-.part .body {
-  fill: #2c2c30;
-  stroke: #55555c;
-  stroke-width: 2;
-}
-
-.part.selected .body {
-  stroke: #ffe27a;
-}
-
-.part text {
-  fill: #f1ede4;
-  font: 700 13px Menlo, Consolas, "Courier New", monospace;
-  text-anchor: middle;
-  dominant-baseline: central;
-  pointer-events: none;
-}
-
-/* IN switch: the light in the middle turns green when it's on */
-.part .light {
-  fill: #3a3a40;
-  pointer-events: none;
-}
-
-.part.on .light {
-  fill: #7ee08a;
-}
-
-/* dark "1" on the green light (but not the name beside it, which is on the dark board) */
-.part.INPUT.on text:not(.part-label) {
-  fill: #1d1d1f;
-}
-
-/* OUT lamp: the whole thing lights up */
-.part.OUTPUT.on .body {
-  fill: #7ee08a;
-  stroke: #b8f5c0;
-}
-
-.part.OUTPUT.on text:not(.part-label) {
-  fill: #1d1d1f;
-}
-
-/* pins: the little dots you drag wires between */
-.pin {
-  fill: #9a9aa2;
-  stroke: transparent; /* invisible border makes them easier to grab */
-  stroke-width: 10;
-  cursor: crosshair;
-}
-
-.pin:hover {
-  fill: #ffe27a;
-}
-
-.board.wiring,
-.board.wiring .part {
-  cursor: crosshair;
-}
-
-/* puzzle switch and lamp names */
-.part text.part-label {
-  fill: #b5b5bd;
-  font-size: 12px;
-}
-
-.part text.part-label.left {
-  text-anchor: end;
-}
-
-.part text.part-label.right {
-  text-anchor: start;
+.ticks {
+  min-width: 62px;
+  color: #777;
+  font: 0.75rem Menlo, Consolas, "Courier New", monospace;
 }
 
 /* ---- Sandbox / Puzzles switch ---- */
@@ -237,15 +149,54 @@
   color: #fbf8f1;
 }
 
-.no-parts {
-  color: #999;
-  font-size: 0.85rem;
-  font-style: italic;
+/* ---- properties of the selected part ---- */
+
+.props {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 6px 12px;
+  border-bottom: 2px solid #222;
+  background: #f6f2e8;
+  color: #666;
+  font-size: 0.8rem;
 }
 
-/* ---- level bar ---- */
+.props[hidden] {
+  display: none;
+}
 
-.level-bar {
+.props strong {
+  color: #222;
+  font-family: Menlo, Consolas, "Courier New", monospace;
+}
+
+.prop {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.props input {
+  padding: 2px 6px;
+  border: 1.5px solid #d8d2c4;
+  border-radius: 5px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.props input.program {
+  width: 240px;
+  font-family: Menlo, Consolas, "Courier New", monospace;
+}
+
+/* ---- level and chip bars ---- */
+
+.level-bar,
+.chip-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -255,9 +206,14 @@
   background: #f1ece1;
 }
 
-/* "display: flex" above would otherwise override the hidden attribute */
-.level-bar[hidden] {
+.level-bar[hidden],
+.chip-bar[hidden] {
   display: none;
+}
+
+.chip-bar {
+  background: #f3ecff;
+  font-size: 0.85rem;
 }
 
 .level-text {
@@ -292,6 +248,218 @@
   background: #444;
 }
 
+/* ---- board ---- */
+
+.board-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.board {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+/* wires */
+
+.wire {
+  fill: none;
+  stroke: #4a4a50;
+  stroke-width: 4;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.wire.on {
+  stroke: #7ee08a;
+}
+
+.wire.byte {
+  stroke: #3f5a6b;
+  stroke-width: 6;
+}
+
+.wire.byte.on {
+  stroke: #6fc3df;
+}
+
+.wire.selected {
+  stroke: #ffe27a;
+}
+
+.wire.preview {
+  stroke: #aaa;
+  stroke-dasharray: 6 6;
+}
+
+.wire-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14;
+  cursor: pointer;
+}
+
+.wire-value {
+  fill: #6fc3df;
+  font: 700 10px Menlo, Consolas, "Courier New", monospace;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* parts */
+
+.part {
+  cursor: grab;
+}
+
+.part .body {
+  fill: #2c2c30;
+  stroke: #55555c;
+  stroke-width: 2;
+}
+
+.part.selected .body {
+  stroke: #ffe27a;
+}
+
+.part.CHIP .body {
+  fill: #332c42;
+  stroke: #7d6ba8;
+}
+
+.part text {
+  fill: #f1ede4;
+  font: 700 13px Menlo, Consolas, "Courier New", monospace;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.part text.sub {
+  fill: #8a8a93;
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.part text.value {
+  fill: #6fc3df;
+  font-size: 15px;
+}
+
+/* IN switch */
+.part .light {
+  fill: #3a3a40;
+  pointer-events: none;
+}
+
+.part.on .light {
+  fill: #7ee08a;
+}
+
+.part.IN.on text:not(.part-label) {
+  fill: #1d1d1f;
+}
+
+/* OUT lamp */
+.part.OUT.on .body {
+  fill: #7ee08a;
+  stroke: #b8f5c0;
+}
+
+.part.OUT.on text:not(.part-label) {
+  fill: #1d1d1f;
+}
+
+/* BYTE switch cells */
+.cell {
+  fill: #3a3a40;
+  stroke: #55555c;
+  stroke-width: 1;
+  cursor: pointer;
+}
+
+.cell.on {
+  fill: #6fc3df;
+  stroke: #6fc3df;
+}
+
+/* names beside switches and lamps, and pin names inside parts */
+.part text.part-label {
+  fill: #b5b5bd;
+  font-size: 12px;
+}
+
+.part text.part-label.left {
+  text-anchor: end;
+}
+
+.part text.part-label.right {
+  text-anchor: start;
+}
+
+.part text.pin-name {
+  fill: #8a8a93;
+  font-size: 8px;
+  font-weight: 400;
+}
+
+.part text.pin-name.in {
+  text-anchor: start;
+}
+
+.part text.pin-name.out {
+  text-anchor: end;
+}
+
+/* pins: the dots (bits) and squares (bytes) you drag wires between */
+.pin {
+  fill: #9a9aa2;
+  stroke: transparent;
+  stroke-width: 10;
+  cursor: crosshair;
+}
+
+.pin.byte {
+  fill: #6fc3df;
+}
+
+.pin:hover {
+  fill: #ffe27a;
+}
+
+.board.wiring,
+.board.wiring .part {
+  cursor: crosshair;
+}
+
+/* ---- little message popup ---- */
+
+.flash {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  z-index: 8;
+  padding: 7px 14px;
+  border: 2px solid #222;
+  border-radius: 10px;
+  background: #fbf8f1;
+  color: #222;
+  font-size: 0.85rem;
+  transform: translateX(-50%);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.flash[hidden] {
+  display: none;
+}
+
 /* ---- test results ---- */
 
 .results {
@@ -316,6 +484,12 @@
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 8px;
+}
+
+.results-note {
+  margin: 0 0 6px;
+  color: #999;
+  font-size: 0.8rem;
 }
 
 .solved-msg {
@@ -356,7 +530,7 @@
   text-align: center;
 }
 
-.results thead tr:first-child th {
+.results th {
   color: #999;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   font-size: 0.75rem;
@@ -365,6 +539,13 @@
 
 .results .sep {
   border-left: 2px solid #d8d2c4;
+}
+
+.results .note {
+  color: #888;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 0.75rem;
+  text-align: left;
 }
 
 .results tr.bad td {
@@ -452,13 +633,6 @@
 
 .level-card.current {
   box-shadow: 3px 3px 0 #222;
-}
-
-.level-card:disabled {
-  border: 2px dashed #d8d2c4;
-  background: none;
-  color: #b5ae9f;
-  cursor: default;
 }
 
 .lc-num {
@@ -571,8 +745,12 @@
   }
 }
 
-@media (max-width: 700px) {
-  .hint {
+@media (max-width: 800px) {
+  .group-name {
+    display: none;
+  }
+
+  .time .ticks {
     display: none;
   }
 }

@@ -3,3 +3,7 @@
 
 # local Claude / editor settings
 .claude/
+
+# Name that Number training downloads (see projects/name-that-number/training/README.md)
+projects/name-that-number/training/mnist/
+projects/name-that-number/training/.venv/

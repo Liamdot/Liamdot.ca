@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Nine &middot; keeping an eye on things</title>
+  <link rel="icon" href="../../logo.svg" type="image/svg+xml">
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0; padding: 30px 20px; background: #16161a; color: #f1ede4;
+      font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    main { max-width: 860px; margin: 0 auto; }
+    h1 { margin: 0 0 4px; font-size: 1.6rem; }
+    .sub { margin: 0 0 24px; color: #74747f; font-size: 0.9rem; }
+    .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 20px; }
+    input, button {
+      padding: 7px 12px; border: 1.5px solid #3a3a44; border-radius: 20px;
+      background: #1c1c21; color: #f1ede4; font: inherit; font-size: 0.9rem;
+    }
+    button { cursor: pointer; }
+    button:hover { border-color: #7ee08a; color: #7ee08a; }
+    button.danger:hover { border-color: #ff8d82; color: #ff8d82; }
+    button:disabled { opacity: 0.4; cursor: default; }
+    .msg {
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 12px 0; border-top: 1px solid #2c2c33;
+    }
+    .msg .where { width: 90px; flex: none; color: #74747f; font: 0.85rem Menlo, Consolas, monospace; }
+    .msg .what { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .msg .who { color: #74747f; font-size: 0.85rem; }
+    .tag { margin-left: 8px; padding: 1px 8px; border-radius: 20px; font-size: 0.75rem; }
+    .tag.reported { background: #4a2f2c; color: #ff8d82; }
+    .tag.hidden { background: #2c2c33; color: #9a96a5; }
+    .note { color: #74747f; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Nine &mdash; keeping an eye on things</h1>
+  <p class="sub">Only you can see this, and only with the key. Nothing here is linked from the site.</p>
+
+  <div class="bar">
+    <input id="key" type="password" placeholder="admin key" size="28">
+    <button id="load">show recent</button>
+    <button id="reported">show reported</button>
+    <span style="flex:1"></span>
+    <button id="writing">writing: ?</button>
+  </div>
+
+  <p class="note" id="status">Paste the key you set on the Worker, then press a button.</p>
+  <div id="list"></div>
+</main>
+
+<script src="config.js"></script>
+<script>
+  const API = String(window.NINE_API || "").replace(/\/+$/, "");
+  const keyBox = document.getElementById("key");
+  const status = document.getElementById("status");
+  const list = document.getElementById("list");
+
+  // Kept for this tab only, so it isn't left lying around.
+  keyBox.value = sessionStorage.getItem("nine-admin") || "";
+
+  async function ask(route, body) {
+    sessionStorage.setItem("nine-admin", keyBox.value);
+    const response = await fetch(API + route, {
+      method: body ? "POST" : "GET",
+      headers: { "Content-Type": "application/json", "X-Admin-Key": keyBox.value },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || response.status);
+    return data;
+  }
+
+  function draw(messages) {
+    list.replaceChildren(...messages.map((m) => {
+      const row = document.createElement("div");
+      row.className = "msg";
+      row.innerHTML = `
+        <div class="where"><a href="./#${m.path}" target="_blank">${m.path}</a></div>
+        <div class="what"></div>
+        <div><button class="danger" data-act="delete">delete</button>
+             ${m.hidden ? '<button data-act="show">put back</button>' : ""}</div>`;
+      const what = row.querySelector(".what");
+      what.textContent = m.text;
+      const by = document.createElement("div");
+      by.className = "who";
+      by.textContent = `${m.name || "anonymous"} · ${new Date(m.at).toLocaleString()}`;
+      if (m.reports) by.innerHTML += `<span class="tag reported">${m.reports} report${m.reports === 1 ? "" : "s"}</span>`;
+      if (m.hidden) by.innerHTML += '<span class="tag hidden">hidden</span>';
+      what.after(by);
+      row.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", async () => {
+          if (button.dataset.act === "delete" && !confirm(`Delete the message at ${m.path}?`)) return;
+          button.disabled = true;
+          try {
+            await ask(`/admin/${button.dataset.act}`, { path: m.path });
+            row.remove();
+          } catch (e) {
+            status.textContent = `Didn't work: ${e.message}`;
+            button.disabled = false;
+          }
+        });
+      });
+      return row;
+    }));
+  }
+
+  async function load(show) {
+    status.textContent = "looking…";
+    try {
+      const data = await ask(`/admin/list${show === "reported" ? "?show=reported" : ""}`);
+      draw(data.messages);
+      status.textContent = data.messages.length
+        ? `${data.messages.length} message${data.messages.length === 1 ? "" : "s"}`
+        : "Nothing here.";
+    } catch (e) {
+      list.replaceChildren();
+      status.textContent = `Didn't work: ${e.message}`;
+    }
+  }
+
+  document.getElementById("load").addEventListener("click", () => load("recent"));
+  document.getElementById("reported").addEventListener("click", () => load("reported"));
+
+  // The kill switch: stops all new writing, leaving everything readable.
+  const writingButton = document.getElementById("writing");
+  async function showWriting() {
+    const data = await fetch(`${API}/tree?path=`).then((r) => r.json());
+    writingButton.textContent = `writing: ${data.writing === "off" ? "off" : "on"}`;
+    writingButton.dataset.now = data.writing === "off" ? "off" : "on";
+  }
+  writingButton.addEventListener("click", async () => {
+    const next = writingButton.dataset.now === "off" ? "on" : "off";
+    if (!confirm(`Turn writing ${next}?`)) return;
+    try {
+      await ask("/admin/writing", { writing: next });
+      await showWriting();
+    } catch (e) {
+      status.textContent = `Didn't work: ${e.message}`;
+    }
+  });
+
+  if (!API) status.textContent = "No address set in config.js — there's nothing to look at yet.";
+  else showWriting().catch(() => {});
+</script>
+</body>
+</html>
