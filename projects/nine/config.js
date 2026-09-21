@@ -4,4 +4,4 @@
 // handy while you're working on it. Paste your Worker's address in (the one
 // Cloudflare gives you, ending in .workers.dev) and everyone shares the same
 // nine squares. Instructions: server/README.md
-window.NINE_API = "";
+window.NINE_API = "https://nine.liam-32b.workers.dev/";
