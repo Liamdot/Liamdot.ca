@@ -268,6 +268,49 @@
 
 /* ---- the message at the end of a path ---- */
 
+/* Zooming in, only the empty frame travels. Once it has landed the words
+   ease in, so they never just appear - whether the message was already
+   loaded or turns up a moment later. */
+@keyframes note-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.note-layer .note-body,
+.note-layer .note-buttons {
+  animation: note-in 0.36s ease-out both;
+}
+
+.note-layer .note-buttons {
+  animation-delay: 0.08s;
+}
+
+/* "looking..." waits a moment, so a quick answer never shows it at all */
+.note-layer .note-intro.looking {
+  animation: note-in 0.3s ease-out 0.4s both;
+}
+
+.zoomer .note-layer.fade-in .note-body,
+.zoomer .note-layer.fade-in .note-buttons {
+  animation: none;
+  opacity: 0;
+}
+
+/* Zooming back out, the words stay put. (Moving the note into the zoom
+   restarts its animation, which would blink them out and back in.) */
+.zoomer .note-layer.fade-out .note-body,
+.zoomer .note-layer.fade-out .note-buttons,
+.zoomer .note-layer.fade-out .note-intro.looking {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes note-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
 /* the message fills the square the grid was in, so the last zoom lands inside it */
 .note {
   display: flex;

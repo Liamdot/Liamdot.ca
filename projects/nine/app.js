@@ -83,7 +83,7 @@ function buildNote(forPath) {
   if (stuck) {
     body = `<p class="note-intro">${Store.trouble}</p>`;
   } else if (waiting) {
-    body = `<p class="note-intro">looking&hellip;</p>`;
+    body = `<p class="note-intro looking">looking&hellip;</p>`;
   } else if (reading) {
     body = `<p class="note-text"></p><p class="note-by"></p>`;
   } else if (shut) {
