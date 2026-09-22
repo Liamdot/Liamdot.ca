@@ -300,16 +300,18 @@ async function waste(body, request, env) {
     ? await env.DB.prepare("SELECT * FROM wasters WHERE id = ?").bind(id).first()
     : null;
 
-  // A browser only remembers who it is for one address, so the same person
-  // coming back from liamdot.ca, the pages.dev address or another browser
-  // would otherwise start a second entry under the same name. If the name
-  // and the person match, carry on with the entry that's already there.
+  // One entry per name. A browser only remembers who it is for the address
+  // it's on, and a home address changes, so neither is any use for telling
+  // who someone is - and two rows called "Liam" on a leaderboard is nonsense
+  // whatever the reason. Whoever types the name gets that entry, and since a
+  // time can only ever go up, the worst anyone can do by taking a name is
+  // share it.
   let adopted = false;
   if (!existing) {
     existing = await env.DB.prepare(
-      "SELECT * FROM wasters WHERE name = ? AND ip_hash = ? ORDER BY seconds DESC LIMIT 1"
-    ).bind(name, ip).first();
-    adopted = Boolean(existing); // it's the same person, so no key to check
+      "SELECT * FROM wasters WHERE name = ? ORDER BY seconds DESC LIMIT 1"
+    ).bind(name).first();
+    adopted = Boolean(existing); // no key to check: the name is the identity
   }
 
   if (existing) {
@@ -319,11 +321,10 @@ async function waste(body, request, env) {
     const most = existing.seconds + Math.floor((now - existing.at) / 1000) + SLACK;
     let seconds = Math.max(existing.seconds, Math.min(claim, most));
 
-    // Tidy away any duplicates this person collected before the above, and
-    // keep the best time among them.
+    // Tidy away any other entries under this name, keeping the best time.
     const twins = await env.DB.prepare(
-      "SELECT id, seconds FROM wasters WHERE name = ? AND ip_hash = ? AND id != ?"
-    ).bind(name, ip, existing.id).all();
+      "SELECT id, seconds FROM wasters WHERE name = ? AND id != ?"
+    ).bind(name, existing.id).all();
     for (const twin of twins.results) {
       seconds = Math.max(seconds, twin.seconds);
       await env.DB.prepare("DELETE FROM wasters WHERE id = ?").bind(twin.id).run();
