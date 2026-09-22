@@ -35,6 +35,18 @@
   text-align: center;
 }
 
+/* who else has it open, just under the clock */
+.here {
+  position: absolute;
+  top: calc(50% + 34px);
+  left: 20px;
+  right: 20px;
+  margin: 0;
+  color: #4a7a52;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 /* ---- the leaderboard, hiding at the bottom ---- */
 
 .drawer {

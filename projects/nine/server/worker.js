@@ -277,7 +277,12 @@ async function topWasters(request, env) {
   const sum = await env.DB.prepare(
     "SELECT COUNT(*) AS people, COALESCE(SUM(seconds), 0) AS seconds FROM wasters WHERE hidden = 0"
   ).first();
-  return json({ top: results, people: sum.people, seconds: sum.seconds }, request, env);
+  // Anyone whose time went up in the last minute and a half still has the
+  // page open - they check in every twenty seconds.
+  const here = await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM wasters WHERE hidden = 0 AND at > ?"
+  ).bind(Date.now() - 90_000).first();
+  return json({ top: results, people: sum.people, seconds: sum.seconds, here: here.n }, request, env);
 }
 
 // Anyone can send any number, so the server only ever believes a total that

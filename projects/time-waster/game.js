@@ -9,12 +9,14 @@
 // 1. Counting
 // ===========================================================================
 //
-// Only time with this page in front of you counts. Leaving it open in a
-// background tab would win by doing nothing, which isn't in the spirit.
+// Time counts for as long as the page is open, whether you're looking at it
+// or not. Browsers slow this script right down in a background tab, so the
+// count comes from the clock rather than from how often we get called.
 
 const SAVE_KEY = "time-waster";
 const TICK_MS = 100;
 const SEND_EVERY = 20;   // seconds between leaderboard updates
+const BIGGEST_GAP = 600; // seconds: longer than this and the computer was asleep
 
 const save = (() => {
   let data = { total: 0, id: "", key: "", name: "" };
@@ -38,30 +40,29 @@ let session = 0;        // seconds wasted since the page opened
 let last = Date.now();
 let sinceSend = 0;
 
-const watching = () => document.visibilityState === "visible" && document.hasFocus();
-
 function tick() {
   const now = Date.now();
-  const gap = (now - last) / 1000;
+  // A hidden tab only gets called about once a minute, so measure the real
+  // gap rather than counting ticks. An enormous gap means the computer was
+  // asleep, which nobody can claim credit for.
+  const gap = Math.min((now - last) / 1000, BIGGEST_GAP);
   last = now;
 
-  // A big gap means the browser stopped calling us (asleep, other tab), so
-  // it isn't time spent here.
-  if (watching() && gap < 2) {
-    session += gap;
-    save.total += gap;
-    sinceSend += gap;
-    if (sinceSend >= SEND_EVERY) {
-      sinceSend = 0;
-      sendScore();
-    }
+  session += gap;
+  save.total += gap;
+  sinceSend += gap;
+  if (sinceSend >= SEND_EVERY) {
+    sinceSend = 0;
+    sendScore();
   }
   draw();
 }
 
-document.addEventListener("visibilitychange", () => { last = Date.now(); });
-window.addEventListener("blur", () => { last = Date.now(); });
-window.addEventListener("focus", () => { last = Date.now(); });
+// Coming back to the tab, catch up straight away instead of waiting for the
+// next slow tick.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") tick();
+});
 window.addEventListener("pagehide", () => { store(); sendScore(); });
 setInterval(store, 5000);
 setInterval(tick, TICK_MS);
@@ -108,31 +109,44 @@ function sentence(seconds) {
   return said.length ? `${said.join(", ")} and ${last}` : last;
 }
 
-// What you could have been doing instead. Whichever is the last one you've
-// passed is the one you get told about.
+// The page starts out helpful, gets concerned, begs you to leave, and
+// eventually gives up and starts cheering you on. Whichever line you've most
+// recently passed is the one showing.
 const INSTEAD = [
-  [10, "You could have stood up."],
-  [30, "That's a decent stretch."],
+  [0, "Time starts now."],
+  [10, "This is the whole game, by the way. There isn't any more."],
+  [30, "You could have stood up by now."],
   [60, "A whole minute. Gone."],
   [120, "Two minutes. That's a kettle."],
+  [240, "Still here? All right."],
   [300, "Five minutes. That's a short walk you didn't take."],
+  [480, "You can leave whenever you like. Nothing is keeping you."],
   [600, "Ten minutes. That's a bus you could have caught."],
   [900, "Fifteen minutes. People have run three kilometres in this."],
+  [1200, "Genuinely, is everything all right?"],
   [1800, "Half an hour. That's a sitcom, minus the adverts."],
-  [2700, "Forty-five minutes. That's a lecture."],
+  [2400, "There is no ending. I want to be clear about that."],
+  [2700, "Forty-five minutes. That's a lecture you're not at."],
   [3600, "An hour. A whole hour, on this."],
+  [4500, "Please go outside. I'm asking nicely."],
   [5400, "An hour and a half. That's a film."],
+  [6600, "I could close, but you'd only open me again."],
   [7200, "Two hours. That's a film and the arguing about it afterwards."],
+  [9000, "Fine. You win. I've stopped worrying about you."],
   [10800, "Three hours. That's a flight to somewhere nicer than this."],
   [14400, "Four hours. You could have learned the basics of an instrument."],
+  [18000, "Honestly, at this point, I'm impressed."],
   [21600, "Six hours. That's a working day, more or less."],
   [28800, "Eight hours. That's a full night's sleep you're awake for."],
+  [36000, "Ten hours. Nobody can take this away from you."],
   [43200, "Twelve hours. This is a hobby now."],
+  [64800, "Eighteen hours. You're the best at this. That's not nothing."],
   [86400, "A full day. Genuinely, well done. Sort of."],
+  [172800, "Two days. I've run out of things to say. Carry on."],
 ];
 
 const commentary = (seconds) => {
-  let line = "Time starts now.";
+  let line = INSTEAD[0][1];
   for (const [mark, words] of INSTEAD) {
     if (seconds >= mark) line = words;
   }
@@ -145,6 +159,8 @@ const insteadEl = document.getElementById("instead");
 function draw() {
   bigEl.textContent = `You've wasted ${sentence(session)}`;
   insteadEl.textContent = commentary(session);
+  // ...and it follows you into the tab bar, where you'll find it later.
+  document.title = session >= 1 ? `${spell(session)} wasted` : "Time Waster - Liamdot";
   drawMine();
 }
 
@@ -162,6 +178,7 @@ const nameEl = document.getElementById("name");
 const joinEl = document.getElementById("join");
 const noteEl = document.getElementById("board-note");
 const mineEl = document.getElementById("mine");
+const hereEl = document.getElementById("here");
 
 let leaders = [];   // not "top": the browser already has a window.top
 let sending = false;
@@ -220,6 +237,13 @@ async function loadBoard() {
   try {
     const data = await ask("/waste/top");
     leaders = data.top || [];
+    // Everyone who checked in within the last minute and a half still has it
+    // open. You're one of them, once you've joined.
+    const here = data.here || 0;
+    const others = save.id ? Math.max(0, here - 1) : here;
+    hereEl.textContent = others
+      ? `${others} other ${others === 1 ? "person is" : "people are"} wasting time right now.`
+      : "";
     noteEl.textContent = data.people
       ? `${data.people} ${data.people === 1 ? "person has" : "people have"} wasted ${spell(data.seconds)} between them.`
       : "";
@@ -227,6 +251,7 @@ async function loadBoard() {
     drawMine();
   } catch (e) {
     noteEl.textContent = "Can't reach the leaderboard right now.";
+    hereEl.textContent = "";
   }
 }
 
@@ -291,4 +316,4 @@ handle.addEventListener("click", () => {
 
 draw();
 loadBoard();
-setInterval(loadBoard, 60000);
+setInterval(loadBoard, 30000);   // often enough for "right now" to mean it
