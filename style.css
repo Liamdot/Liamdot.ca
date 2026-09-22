@@ -133,69 +133,6 @@ header h1 a {
   font-size: 1.1rem;
 }
 
-/* every word in the line under the title does something daft when you point at it */
-.word {
-  display: inline-block;
-  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4), color 0.2s, letter-spacing 0.35s;
-}
-
-.word:hover {
-  color: #222;
-}
-
-.spin:hover {
-  transform: rotate(360deg);
-}
-
-.jump:hover {
-  transform: translateY(-10px) scale(1.15);
-}
-
-.wobble:hover {
-  animation: wobble 0.5s ease-in-out;
-}
-
-@keyframes wobble {
-  20% { transform: rotate(-9deg); }
-  40% { transform: rotate(7deg); }
-  60% { transform: rotate(-5deg); }
-  80% { transform: rotate(3deg); }
-  100% { transform: rotate(0); }
-}
-
-.squish:hover {
-  transform: scale(1.45, 0.65);
-}
-
-.flip:hover {
-  transform: scaleY(-1);
-}
-
-.rainbow:hover {
-  animation: rainbow 0.9s linear infinite;
-}
-
-@keyframes rainbow {
-  0% { color: #e0453a; }
-  25% { color: #f5b74a; }
-  50% { color: #7ee08a; }
-  75% { color: #6fc3df; }
-  100% { color: #e0453a; }
-}
-
-.stretch:hover {
-  letter-spacing: 0.35em;
-  transform: translateX(-2px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .word,
-  .word:hover {
-    animation: none;
-    transform: none;
-  }
-}
-
 /* project grid */
 
 .grid {

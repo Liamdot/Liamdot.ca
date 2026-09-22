@@ -20,25 +20,6 @@ projectsEl.innerHTML = newestFirst.length
   ? newestFirst.map(tileHTML).join("")
   : `<p class="empty">Nothing here yet. Check back soon.</p>`;
 
-// Every word in the line under the title gets its own silly hover effect.
-// They're handed out in order and start again from the beginning, so the
-// sentence can say anything you like.
-const WORD_EFFECTS = ["spin", "jump", "wobble", "squish", "flip", "rainbow", "stretch"];
-
-function sillyWords() {
-  const line = document.querySelector(".intro");
-  if (!line) return;
-  const words = line.textContent.trim().split(/\s+/);
-  line.replaceChildren(...words.flatMap((word, i) => {
-    const span = document.createElement("span");
-    span.className = `word ${WORD_EFFECTS[i % WORD_EFFECTS.length]}`;
-    span.textContent = word;
-    return i === words.length - 1 ? [span] : [span, " "];
-  }));
-}
-
-sillyWords();
-
 // The names and descriptions lie on the page underneath the thumbnails, which
 // float up to uncover them (see style.css). How far they float depends on how
 // tall the tallest description is, which depends on the window width - so
