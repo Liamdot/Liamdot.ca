@@ -1,0 +1,15 @@
+/* Styles just for Time Waster. Loaded after the site's style.css and game.css. */
+
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #16161a;
+  color: #f1ede4;
+}
+
+.soon {
+  margin: 0;
+  color: #74747f;
+  font-size: 1.1rem;
+}

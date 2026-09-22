@@ -19,6 +19,13 @@
 
 const PROJECTS = [
   {
+    title: "Time Waster",
+    blurb: "Somewhere to lose a few minutes",
+    date: "2026-09-22",
+    url: "projects/time-waster/",
+    thumb: "thumbs/time-waster.svg",
+  },
+  {
     title: "Nine",
     blurb: "A recursive maze of hidden messages, written by you",
     date: "2026-09-20",
