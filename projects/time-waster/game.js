@@ -238,6 +238,9 @@ async function sendScore() {
     const data = await ask("/waste", {
       id: save.id, key: save.key, name: save.name, seconds: Math.floor(save.total),
     });
+    // The server may hand back an entry this browser didn't know it had - the
+    // same name from the same person at a different address - so take it on.
+    Object.assign(save, { id: data.id, key: data.key });
     save.total = Math.max(save.total, data.seconds);
     store();
     await loadBoard();

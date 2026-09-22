@@ -296,17 +296,42 @@ async function waste(body, request, env) {
   const now = Date.now();
   const ip = await visitorId(request, env);
   const id = String(body.id || "").slice(0, 40);
-  const existing = id
+  let existing = id
     ? await env.DB.prepare("SELECT * FROM wasters WHERE id = ?").bind(id).first()
     : null;
 
+  // A browser only remembers who it is for one address, so the same person
+  // coming back from liamdot.ca, the pages.dev address or another browser
+  // would otherwise start a second entry under the same name. If the name
+  // and the person match, carry on with the entry that's already there.
+  let adopted = false;
+  if (!existing) {
+    existing = await env.DB.prepare(
+      "SELECT * FROM wasters WHERE name = ? AND ip_hash = ? ORDER BY seconds DESC LIMIT 1"
+    ).bind(name, ip).first();
+    adopted = Boolean(existing); // it's the same person, so no key to check
+  }
+
   if (existing) {
-    if (existing.edit_key !== String(body.key || "")) return json({ error: "not yours" }, request, env, 403);
+    if (!adopted && existing.edit_key !== String(body.key || "")) {
+      return json({ error: "not yours" }, request, env, 403);
+    }
     const most = existing.seconds + Math.floor((now - existing.at) / 1000) + SLACK;
-    const seconds = Math.max(existing.seconds, Math.min(claim, most));
+    let seconds = Math.max(existing.seconds, Math.min(claim, most));
+
+    // Tidy away any duplicates this person collected before the above, and
+    // keep the best time among them.
+    const twins = await env.DB.prepare(
+      "SELECT id, seconds FROM wasters WHERE name = ? AND ip_hash = ? AND id != ?"
+    ).bind(name, ip, existing.id).all();
+    for (const twin of twins.results) {
+      seconds = Math.max(seconds, twin.seconds);
+      await env.DB.prepare("DELETE FROM wasters WHERE id = ?").bind(twin.id).run();
+    }
+
     await env.DB.prepare("UPDATE wasters SET name = ?, seconds = ?, at = ? WHERE id = ?")
-      .bind(name, seconds, now, id).run();
-    return json({ ok: true, id, key: existing.edit_key, seconds }, request, env);
+      .bind(name, seconds, now, existing.id).run();
+    return json({ ok: true, id: existing.id, key: existing.edit_key, seconds }, request, env);
   }
 
   const recent = await env.DB.prepare(
