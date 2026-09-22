@@ -1,6 +1,7 @@
 /* Styles just for Gate Playground. Loaded after the site's style.css and game.css. */
 
 .stage {
+  position: relative; /* the properties bar floats inside it */
   display: flex;
   flex-direction: column;
   background: #1d1d1f;
@@ -151,13 +152,21 @@
 
 /* ---- properties of the selected part ---- */
 
+/* Floats over the bottom of the board rather than sitting in the column,
+   so picking something up doesn't shove the whole board down. */
 .props {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 14px;
+  max-width: calc(100% - 24px);
   padding: 6px 12px;
-  border-bottom: 2px solid #222;
+  border: 2px solid #222;
+  border-radius: 10px;
   background: #f6f2e8;
   color: #666;
   font-size: 0.8rem;
