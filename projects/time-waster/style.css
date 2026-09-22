@@ -26,11 +26,13 @@
 /* ---- the clock, dead centre ---- */
 
 .time {
+  max-width: 34ch;
   margin: 0;
+  padding: 0 20px;
   /* tabular figures stop the numbers jittering as they tick over */
-  font: 500 2rem/1 Menlo, Consolas, "Courier New", monospace;
+  font-size: 1.25rem;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
+  text-align: center;
 }
 
 /* ---- the leaderboard, hiding at the bottom ---- */

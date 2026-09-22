@@ -92,13 +92,21 @@ function spell(seconds, parts = 2) {
   return said.join(", ");
 }
 
-const clock = (seconds) => {
-  const whole = Math.floor(seconds);
-  const h = Math.floor(whole / 3600);
-  const m = String(Math.floor(whole / 60) % 60).padStart(2, "0");
-  const s = String(whole % 60).padStart(2, "0");
-  return `${h ? `${h}:` : ""}${h ? m : Number(m)}:${s}`;
-};
+// Spelled out in full: "2 days, 4 hours, 1 minute and 9 seconds". Once the
+// biggest unit has turned up, every smaller one is named even at zero -
+// otherwise an exact hour reads "1 hour and 0 seconds", and units would pop
+// in and out of the sentence as the numbers roll over.
+function sentence(seconds) {
+  let left = Math.floor(seconds);
+  const said = [];
+  for (const [name, size] of UNITS) {
+    const n = Math.floor(left / size);
+    left -= n * size;
+    if (said.length || n > 0 || size === 1) said.push(`${n} ${name}${n === 1 ? "" : "s"}`);
+  }
+  const last = said.pop();
+  return said.length ? `${said.join(", ")} and ${last}` : last;
+}
 
 // What you could have been doing instead. Whichever is the last one you've
 // passed is the one you get told about.
@@ -135,7 +143,7 @@ const bigEl = document.getElementById("big");
 const insteadEl = document.getElementById("instead");
 
 function draw() {
-  bigEl.textContent = clock(session);
+  bigEl.textContent = `You've wasted ${sentence(session)}`;
   insteadEl.textContent = commentary(session);
   drawMine();
 }
@@ -195,7 +203,7 @@ function drawBoard() {
 }
 
 function drawMine() {
-  const all = `You've wasted <b>${spell(save.total)}</b> here, all told.`;
+  const all = `All time: <b>${spell(save.total)}</b>.`;
   if (!save.id) {
     mineEl.innerHTML = all;
     return;
