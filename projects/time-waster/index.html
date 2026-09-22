@@ -55,23 +55,25 @@
   </nav>
 
   <main class="stage" id="stage">
-    <section class="clock-card">
-      <p class="label">time wasted here</p>
-      <p class="big" id="big">0:00</p>
-      <p class="words" id="session-words"></p>
-      <p class="instead" id="instead"></p>
-      <p class="total">all time: <span id="total-words"></span></p>
-    </section>
+    <!-- the running commentary, quiet and out of the way at the top -->
+    <p class="ticker" id="instead"></p>
 
-    <section class="board-card">
-      <h2>Worst offenders</h2>
-      <ol class="board" id="board"></ol>
-      <p class="mine" id="mine"></p>
-      <div class="join-row">
-        <input id="name" maxlength="20" placeholder="your name">
-        <button class="join" id="join">put me on the board</button>
+    <p class="time" id="big">0:00</p>
+
+    <!-- the leaderboard, tucked away until you pull it up -->
+    <section class="drawer" id="drawer">
+      <button class="handle" id="handle" aria-expanded="false" aria-controls="drawer-body">
+        leaderboard <span class="arrow" aria-hidden="true">&#9650;</span>
+      </button>
+      <div class="drawer-body" id="drawer-body">
+        <ol class="board" id="board"></ol>
+        <p class="mine" id="mine"></p>
+        <div class="join-row">
+          <input id="name" maxlength="20" placeholder="your name">
+          <button class="join" id="join">put me on the board</button>
+        </div>
+        <p class="board-note" id="board-note"></p>
       </div>
-      <p class="board-note" id="board-note"></p>
     </section>
   </main>
 

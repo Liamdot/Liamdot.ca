@@ -1,77 +1,93 @@
 /* Styles just for Time Waster. Loaded after the site's style.css and game.css. */
 
 .stage {
+  position: relative; /* the ticker and the drawer sit against its edges */
   display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  align-content: center;
+  align-items: center;
   justify-content: center;
-  padding: 24px;
-  overflow-y: auto;
+  overflow: hidden;
   background: #16161a;
   color: #f1ede4;
 }
 
-/* ---- the clock ---- */
+/* ---- the line at the top ---- */
 
-.clock-card {
-  flex: 1 1 320px;
-  max-width: 460px;
+.ticker {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  right: 20px;
+  margin: 0;
+  color: #55555f;
+  font-size: 0.95rem;
   text-align: center;
 }
 
-.label {
+/* ---- the clock, dead centre ---- */
+
+.time {
   margin: 0;
-  color: #74747f;
-  font-size: 0.8rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.big {
-  margin: 4px 0 0;
   /* tabular figures stop the numbers jittering as they tick over */
-  font: 700 clamp(3rem, 14vw, 6rem)/1 Menlo, Consolas, "Courier New", monospace;
+  font: 500 2rem/1 Menlo, Consolas, "Courier New", monospace;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
 }
 
-.words {
-  margin: 8px 0 0;
-  color: #cfcbc2;
-  font-size: 1.1rem;
-}
+/* ---- the leaderboard, hiding at the bottom ---- */
 
-.instead {
-  min-height: 3em; /* held open, so the line changing doesn't shift the page */
-  margin: 18px 0 0;
-  color: #7ee08a;
-  font-size: 1.05rem;
-}
-
-.total {
-  margin: 10px 0 0;
-  color: #74747f;
-  font-size: 0.9rem;
-}
-
-/* ---- the leaderboard ---- */
-
-.board-card {
-  flex: 1 1 320px;
-  max-width: 420px;
-  padding: 18px 20px;
+.drawer {
+  --handle: 38px;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: min(420px, calc(100% - 24px));
   border: 1.5px solid #2f2f38;
-  border-radius: 14px;
+  border-bottom: none;
+  border-radius: 14px 14px 0 0;
   background: #1c1c21;
+  /* only the handle pokes above the bottom edge until it's opened */
+  transform: translate(-50%, calc(100% - var(--handle)));
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.board-card h2 {
-  margin: 0 0 12px;
-  font-size: 1.1rem;
+.drawer.open {
+  transform: translate(-50%, 0);
+}
+
+.handle {
+  display: block;
+  width: 100%;
+  height: var(--handle);
+  padding: 0;
+  border: none;
+  border-radius: 14px 14px 0 0;
+  background: none;
+  color: #74747f;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.handle:hover {
+  color: #f1ede4;
+}
+
+.arrow {
+  display: inline-block;
+  font-size: 0.7em;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drawer.open .arrow {
+  transform: rotate(180deg);
+}
+
+.drawer-body {
+  padding: 0 18px 18px;
 }
 
 .board {
-  max-height: 46vh;
+  max-height: 38vh;
   margin: 0;
   padding: 0;
   overflow-y: auto;
@@ -118,20 +134,25 @@
 }
 
 .empty-row {
-  color: #55555f;
   border: none;
+  color: #55555f;
 }
 
 .mine {
   margin: 12px 0 0;
-  color: #7ee08a;
+  color: #74747f;
   font-size: 0.85rem;
+}
+
+.mine b {
+  color: #7ee08a;
+  font-weight: 700;
 }
 
 .join-row {
   display: flex;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .join-row input {
@@ -178,4 +199,11 @@
   margin: 10px 0 0;
   color: #74747f;
   font-size: 0.8rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer,
+  .arrow {
+    transition: none;
+  }
 }

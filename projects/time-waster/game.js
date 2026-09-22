@@ -132,14 +132,10 @@ const commentary = (seconds) => {
 };
 
 const bigEl = document.getElementById("big");
-const sessionEl = document.getElementById("session-words");
-const totalEl = document.getElementById("total-words");
 const insteadEl = document.getElementById("instead");
 
 function draw() {
   bigEl.textContent = clock(session);
-  sessionEl.textContent = spell(session);
-  totalEl.textContent = spell(save.total);
   insteadEl.textContent = commentary(session);
   drawMine();
 }
@@ -199,14 +195,13 @@ function drawBoard() {
 }
 
 function drawMine() {
+  const all = `You've wasted <b>${spell(save.total)}</b> here, all told.`;
   if (!save.id) {
-    mineEl.textContent = "";
+    mineEl.innerHTML = all;
     return;
   }
   const place = leaders.findIndex((row) => row.name === save.name);
-  mineEl.textContent = place >= 0
-    ? `You're number ${place + 1}.`
-    : "Not on the board yet - keep at it.";
+  mineEl.innerHTML = place >= 0 ? `${all} You're number ${place + 1}.` : `${all} Not on the board yet.`;
 }
 
 async function loadBoard() {
@@ -272,6 +267,15 @@ joinEl.addEventListener("click", async () => {
 
 nameEl.addEventListener("keydown", (e) => {
   if (e.key === "Enter") joinEl.click();
+});
+
+// The drawer slides up out of the bottom edge.
+const drawer = document.getElementById("drawer");
+const handle = document.getElementById("handle");
+
+handle.addEventListener("click", () => {
+  const open = drawer.classList.toggle("open");
+  handle.setAttribute("aria-expanded", String(open));
 });
 
 draw();
