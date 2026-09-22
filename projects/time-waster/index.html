@@ -35,11 +35,19 @@
     <div class="info-panel" id="info-panel" hidden>
       <h2>Time Waster</h2>
       <p class="meta">made September 2026</p>
-      <p>Somewhere to lose a few minutes.</p>
+      <p>It counts how long you've had this open, and tells you what you could have done instead. That's the whole game.</p>
+
+      <h3>How it works</h3>
+      <ul>
+        <li>Only time with this page actually in front of you counts</li>
+        <li>Your total is kept between visits</li>
+        <li>Put a name in to appear on the leaderboard</li>
+        <li>The server only believes time that could really have passed, so there's no point cheating</li>
+      </ul>
 
       <h3>Updates</h3>
       <ul>
-        <li><strong>v0.1</strong> &ndash; nothing here yet</li>
+        <li><strong>v1.0</strong> &ndash; the clock and the leaderboard</li>
       </ul>
 
       <a class="more" href="../../">more stuff &rarr;</a>
@@ -47,11 +55,28 @@
   </nav>
 
   <main class="stage" id="stage">
-    <!-- Everything goes in here. It fills the window below the bar. -->
-    <p class="soon">Nothing here yet.</p>
+    <section class="clock-card">
+      <p class="label">time wasted here</p>
+      <p class="big" id="big">0:00</p>
+      <p class="words" id="session-words"></p>
+      <p class="instead" id="instead"></p>
+      <p class="total">all time: <span id="total-words"></span></p>
+    </section>
+
+    <section class="board-card">
+      <h2>Worst offenders</h2>
+      <ol class="board" id="board"></ol>
+      <p class="mine" id="mine"></p>
+      <div class="join-row">
+        <input id="name" maxlength="20" placeholder="your name">
+        <button class="join" id="join">put me on the board</button>
+      </div>
+      <p class="board-note" id="board-note"></p>
+    </section>
   </main>
 
   <script src="../../nav.js"></script>
+  <script src="config.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

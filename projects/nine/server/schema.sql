@@ -15,3 +15,14 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT
 );
 INSERT OR IGNORE INTO settings (key, value) VALUES ('writing', 'on');
+
+CREATE TABLE IF NOT EXISTS wasters (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  seconds INTEGER NOT NULL DEFAULT 0,
+  at INTEGER NOT NULL,
+  edit_key TEXT NOT NULL,
+  ip_hash TEXT,
+  hidden INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS wasters_by_seconds ON wasters (seconds DESC);

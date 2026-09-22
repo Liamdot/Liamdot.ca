@@ -102,6 +102,19 @@ The D1 console is the quickest way to see what's there:
 SELECT path, text, name, reports, hidden FROM messages ORDER BY at DESC LIMIT 20;
 ```
 
+## Time Waster's leaderboard
+
+The same Worker and the same database also hold the leaderboard for Time
+Waster, in a table called `wasters`. If you set this up before that existed,
+run the `wasters` part of `schema.sql` in the D1 console and paste in the
+newer `worker.js`.
+
+Nobody can simply claim a thousand hours: the Worker only accepts a total
+that could really have happened, which is whatever it had before plus the
+time that has actually passed since. A brand new entry is capped at twelve
+hours. Names go through the same rude-word filter, and the admin page can
+remove one.
+
 ## What it answers
 
 | Request | What it does |
@@ -112,7 +125,9 @@ SELECT path, text, name, reports, hidden FROM messages ORDER BY at DESC LIMIT 20
 | `POST /message` | write or edit (`{ path, text, name, key }`) |
 | `POST /delete` | remove your own (`{ path, key }`) |
 | `POST /report` | flag one (`{ path }`) |
-| `/admin/list`, `/admin/delete`, `/admin/show`, `/admin/writing` | yours, with the key |
+| `GET /waste/top` | the leaderboard, and the total wasted by everyone |
+| `POST /waste` | add to it (`{ id, key, name, seconds }`) |
+| `/admin/list`, `/admin/delete`, `/admin/show`, `/admin/writing`, `/admin/wasters`, `/admin/unwaste` | yours, with the key |
 
 The `key` is a secret the Worker hands back when a message is first written.
 The browser keeps it so the same person can edit or delete their own message

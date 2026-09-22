@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Nine &middot; keeping an eye on things</title>
+  <title>Keeping an eye on things</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
   <style>
     :root { color-scheme: dark; }
@@ -39,9 +39,10 @@
 </head>
 <body>
 <main>
-  <h1>Nine &mdash; keeping an eye on things</h1>
+  <h1>Keeping an eye on things</h1>
   <p class="sub">Only you can see this, and only with the key. Nothing here is linked from the site.</p>
 
+  <h2 style="margin:0 0 12px; font-size:1.2rem">Nine</h2>
   <div class="bar">
     <input id="key" type="password" placeholder="admin key" size="28">
     <button id="load">show recent</button>
@@ -52,6 +53,12 @@
 
   <p class="note" id="status">Paste the key you set on the Worker, then press a button.</p>
   <div id="list"></div>
+
+  <h2 style="margin-top:36px; font-size:1.2rem">Time Waster leaderboard</h2>
+  <div class="bar">
+    <button id="wasters">show the board</button>
+  </div>
+  <div id="board"></div>
 </main>
 
 <script src="config.js"></script>
@@ -140,6 +147,37 @@
     try {
       await ask("/admin/writing", { writing: next });
       await showWriting();
+    } catch (e) {
+      status.textContent = `Didn't work: ${e.message}`;
+    }
+  });
+
+  // ---- Time Waster's leaderboard, in case someone picks a silly name ----
+  const boardEl = document.getElementById("board");
+
+  document.getElementById("wasters").addEventListener("click", async () => {
+    status.textContent = "looking…";
+    try {
+      const data = await ask("/admin/wasters");
+      boardEl.replaceChildren(...data.wasters.map((w) => {
+        const row = document.createElement("div");
+        row.className = "msg";
+        row.innerHTML = '<div class="where"></div><div class="what"></div>'
+          + '<div><button class="danger">remove</button></div>';
+        row.querySelector(".where").textContent = `${Math.round(w.seconds / 60)} min`;
+        row.querySelector(".what").textContent = w.name;
+        row.querySelector("button").addEventListener("click", async () => {
+          if (!confirm(`Remove ${w.name} from the leaderboard?`)) return;
+          try {
+            await ask("/admin/unwaste", { id: w.id });
+            row.remove();
+          } catch (e) {
+            status.textContent = `Didn't work: ${e.message}`;
+          }
+        });
+        return row;
+      }));
+      status.textContent = `${data.wasters.length} on the board`;
     } catch (e) {
       status.textContent = `Didn't work: ${e.message}`;
     }

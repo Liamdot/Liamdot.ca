@@ -2,14 +2,180 @@
 
 .stage {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-content: center;
   justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
   background: #16161a;
   color: #f1ede4;
 }
 
-.soon {
+/* ---- the clock ---- */
+
+.clock-card {
+  flex: 1 1 320px;
+  max-width: 460px;
+  text-align: center;
+}
+
+.label {
   margin: 0;
   color: #74747f;
+  font-size: 0.8rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.big {
+  margin: 4px 0 0;
+  /* tabular figures stop the numbers jittering as they tick over */
+  font: 700 clamp(3rem, 14vw, 6rem)/1 Menlo, Consolas, "Courier New", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.words {
+  margin: 8px 0 0;
+  color: #cfcbc2;
   font-size: 1.1rem;
+}
+
+.instead {
+  min-height: 3em; /* held open, so the line changing doesn't shift the page */
+  margin: 18px 0 0;
+  color: #7ee08a;
+  font-size: 1.05rem;
+}
+
+.total {
+  margin: 10px 0 0;
+  color: #74747f;
+  font-size: 0.9rem;
+}
+
+/* ---- the leaderboard ---- */
+
+.board-card {
+  flex: 1 1 320px;
+  max-width: 420px;
+  padding: 18px 20px;
+  border: 1.5px solid #2f2f38;
+  border-radius: 14px;
+  background: #1c1c21;
+}
+
+.board-card h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+.board {
+  max-height: 46vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 5px 0;
+  border-top: 1px solid #2c2c33;
+  font-size: 0.9rem;
+}
+
+.row:first-child {
+  border-top: none;
+}
+
+.place {
+  width: 1.6em;
+  flex: none;
+  color: #55555f;
+  font: 0.85rem Menlo, Consolas, "Courier New", monospace;
+  text-align: right;
+}
+
+.who {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.much {
+  flex: none;
+  color: #74747f;
+  font-size: 0.85rem;
+}
+
+.row.you .who {
+  color: #7ee08a;
+  font-weight: 700;
+}
+
+.empty-row {
+  color: #55555f;
+  border: none;
+}
+
+.mine {
+  margin: 12px 0 0;
+  color: #7ee08a;
+  font-size: 0.85rem;
+}
+
+.join-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.join-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1.5px solid #3a3a44;
+  border-radius: 20px;
+  background: #16161a;
+  color: #f1ede4;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.join-row input:focus {
+  border-color: #7ee08a;
+  outline: none;
+}
+
+.join {
+  padding: 7px 14px;
+  border: 1.5px solid #7ee08a;
+  border-radius: 20px;
+  background: #7ee08a;
+  color: #16161a;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.join:hover {
+  background: #9bf0a5;
+}
+
+.join:disabled {
+  border-color: #2c2c33;
+  background: none;
+  color: #55555f;
+  cursor: default;
+}
+
+.board-note {
+  margin: 10px 0 0;
+  color: #74747f;
+  font-size: 0.8rem;
 }

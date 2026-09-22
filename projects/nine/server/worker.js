@@ -263,6 +263,69 @@ async function report(body, request, env) {
 }
 
 // ---------------------------------------------------------------------------
+// Time Waster's leaderboard. Same database, its own table.
+// ---------------------------------------------------------------------------
+
+const BOARD_SIZE = 20;
+const FIRST_CLAIM = 12 * 3600;   // most seconds a brand new entry may claim
+const SLACK = 60;                // allowance for clocks and slow requests
+
+async function topWasters(request, env) {
+  const { results } = await env.DB.prepare(
+    "SELECT name, seconds FROM wasters WHERE hidden = 0 ORDER BY seconds DESC LIMIT ?"
+  ).bind(BOARD_SIZE).all();
+  const sum = await env.DB.prepare(
+    "SELECT COUNT(*) AS people, COALESCE(SUM(seconds), 0) AS seconds FROM wasters WHERE hidden = 0"
+  ).first();
+  return json({ top: results, people: sum.people, seconds: sum.seconds }, request, env);
+}
+
+// Anyone can send any number, so the server only ever believes a total that
+// could have happened: what it already had, plus the time that has actually
+// passed since. A brand new entry is capped too.
+async function waste(body, request, env) {
+  const name = String(body.name || "").trim().slice(0, NAME_LIMIT);
+  const claim = Math.floor(Number(body.seconds));
+  if (!name) return json({ error: "Put a name in first." }, request, env, 400);
+  if (blockedWord(name)) return json({ error: "Pick a friendlier name." }, request, env, 400);
+  if (!Number.isFinite(claim) || claim < 0) return json({ error: "bad number" }, request, env, 400);
+  if (await setting(env, "writing", "on") !== "on") {
+    return json({ error: "The leaderboard is closed at the moment." }, request, env, 403);
+  }
+
+  const now = Date.now();
+  const ip = await visitorId(request, env);
+  const id = String(body.id || "").slice(0, 40);
+  const existing = id
+    ? await env.DB.prepare("SELECT * FROM wasters WHERE id = ?").bind(id).first()
+    : null;
+
+  if (existing) {
+    if (existing.edit_key !== String(body.key || "")) return json({ error: "not yours" }, request, env, 403);
+    const most = existing.seconds + Math.floor((now - existing.at) / 1000) + SLACK;
+    const seconds = Math.max(existing.seconds, Math.min(claim, most));
+    await env.DB.prepare("UPDATE wasters SET name = ?, seconds = ?, at = ? WHERE id = ?")
+      .bind(name, seconds, now, id).run();
+    return json({ ok: true, id, key: existing.edit_key, seconds }, request, env);
+  }
+
+  const recent = await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM wasters WHERE ip_hash = ? AND at > ?"
+  ).bind(ip, now - 3600_000).first();
+  if (recent.n >= PER_HOUR) {
+    return json({ error: "That's a lot of new names in one go - try again later." }, request, env, 429);
+  }
+
+  const seconds = Math.min(claim, FIRST_CLAIM);
+  const newId = crypto.randomUUID();
+  const editKey = crypto.randomUUID();
+  await env.DB.prepare(
+    "INSERT INTO wasters (id, name, seconds, at, edit_key, ip_hash) VALUES (?, ?, ?, ?, ?, ?)"
+  ).bind(newId, name, seconds, now, editKey, ip).run();
+  return json({ ok: true, id: newId, key: editKey, seconds }, request, env);
+}
+
+// ---------------------------------------------------------------------------
 // Your tools (need the admin key)
 // ---------------------------------------------------------------------------
 
@@ -288,6 +351,18 @@ async function admin(url, request, env, body) {
 
   if (action === "show") { // un-hide something that was reported unfairly
     await env.DB.prepare("UPDATE messages SET hidden = 0, reports = 0 WHERE path = ?").bind(body.path).run();
+    return json({ ok: true }, request, env);
+  }
+
+  if (action === "wasters") {
+    const { results } = await env.DB.prepare(
+      "SELECT id, name, seconds, at FROM wasters WHERE hidden = 0 ORDER BY seconds DESC LIMIT 100"
+    ).all();
+    return json({ wasters: results }, request, env);
+  }
+
+  if (action === "unwaste") {
+    await env.DB.prepare("DELETE FROM wasters WHERE id = ?").bind(body.id).run();
     return json({ ok: true }, request, env);
   }
 
@@ -328,6 +403,8 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/message") return await message(path, request, env);
       if (request.method === "GET" && url.pathname === "/random") return await random(request, env);
+      if (request.method === "GET" && url.pathname === "/waste/top") return await topWasters(request, env);
+      if (request.method === "POST" && url.pathname === "/waste") return await waste(body, request, env);
       if (request.method === "POST" && url.pathname === "/message") return await write(body, request, env);
       if (request.method === "POST" && url.pathname === "/delete") return await remove(body, request, env);
       if (request.method === "POST" && url.pathname === "/report") return await report(body, request, env);
