@@ -300,36 +300,22 @@ async function waste(body, request, env) {
     ? await env.DB.prepare("SELECT * FROM wasters WHERE id = ?").bind(id).first()
     : null;
 
-  // One entry per name. A browser only remembers who it is for the address
-  // it's on, and a home address changes, so neither is any use for telling
-  // who someone is - and two rows called "Liam" on a leaderboard is nonsense
-  // whatever the reason. Whoever types the name gets that entry, and since a
-  // time can only ever go up, the worst anyone can do by taking a name is
-  // share it.
-  let adopted = false;
-  if (!existing) {
-    existing = await env.DB.prepare(
-      "SELECT * FROM wasters WHERE name = ? ORDER BY seconds DESC LIMIT 1"
-    ).bind(name).first();
-    adopted = Boolean(existing); // no key to check: the name is the identity
+  // An entry belongs to the browser that made it, which is the only thing
+  // holding its key. Names are first come, first served, so nobody can add
+  // to someone else's time and no two rows share a name.
+  const taken = await env.DB.prepare(
+    "SELECT id FROM wasters WHERE name = ? COLLATE NOCASE"
+  ).bind(name).first();
+  if (taken && (!existing || taken.id !== existing.id)) {
+    return json({ error: "That name's taken. If it's yours, use the browser you joined in." }, request, env, 409);
   }
 
   if (existing) {
-    if (!adopted && existing.edit_key !== String(body.key || "")) {
+    if (existing.edit_key !== String(body.key || "")) {
       return json({ error: "not yours" }, request, env, 403);
     }
     const most = existing.seconds + Math.floor((now - existing.at) / 1000) + SLACK;
-    let seconds = Math.max(existing.seconds, Math.min(claim, most));
-
-    // Tidy away any other entries under this name, keeping the best time.
-    const twins = await env.DB.prepare(
-      "SELECT id, seconds FROM wasters WHERE name = ? AND id != ?"
-    ).bind(name, existing.id).all();
-    for (const twin of twins.results) {
-      seconds = Math.max(seconds, twin.seconds);
-      await env.DB.prepare("DELETE FROM wasters WHERE id = ?").bind(twin.id).run();
-    }
-
+    const seconds = Math.max(existing.seconds, Math.min(claim, most));
     await env.DB.prepare("UPDATE wasters SET name = ?, seconds = ?, at = ? WHERE id = ?")
       .bind(name, seconds, now, existing.id).run();
     return json({ ok: true, id: existing.id, key: existing.edit_key, seconds }, request, env);
