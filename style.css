@@ -153,7 +153,7 @@ header h1 a {
 
 .grid {
   display: grid;
-  margin-top: 40px;
+  margin-top: 68px;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 28px 22px;
 }
