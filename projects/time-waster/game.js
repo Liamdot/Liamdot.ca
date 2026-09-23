@@ -36,7 +36,8 @@ const store = () => {
   }
 };
 
-let session = 0;        // seconds wasted since the page opened
+// There's one number: the total, kept between visits and topped up by the
+// server when you come back (it holds the truth if you've joined the board).
 let last = Date.now();
 let sinceSend = 0;
 
@@ -48,7 +49,6 @@ function tick() {
   const gap = Math.min((now - last) / 1000, BIGGEST_GAP);
   last = now;
 
-  session += gap;
   save.total += gap;
   sinceSend += gap;
   if (sinceSend >= SEND_EVERY) {
@@ -157,10 +157,10 @@ const bigEl = document.getElementById("big");
 const insteadEl = document.getElementById("instead");
 
 function draw() {
-  bigEl.textContent = `You've wasted ${sentence(session)}`;
-  insteadEl.textContent = commentary(session);
+  bigEl.textContent = `You've wasted ${sentence(save.total)}`;
+  insteadEl.textContent = commentary(save.total);
   // ...and it follows you into the tab bar, where you'll find it later.
-  document.title = session >= 1 ? `${spell(session)} wasted` : "Time Waster - Liamdot";
+  document.title = save.total >= 1 ? `${spell(save.total)} wasted` : "Time Waster - Liamdot";
   drawMine();
 }
 
@@ -220,13 +220,12 @@ function drawBoard() {
 }
 
 function drawMine() {
-  const all = `All time: <b>${spell(save.total)}</b>.`;
   if (!save.id) {
-    mineEl.innerHTML = all;
+    mineEl.textContent = "";
     return;
   }
   const place = leaders.findIndex((row) => row.name === save.name);
-  mineEl.innerHTML = place >= 0 ? `${all} You're number ${place + 1}.` : `${all} Not on the board yet.`;
+  mineEl.textContent = place >= 0 ? `You're number ${place + 1}.` : "Not on the board yet.";
 }
 
 async function loadBoard() {
@@ -315,5 +314,8 @@ handle.addEventListener("click", () => {
 });
 
 draw();
+// If you've joined, the server knows your total - it may be ahead of this
+// browser (another tab, another machine), so ask on the way in.
+sendScore();
 loadBoard();
 setInterval(loadBoard, 30000);   // often enough for "right now" to mean it
