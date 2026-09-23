@@ -1,0 +1,15 @@
+# Cloudflare Pages reads this file.
+#
+# By default it tells browsers to keep everything for four hours, which means
+# a change can be live and still not show up. Instead: always ask whether the
+# page has changed (a quick "no" is cheap), and only cache the things whose
+# names would change anyway if their contents did.
+
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/thumbs/*
+  Cache-Control: public, max-age=86400
+
+/logo.svg
+  Cache-Control: public, max-age=86400
