@@ -40,36 +40,94 @@ measureCaptions();
 window.addEventListener("resize", measureCaptions);
 if (document.fonts) document.fonts.ready.then(measureCaptions); // fonts can change the height
 
-// The top row floats up into the title. Rather than letting it cover the
-// name, the title steps up out of the way - by exactly as much as that card
-// needs, and never so far that it goes off the top of the page itself.
+// The top row floats up into the title. Rather than letting a card cover the
+// name, the title steps up out of the way - but only when that card is
+// really going to land on the words, and only by as much as it needs.
+//
+// Everything here is measured from resting layout positions (offsetTop and
+// friends), never from getBoundingClientRect, because the title may be
+// half-way through moving when you slide from one card to the next and a
+// measurement taken mid-move would feed on itself.
+
 const header = document.querySelector("header");
+const grid = document.querySelector(".grid");
+
+// Where something sits on the page, ignoring any transform on it.
+function restingTop(el) {
+  let y = 0;
+  for (let node = el; node; node = node.offsetParent) y += node.offsetTop;
+  return y;
+}
+
+function restingLeft(el) {
+  let x = 0;
+  for (let node = el; node; node = node.offsetParent) x += node.offsetLeft;
+  return x;
+}
+
+let title = null;   // the words' resting box, worked out below
+
+// How wide the writing actually is - a paragraph is as wide as the page,
+// but "The best projects on the internet." is not.
+function textBox(el) {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const box = range.getBoundingClientRect();
+  range.detach();
+  return box.width ? box : el.getBoundingClientRect();
+}
+
+// Only run while the title is at rest, so the measurements mean something.
+function measureTitle() {
+  const words = [document.querySelector(".wordmark"), document.querySelector(".intro")].filter(Boolean);
+  if (!words.length) return;
+  const wasUp = document.body.classList.contains("title-up");
+  document.body.classList.remove("title-up");
+
+  const boxes = words.map(textBox);
+  const top = window.scrollY;
+  title = {
+    top: restingTop(header),
+    bottom: Math.max(...boxes.map((b) => b.bottom + top)),
+    left: Math.min(...boxes.map((b) => b.left)),
+    right: Math.max(...boxes.map((b) => b.right)),
+  };
+
+  if (wasUp) document.body.classList.add("title-up");
+}
+
+measureTitle();
+window.addEventListener("resize", measureTitle);
+if (document.fonts) document.fonts.ready.then(measureTitle);
 
 function titleDodge(tile) {
+  if (!title) return 0;
   const float = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--float")) || 80;
-  const lifted = tile.getBoundingClientRect().top - float;   // where the card will be
-  // Measure the title where it sits at rest: it may already be stepped up
-  // from the card you're moving off, and two lifts shouldn't stack.
-  const already = document.body.classList.contains("title-up")
-    ? parseFloat(getComputedStyle(document.body).getPropertyValue("--dodge")) || 0 : 0;
-  const title = header.getBoundingClientRect();
-  const needed = title.bottom + already - lifted + 6;
-  const room = title.top + already;   // how far it can rise before leaving the screen itself
+
+  // Does this card land on the words at all? A card off to the right passes
+  // the title by, however high it floats.
+  const left = restingLeft(tile);
+  const right = left + tile.offsetWidth;
+  if (right < title.left || left > title.right) return 0;
+
+  const lands = restingTop(tile) - float;
+  const needed = title.bottom - lands + 6;
+  const room = title.top - window.scrollY;   // it can't rise past the top of the screen
   return Math.max(0, Math.min(needed, room));
 }
 
-document.querySelector(".grid").addEventListener("pointerover", (e) => {
+grid.addEventListener("pointerover", (e) => {
   const tile = e.target.closest(".tile");
-  if (!tile || tile.contains(e.relatedTarget)) return;
+  if (!tile) return;
   const dodge = titleDodge(tile);
   document.body.style.setProperty("--dodge", `${dodge}px`);
   document.body.classList.toggle("title-up", dodge > 0);
 });
 
-document.querySelector(".grid").addEventListener("pointerout", (e) => {
+grid.addEventListener("pointerout", (e) => {
   const tile = e.target.closest(".tile");
   if (!tile || tile.contains(e.relatedTarget)) return;
-  document.body.classList.remove("title-up");
+  if (!e.relatedTarget || !e.relatedTarget.closest(".tile")) document.body.classList.remove("title-up");
 });
 
 // Logo bump: add a class on hover and only remove it once the animation ends,
