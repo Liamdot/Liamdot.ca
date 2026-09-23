@@ -48,6 +48,7 @@ let selected = null;
 let action = null;
 let levelSelectOpen = false;
 let lastTest = null;
+let truth = null;           // the last truth table worked out, if any
 
 let sim = null;
 let ticks = 0;
@@ -250,6 +251,7 @@ const paletteEl = document.getElementById("palette");
 const propsEl = document.getElementById("props");
 const levelBar = document.getElementById("level-bar");
 const resultsEl = document.getElementById("results");
+const truthEl = document.getElementById("truth");
 const levelSelectEl = document.getElementById("level-select");
 const introEl = document.getElementById("intro");
 const chipBar = document.getElementById("chip-bar");
@@ -554,6 +556,7 @@ function render() {
   renderProps();
   renderLevelBar();
   renderResults();
+  renderTruth();
   renderLevelSelect();
   updateTimeBar();
   introEl.hidden = Boolean(progress.seenIntro);
@@ -561,6 +564,7 @@ function render() {
 
 // Rebuild the circuit, redraw, save. Call after anything changes.
 function changed() {
+  truth = null;   // whatever it said is about the old board
   rebuildSim();
   render();
   save();
@@ -875,6 +879,138 @@ exprBox.addEventListener("keydown", (e) => {
   if (e.key === "Enter") buildFromExpression();
   e.stopPropagation();   // 1-9 and space are shortcuts everywhere else
 });
+
+// ---- the truth table ----
+//
+// Tries every combination of the switches, writes down what the lamps do,
+// and reads the minterms and maxterms off the result.
+
+const MOST_INPUTS = 10;   // 1024 rows is already more than anyone wants
+
+function workOutTable() {
+  const switches = parts
+    .filter((part) => part.type === "IN")
+    .sort((a, b) => a.y - b.y || a.x - b.x);
+  const lamps = parts
+    .filter((part) => part.type === "OUT")
+    .sort((a, b) => a.y - b.y || a.x - b.x);
+
+  if (!switches.length || !lamps.length) {
+    flashMessage("A truth table needs at least one IN switch and one OUT lamp.");
+    return;
+  }
+  if (switches.length > MOST_INPUTS) {
+    flashMessage(`That's ${switches.length} switches - ${MOST_INPUTS} is as many as I'll go through.`);
+    return;
+  }
+
+  // Short labels make good column headings; a lamp labelled with a whole
+  // expression doesn't, so it gets a plain Q instead.
+  const short = (label, fallback) => (label && label.length <= 4 ? label : fallback);
+  const names = switches.map((part, i) => short(part.label, String.fromCharCode(65 + i)));
+  const outNames = lamps.map((part, i) => short(part.label, lamps.length === 1 ? "Q" : `Q${i + 1}`));
+
+  const before = switches.map((part) => part.on);
+  rebuildSim();
+
+  const rows = [];
+  for (let combo = 0; combo < 2 ** switches.length; combo++) {
+    // first switch is the most significant, as truth tables are usually written
+    const set = switches.map((part, i) => (combo >> (switches.length - 1 - i)) & 1);
+    sim.reset();
+    switches.forEach((part, i) => { part.on = Boolean(set[i]); });
+    sim.settle();
+    sim.tick();
+    sim.tick();
+    rows.push({ set, out: lamps.map((lamp) => (valueOf(lamp) ? 1 : 0)) });
+  }
+
+  switches.forEach((part, i) => { part.on = before[i]; });
+  rebuildSim();
+
+  truth = {
+    names,
+    outNames,
+    rows,
+    remembers: Boolean(sim && sim.hasMemory),
+  };
+  render();
+}
+
+// A minterm is a row where the output is on, written as every input in the
+// state that row has them in; a maxterm is a row where it's off, written the
+// other way round. Together they're the two ways of spelling out a circuit.
+const mintermOf = (names, set) => names.map((name, i) => (set[i] ? name : `${name}'`)).join("");
+const maxtermOf = (names, set) => `(${names.map((name, i) => (set[i] ? `${name}'` : name)).join(" + ")})`;
+
+function termsFor(table, which) {
+  const on = [];
+  const off = [];
+  table.rows.forEach((row, i) => (row.out[which] ? on : off).push(i));
+  return {
+    on,
+    off,
+    sop: on.length ? on.map((i) => mintermOf(table.names, table.rows[i].set)).join(" + ") : "0 (never on)",
+    pos: off.length ? off.map((i) => maxtermOf(table.names, table.rows[i].set)).join("") : "1 (always on)",
+  };
+}
+
+function tableAsText(table) {
+  const head = [...table.names, ...table.outNames].join("\t");
+  const body = table.rows.map((row) => [...row.set, ...row.out].join("\t")).join("\n");
+  const terms = table.outNames.map((name, i) => {
+    const t = termsFor(table, i);
+    return `${name}  minterms: ${t.on.join(", ") || "none"}\n${name}  maxterms: ${t.off.join(", ") || "none"}\n`
+      + `${name} = ${t.sop}\n${name} = ${t.pos}`;
+  }).join("\n\n");
+  return `${head}\n${body}\n\n${terms}\n`;
+}
+
+function renderTruth() {
+  truthEl.hidden = !truth || levelSelectOpen;
+  if (truthEl.hidden) return;
+
+  const { names, outNames, rows } = truth;
+  const head = `<tr><th class="row-num">#</th>${names.map((n) => `<th>${escapeText(n)}</th>`).join("")}`
+    + `${outNames.map((n, i) => `<th class="${i === 0 ? "sep" : ""}">${escapeText(n)}</th>`).join("")}</tr>`;
+  const body = rows.map((row, i) => `<tr>
+      <td class="row-num">${i}</td>
+      ${row.set.map((v) => `<td>${v}</td>`).join("")}
+      ${row.out.map((v, j) => `<td class="${j === 0 ? "sep" : ""} ${v ? "one" : ""}">${v}</td>`).join("")}
+    </tr>`).join("");
+
+  const terms = outNames.map((name, i) => {
+    const t = termsFor(truth, i);
+    return `<div class="terms">
+      <p><strong>${escapeText(name)}</strong> &Sigma;m(${t.on.join(", ") || "&ndash;"})
+         &nbsp; &Pi;M(${t.off.join(", ") || "&ndash;"})</p>
+      <p class="term-line">${escapeText(name)} = ${escapeText(t.sop)}</p>
+      <p class="term-line">${escapeText(name)} = ${escapeText(t.pos)}</p>
+    </div>`;
+  }).join("");
+
+  truthEl.innerHTML = `
+    <div class="results-head">
+      <span>Truth table</span>
+      <button class="close-btn" id="truth-copy" title="Copy as text" aria-label="Copy">copy</button>
+      <button class="close-btn" id="truth-close" aria-label="Close">&times;</button>
+    </div>
+    ${truth.remembers ? `<p class="results-note">This circuit remembers things, so a table can only show where it settles from a fresh start.</p>` : ""}
+    <div class="truth-scroll"><table>${head}${body}</table></div>
+    ${terms}`;
+
+  document.getElementById("truth-close").addEventListener("click", () => { truth = null; renderTruth(); });
+  document.getElementById("truth-copy").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(tableAsText(truth));
+      flashMessage("Copied.");
+    } catch (e) {
+      flashMessage("Couldn't copy - your browser said no.");
+    }
+  });
+}
+
+document.getElementById("table-btn").addEventListener("click", workOutTable);
 
 // ---- time controls ----
 
