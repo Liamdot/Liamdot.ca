@@ -802,7 +802,13 @@ const exprBox = document.getElementById("expr");
 
 function buildFromExpression() {
   const text = exprBox.value.trim();
-  if (!text) { exprBox.focus(); return; }
+  if (!text) {
+    // Silently doing nothing looks broken, and it's an easy mistake to make:
+    // typing without clicking into the box first leaves it empty.
+    flashMessage("Type an expression in the box first, like (A'B + C).");
+    exprBox.focus();
+    return;
+  }
 
   let tree;
   try {
@@ -834,7 +840,10 @@ function buildFromExpression() {
   }
 
   const loose = parts.filter((part) => !part.locked);
-  if (loose.length && !confirm("Replace what's on the board?")) return;
+  if (loose.length && !confirm(`Replace the ${loose.length} part${loose.length === 1 ? "" : "s"} on the board with ${text}?`)) {
+    flashMessage("Left the board alone.");
+    return;
+  }
 
   let made;
   try {
