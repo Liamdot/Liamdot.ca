@@ -1,16 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" fill="#16161a"/>
-  <g fill="none" stroke="#cfcbc2" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
-    <!-- lid, tilted as if just dropped back on -->
-    <g transform="rotate(-6 50 30)">
-      <path d="M42 22h16"/>
-      <path d="M26 30h48"/>
-    </g>
-    <!-- bin, tapering towards the bottom -->
-    <path d="M32 38h36l-3.5 40a4 4 0 0 1-4 3.6H39.5a4 4 0 0 1-4-3.6Z"/>
-  </g>
-  <!-- the hours going in -->
-  <g fill="none" stroke="#7ee08a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M44 48v22M56 48v22"/>
+  <rect width="100" height="100" fill="#f2b705"/>
+
+  <!-- the sand: nearly all of it has run through already -->
+  <path d="M38 76h24l-12-13Z" fill="#1d1d1f"/>
+  <path d="M44 28h12l-6 7Z" fill="#1d1d1f"/>
+  <rect x="49" y="46" width="2" height="12" fill="#1d1d1f"/>
+
+  <!-- the glass -->
+  <g fill="none" stroke="#1d1d1f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 22h36"/>
+    <path d="M32 78h36"/>
+    <path d="M36 22v8l14 20 14-20v-8"/>
+    <path d="M36 78v-8l14-20 14 20v8"/>
   </g>
 </svg>
