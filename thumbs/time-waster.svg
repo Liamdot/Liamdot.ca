@@ -4,9 +4,10 @@
   <!-- The sand, all sized to sit inside the glass: the walls run from
        (36,30) to the neck at (50,50), so nothing crosses them. -->
   <g fill="#f1ede4">
-    <path d="M38.5 75.5h23L50 61Z"/>          <!-- the heap that's already fallen -->
+    <!-- the heap and the stream are one shape, so the sand really does run
+         from the neck into the pile rather than stopping short of it -->
+    <path d="M38.5 75.5h23L50.6 62V49h-1.2v13Z"/>
     <path d="M47.6 43h4.8L50 47.5Z"/>         <!-- the last of it, about to go -->
-    <rect x="49.4" y="50" width="1.2" height="11"/>  <!-- still falling -->
   </g>
 
   <!-- the glass -->
