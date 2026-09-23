@@ -51,6 +51,7 @@ if (document.fonts) document.fonts.ready.then(measureCaptions); // fonts can cha
 
 const header = document.querySelector("header");
 const grid = document.querySelector(".grid");
+const CLEARANCE = 26;   // how much daylight to leave between title and card
 
 // Where something sits on the page, ignoring any transform on it.
 function restingTop(el) {
@@ -111,7 +112,7 @@ function titleDodge(tile) {
   if (right < title.left || left > title.right) return 0;
 
   const lands = restingTop(tile) - float;
-  const needed = title.bottom - lands + 6;
+  const needed = title.bottom - lands + CLEARANCE;
   const room = title.top - window.scrollY;   // it can't rise past the top of the screen
   return Math.max(0, Math.min(needed, room));
 }
