@@ -45,6 +45,16 @@
         <li>Right-click something (or select it and press Delete) to remove it</li>
       </ul>
 
+      <h3>From an expression</h3>
+      <p>Type something like <code>(A'B + C)</code> in the box and press <strong>build</strong>, and it gets wired up for you, switches labelled and all.</p>
+      <ul>
+        <li><code>A'</code>, <code>!A</code> or <code>NOT A</code> for not</li>
+        <li><code>AB</code>, <code>A*B</code> or <code>A AND B</code> for and</li>
+        <li><code>A+B</code> or <code>A OR B</code> for or, <code>A^B</code> for exclusive or</li>
+        <li>NAND, NOR and XNOR work spelled out</li>
+        <li>On a puzzle it uses the switches and lamp already there, so you can build an answer and test it</li>
+      </ul>
+
       <h3>Time</h3>
       <p>Memory parts only change when time moves. <strong>pause</strong>, <strong>step</strong> (one tick) and the speed slider control it; <strong>reset time</strong> forgets everything remembered.</p>
 
@@ -53,6 +63,7 @@
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v0.4</strong> &ndash; build a circuit from an expression</li>
         <li><strong>v0.3</strong> &ndash; bytes, memory, chips, and levels up to a tiny CPU</li>
         <li><strong>v0.2</strong> &ndash; puzzles</li>
         <li><strong>v0.1</strong> &ndash; first version</li>
@@ -80,6 +91,12 @@
         <input type="range" id="speed" min="1" max="30" value="8" title="Ticks per second" aria-label="Speed">
         <span class="ticks" id="tick-count">tick 0</span>
         <button class="tool-btn" id="reset-state-btn" title="Forget everything the circuit remembers">reset time</button>
+      </div>
+
+      <div class="expr-box">
+        <input id="expr" placeholder="(A'B + C)" title="Write a boolean expression and have it wired up for you"
+               size="14" autocomplete="off" spellcheck="false">
+        <button class="tool-btn" id="build-btn">build</button>
       </div>
 
       <button class="tool-btn" id="save-chip-btn">save as chip</button>
@@ -149,6 +166,7 @@
 
   <script src="../../nav.js"></script>
   <script src="parts.js"></script>
+  <script src="expression.js"></script>
   <script src="levels.js"></script>
   <script src="game.js"></script>
 </body>

@@ -792,6 +792,81 @@ clearBtn.addEventListener("click", () => {
   changed();
 });
 
+// ---- building a circuit from an expression ----
+//
+// The reading and the laying out live in expression.js. This part decides
+// what it gets built onto: on a puzzle the switches and the lamp are already
+// there and locked, so they're reused and everything else is swept away.
+
+const exprBox = document.getElementById("expr");
+
+function buildFromExpression() {
+  const text = exprBox.value.trim();
+  if (!text) { exprBox.focus(); return; }
+
+  let tree;
+  try {
+    tree = Expression.parse(text);
+  } catch (e) {
+    flashMessage(e.message);
+    return;
+  }
+
+  const locked = parts.filter((part) => part.locked);
+  const existing = {};
+  for (const part of locked) {
+    if (part.type === "IN" && part.label) existing[part.label.toUpperCase()] = part;
+  }
+  const lamps = locked.filter((part) => part.type === "OUT");
+
+  // On a puzzle you can only use the inputs it gives you.
+  const wanted = Expression.variablesIn(tree);
+  if (locked.length) {
+    const unknown = wanted.filter((name) => !existing[name.toUpperCase()]);
+    if (unknown.length) {
+      flashMessage(`This puzzle has no input called ${unknown[0]}.`);
+      return;
+    }
+    if (lamps.length > 1) {
+      flashMessage("This puzzle has more than one output - build it by hand.");
+      return;
+    }
+  }
+
+  const loose = parts.filter((part) => !part.locked);
+  if (loose.length && !confirm("Replace what's on the board?")) return;
+
+  let made;
+  try {
+    made = Expression.build(tree, {
+      nextId,
+      existing: Object.fromEntries(wanted.map((name) => [name, existing[name.toUpperCase()]]).filter(([, p]) => p)),
+      outPart: lamps[0] || null,
+      name: text,
+      grid: GRID,
+    });
+  } catch (e) {
+    flashMessage(e.message);
+    return;
+  }
+
+  // keep whatever the puzzle provides, drop the rest, then drop in the new
+  const keep = new Set(locked.map((part) => part.id));
+  parts = locked.concat(made.parts);
+  wires = wires.filter((wire) => keep.has(wire.from) && keep.has(wire.to)).concat(made.wires);
+  nextId = made.nextId;
+  selected = null;
+  lastTest = null;
+  changed();
+  flashMessage(`Built ${text}.`);
+}
+
+document.getElementById("build-btn").addEventListener("click", buildFromExpression);
+exprBox.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") buildFromExpression();
+  e.stopPropagation();   // 1-9 and space are shortcuts everywhere else
+});
+
 // ---- time controls ----
 
 playBtn.addEventListener("click", () => { running = !running; updateTimeBar(); });

@@ -150,6 +150,30 @@
   color: #fbf8f1;
 }
 
+/* ---- the expression box ---- */
+
+.expr-box {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.expr-box input {
+  padding: 4px 10px;
+  border: 1.5px solid #d8d2c4;
+  border-radius: 20px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  font-size: 0.85rem;
+  font-family: Menlo, Consolas, "Courier New", monospace;
+}
+
+.expr-box input:focus {
+  border-color: #222;
+  outline: none;
+}
+
 /* ---- properties of the selected part ---- */
 
 /* Floats over the bottom of the board rather than sitting in the column,
