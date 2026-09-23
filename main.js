@@ -40,6 +40,38 @@ measureCaptions();
 window.addEventListener("resize", measureCaptions);
 if (document.fonts) document.fonts.ready.then(measureCaptions); // fonts can change the height
 
+// The top row floats up into the title. Rather than letting it cover the
+// name, the title steps up out of the way - by exactly as much as that card
+// needs, and never so far that it goes off the top of the page itself.
+const header = document.querySelector("header");
+
+function titleDodge(tile) {
+  const float = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--float")) || 80;
+  const lifted = tile.getBoundingClientRect().top - float;   // where the card will be
+  // Measure the title where it sits at rest: it may already be stepped up
+  // from the card you're moving off, and two lifts shouldn't stack.
+  const already = document.body.classList.contains("title-up")
+    ? parseFloat(getComputedStyle(document.body).getPropertyValue("--dodge")) || 0 : 0;
+  const title = header.getBoundingClientRect();
+  const needed = title.bottom + already - lifted + 6;
+  const room = title.top + already;   // how far it can rise before leaving the screen itself
+  return Math.max(0, Math.min(needed, room));
+}
+
+document.querySelector(".grid").addEventListener("pointerover", (e) => {
+  const tile = e.target.closest(".tile");
+  if (!tile || tile.contains(e.relatedTarget)) return;
+  const dodge = titleDodge(tile);
+  document.body.style.setProperty("--dodge", `${dodge}px`);
+  document.body.classList.toggle("title-up", dodge > 0);
+});
+
+document.querySelector(".grid").addEventListener("pointerout", (e) => {
+  const tile = e.target.closest(".tile");
+  if (!tile || tile.contains(e.relatedTarget)) return;
+  document.body.classList.remove("title-up");
+});
+
 // Logo bump: add a class on hover and only remove it once the animation ends,
 // so it always plays all the way through.
 const wordmark = document.querySelector(".wordmark");

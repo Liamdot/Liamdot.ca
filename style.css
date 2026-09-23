@@ -38,6 +38,22 @@ button {
 
 /* header */
 
+header {
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* a card in the top row is floating up over the title, so the title moves
+   up to stay readable - see main.js, which works out how far */
+body.title-up header {
+  transform: translateY(calc(-1 * var(--dodge, 0px)));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  header {
+    transition: none;
+  }
+}
+
 header h1 {
   margin: 0;
   font-size: 3.2rem;
