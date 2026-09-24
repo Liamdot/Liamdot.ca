@@ -114,7 +114,9 @@ header.parentNode.insertBefore(sentinel, header);
 // page never changes length.
 function measureHeader() {
   if (document.body.classList.contains("stuck")) return;
-  document.body.style.setProperty("--header-height", `${header.offsetHeight}px`);
+  // the exact height, fractions and all - offsetHeight rounds, and a third
+  // of a pixel is enough to resize the scrollbar
+  document.body.style.setProperty("--header-height", `${header.getBoundingClientRect().height}px`);
 }
 
 measureHeader();

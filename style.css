@@ -60,6 +60,14 @@ body.title-up header {
   margin-bottom: -1px;
 }
 
+/* flow-root so the tagline's top margin stays inside the header. Without it,
+   the moment the name lifts out that margin escapes, pushes the header down
+   six pixels, and the page changes length - which you see as the scrollbar
+   twitching. */
+header {
+  display: flow-root;
+}
+
 body.stuck header {
   height: var(--header-height);
   transform: none;
@@ -90,7 +98,10 @@ body.stuck .intro {
 }
 
 header h1 {
-  transition: font-size 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+  /* deliberately no transition on the size: while the name is animating back
+     into the page it would be the wrong height for a moment, and the page
+     would change length under you as you scroll - a visible twitch of the
+     scrollbar. It pops instead. */
   margin: 0;
   font-size: 3.2rem;
   font-weight: 800;
