@@ -101,8 +101,35 @@ measureTitle();
 window.addEventListener("resize", measureTitle);
 if (document.fonts) document.fonts.ready.then(measureTitle);
 
+// The title becomes its compact bar at the exact moment it pins to the top.
+// A sliver of nothing sits above it and gets watched: while that sliver is
+// on screen the title is still part of the page, and once it has scrolled
+// away the title is a bar. Watching the scroll position instead would mean
+// guessing a number, and the guess would be wrong at other font sizes.
+const sentinel = document.createElement("div");
+sentinel.className = "sentinel";
+header.parentNode.insertBefore(sentinel, header);
+
+// The header keeps this height once the name has lifted out of it, so the
+// page never changes length.
+function measureHeader() {
+  if (document.body.classList.contains("stuck")) return;
+  document.body.style.setProperty("--header-height", `${header.offsetHeight}px`);
+}
+
+measureHeader();
+window.addEventListener("resize", measureHeader);
+if (document.fonts) document.fonts.ready.then(measureHeader);
+
+new IntersectionObserver(([entry]) => {
+  document.body.classList.toggle("stuck", !entry.isIntersecting);
+  document.body.classList.remove("title-up");
+}).observe(sentinel);
+
 function titleDodge(tile) {
-  if (!title) return 0;
+  // Once the title is a bar at the top, nothing can cover it, so there's
+  // nothing to get out of the way of.
+  if (!title || document.body.classList.contains("stuck")) return 0;
   const float = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--float")) || 80;
 
   // Does this card land on the words at all? A card off to the right passes

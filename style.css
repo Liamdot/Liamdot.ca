@@ -48,13 +48,49 @@ body.title-up header {
   transform: translateY(calc(-1 * var(--dodge, 0px)));
 }
 
+/* Scrolled down, the name lifts out of the page and becomes a bar across the
+   top that everything else runs underneath.
+   The header itself stays exactly where it was and keeps its height (main.js
+   measures it into --header-height). That matters: if the page got shorter
+   when the bar appeared, the scroll position would shift, which would put
+   the header back, which would make the page taller again - and it would sit
+   there flickering. */
+.sentinel {
+  height: 1px;
+  margin-bottom: -1px;
+}
+
+body.stuck header {
+  height: var(--header-height);
+  transform: none;
+}
+
+body.stuck header h1 {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding: 9px max(20px, calc((100vw - 1000px) / 2 + 20px));
+  border-bottom: 1px solid #e6e0d2;
+  background: rgba(251, 248, 241, 0.92);
+  backdrop-filter: blur(8px);
+  font-size: 1.5rem;
+}
+
+body.stuck .intro {
+  visibility: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  header {
+  header,
+  header h1 {
     transition: none;
   }
 }
 
 header h1 {
+  transition: font-size 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
   margin: 0;
   font-size: 3.2rem;
   font-weight: 800;
