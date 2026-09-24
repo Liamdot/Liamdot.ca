@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Breadboard Baker - Liamdot</title>
+  <link rel="icon" href="../../logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../game.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="game-page">
+  <nav class="topbar">
+    <div class="crumbs">
+      <a class="home" href="../../"><img class="logo" src="../../logo.svg" alt=""><span class="home-long">Liamdot</span></a>
+      <span class="sep">/</span>
+      <span class="title">Breadboard Baker</span>
+    </div>
+
+    <div class="actions">
+      <button id="info-btn" aria-expanded="false" aria-controls="info-panel" aria-label="Info" title="Info">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <line x1="10" y1="9" x2="10" y2="14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="10" cy="5.9" r="1.2" fill="currentColor"/>
+        </svg>
+      </button>
+      <button id="fullscreen-btn" aria-label="Fullscreen" title="Fullscreen">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <path d="M3 7.5V3h4.5M12.5 3H17v4.5M17 12.5V17h-4.5M7.5 17H3v-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="info-panel" id="info-panel" hidden>
+      <h2>Breadboard Baker</h2>
+      <p class="meta">made September 2026</p>
+      <p>Build a circuit on a breadboard that knows how a breadboard works, and have it tell you what you've got wrong before the smoke does.</p>
+
+      <h3>How to use</h3>
+      <ul>
+        <li>Pick a part, click one hole, then click another &mdash; that's it placed</li>
+        <li>Chips go across the middle gap; click where you want pin 1</li>
+        <li>Click a button to press it; right-click anything to remove it</li>
+        <li>Select a resistor and press <strong>r</strong> to change its value</li>
+        <li>The rails are live: + is 5V, &minus; is ground</li>
+      </ul>
+
+      <h3>What it checks</h3>
+      <ul>
+        <li>LEDs with nothing to limit the current, and LEDs in backwards</li>
+        <li>Chips with no power or no ground</li>
+        <li>Inputs left floating &mdash; they read high, which hides the mistake</li>
+        <li>Two outputs driving the same clip, or an output wired to a rail</li>
+        <li>The rails shorted together</li>
+      </ul>
+
+      <h3>Updates</h3>
+      <ul>
+        <li><strong>v1.0</strong> &ndash; the board, seven chips, and the checker</li>
+      </ul>
+
+      <a class="more" href="../../">more stuff &rarr;</a>
+    </div>
+  </nav>
+
+  <main class="stage" id="stage">
+    <div class="toolbar">
+      <div class="palette" id="palette">
+        <span class="group-label">parts</span>
+        <button class="tool-btn" data-tool="pick">pick</button>
+        <button class="tool-btn" data-tool="wire">wire</button>
+        <button class="swatch" id="wire-colour" title="Wire colour"></button>
+        <button class="tool-btn" data-tool="resistor">resistor</button>
+        <button class="tool-btn" data-tool="led">LED</button>
+        <button class="tool-btn" data-tool="button">button</button>
+
+        <span class="group-label">chips</span>
+        <button class="tool-btn" data-tool="chip" data-chip="7400">7400</button>
+        <button class="tool-btn" data-tool="chip" data-chip="7402">7402</button>
+        <button class="tool-btn" data-tool="chip" data-chip="7404">7404</button>
+        <button class="tool-btn" data-tool="chip" data-chip="7408">7408</button>
+        <button class="tool-btn" data-tool="chip" data-chip="7432">7432</button>
+        <button class="tool-btn" data-tool="chip" data-chip="7486">7486</button>
+        <button class="tool-btn" data-tool="chip" data-chip="74138">74138</button>
+      </div>
+
+      <div class="right-tools">
+        <button class="tool-btn" id="check-btn">check my wiring</button>
+        <button class="tool-btn" id="image-btn" title="Save a picture of the board">picture</button>
+        <button class="tool-btn" id="clear-btn">clear</button>
+      </div>
+    </div>
+
+    <div class="work">
+      <div class="board-wrap">
+        <svg class="board" id="board" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="checks" id="checks" hidden></div>
+      </div>
+      <aside class="inspector" id="inspector"></aside>
+    </div>
+  </main>
+
+  <script src="../../nav.js"></script>
+  <script src="chips.js"></script>
+  <script src="circuit.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

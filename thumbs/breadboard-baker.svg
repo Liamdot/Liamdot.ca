@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#ded8cb"/>
+
+  <!-- the rails -->
+  <line x1="10" y1="12" x2="90" y2="12" stroke="#d94f4f" stroke-width="1.4"/>
+  <line x1="10" y1="88" x2="90" y2="88" stroke="#3f7ad9" stroke-width="1.4"/>
+
+  <!-- the holes, with the channel down the middle -->
+  <g fill="#b3aa97">
+    <g>
+      <rect x="10" y="9" width="4" height="4" rx="1"/><rect x="22" y="9" width="4" height="4" rx="1"/>
+      <rect x="34" y="9" width="4" height="4" rx="1"/><rect x="46" y="9" width="4" height="4" rx="1"/>
+      <rect x="58" y="9" width="4" height="4" rx="1"/><rect x="70" y="9" width="4" height="4" rx="1"/>
+      <rect x="82" y="9" width="4" height="4" rx="1"/>
+    </g>
+    <g>
+      <rect x="10" y="26" width="4" height="4" rx="1"/><rect x="22" y="26" width="4" height="4" rx="1"/>
+      <rect x="34" y="26" width="4" height="4" rx="1"/><rect x="46" y="26" width="4" height="4" rx="1"/>
+      <rect x="58" y="26" width="4" height="4" rx="1"/><rect x="70" y="26" width="4" height="4" rx="1"/>
+      <rect x="82" y="26" width="4" height="4" rx="1"/>
+      <rect x="10" y="36" width="4" height="4" rx="1"/><rect x="22" y="36" width="4" height="4" rx="1"/>
+      <rect x="34" y="36" width="4" height="4" rx="1"/><rect x="46" y="36" width="4" height="4" rx="1"/>
+      <rect x="58" y="36" width="4" height="4" rx="1"/><rect x="70" y="36" width="4" height="4" rx="1"/>
+      <rect x="82" y="36" width="4" height="4" rx="1"/>
+    </g>
+    <g>
+      <rect x="10" y="62" width="4" height="4" rx="1"/><rect x="22" y="62" width="4" height="4" rx="1"/>
+      <rect x="34" y="62" width="4" height="4" rx="1"/><rect x="46" y="62" width="4" height="4" rx="1"/>
+      <rect x="58" y="62" width="4" height="4" rx="1"/><rect x="70" y="62" width="4" height="4" rx="1"/>
+      <rect x="82" y="62" width="4" height="4" rx="1"/>
+      <rect x="10" y="72" width="4" height="4" rx="1"/><rect x="22" y="72" width="4" height="4" rx="1"/>
+      <rect x="34" y="72" width="4" height="4" rx="1"/><rect x="46" y="72" width="4" height="4" rx="1"/>
+      <rect x="58" y="72" width="4" height="4" rx="1"/><rect x="70" y="72" width="4" height="4" rx="1"/>
+      <rect x="82" y="72" width="4" height="4" rx="1"/>
+    </g>
+  </g>
+  <rect x="6" y="45" width="88" height="10" fill="#cdc6b6"/>
+
+  <!-- a chip across the gap -->
+  <rect x="26" y="41" width="40" height="18" rx="2" fill="#2a2a30"/>
+  <path d="M26 45a5 5 0 0 0 0 10Z" fill="#ded8cb"/>
+
+  <!-- a jumper, and an LED that's on -->
+  <path d="M18 12C18 26 74 22 74 40" fill="none" stroke="#e0a63a" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="78" cy="70" r="7" fill="#d94f4f" stroke="#fff2ec" stroke-width="2"/>
+</svg>

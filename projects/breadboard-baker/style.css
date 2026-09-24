@@ -1,0 +1,382 @@
+/* Styles just for Breadboard Baker. Loaded after style.css and game.css. */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  background: #16161a;
+  color: #f1ede4;
+}
+
+/* ---- toolbar ---- */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #2c2c33;
+  background: #1c1c21;
+}
+
+.palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.right-tools {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.group-label {
+  margin-right: 2px;
+  color: #55555f;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.group-label + .tool-btn {
+  margin-left: 0;
+}
+
+.tool-btn {
+  padding: 4px 11px;
+  border: 1.5px solid #3a3a44;
+  border-radius: 20px;
+  background: none;
+  color: #cfcbc2;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.tool-btn:hover {
+  border-color: #7ee08a;
+  color: #7ee08a;
+}
+
+.tool-btn.active {
+  border-color: #7ee08a;
+  background: #7ee08a;
+  color: #16161a;
+  font-weight: 700;
+}
+
+#check-btn.has-bad {
+  border-color: #ff8d82;
+  color: #ff8d82;
+}
+
+#check-btn.all-good {
+  border-color: #3f7a4a;
+  color: #7ee08a;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1.5px solid #3a3a44;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* ---- the work area ---- */
+
+.work {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  min-height: 0;
+  padding: 16px;
+  overflow: auto;
+}
+
+.board-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.board {
+  width: 100%;
+  max-height: 100%;
+}
+
+/* ---- the board itself ---- */
+
+.board .body {
+  fill: #ded8cb;
+  stroke: #c6bfae;
+}
+
+.board .channel {
+  fill: #cdc6b6;
+}
+
+.board .rail-line {
+  stroke-width: 1.5;
+}
+
+.board .rail-line.plus { stroke: #d94f4f; }
+.board .rail-line.minus { stroke: #3f7ad9; }
+
+.board .rail-label {
+  font: 700 13px Menlo, Consolas, "Courier New", monospace;
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
+
+.board .rail-label.plus { fill: #d94f4f; }
+.board .rail-label.minus { fill: #3f7ad9; }
+
+.board .mark {
+  fill: #8a8375;
+  font: 10px Menlo, Consolas, "Courier New", monospace;
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
+
+.board .hole {
+  fill: #b3aa97;
+  stroke: #9c937f;
+  stroke-width: 0.5;
+  cursor: pointer;
+}
+
+.board .hole:hover {
+  fill: #6f675a;
+}
+
+/* what each clip is doing, once there's power in it */
+.board .hole.high { fill: #d98a4f; }
+.board .hole.low { fill: #5f7f9c; }
+.board .hole.short { fill: #d94f4f; }
+.board .hole.same { stroke: #222; stroke-width: 1.5; }
+
+.board .pending {
+  fill: none;
+  stroke: #222;
+  stroke-width: 2;
+}
+
+/* ---- parts ---- */
+
+.board .part { cursor: pointer; }
+
+.board .jumper {
+  fill: none;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+
+.board .lead {
+  stroke: #9a9488;
+  stroke-width: 2;
+}
+
+.board .package {
+  fill: #d8c9a0;
+  stroke: #9a8c66;
+}
+
+.board .value {
+  fill: #4a463d;
+  font: 9px Menlo, Consolas, "Courier New", monospace;
+  text-anchor: middle;
+}
+
+.board .bulb {
+  stroke: #6b1f1f;
+  stroke-width: 1.4;
+}
+
+/* the glow, only once it's actually lit */
+.board .halo {
+  opacity: 0;
+}
+
+.board .led.lit .halo {
+  opacity: 0.35;
+}
+
+.board .led.lit .bulb {
+  stroke: #fff2ec;
+  stroke-width: 2;
+}
+
+.board .cap {
+  fill: #2c2c33;
+  stroke: #15151a;
+}
+
+.board .top {
+  fill: #6f6f7a;
+}
+
+.board .button.pressed .top {
+  fill: #7ee08a;
+}
+
+.board .dip {
+  fill: #2a2a30;
+  stroke: #15151a;
+}
+
+.board .notch {
+  fill: #16161a;
+}
+
+.board .leg {
+  fill: #b9b4a6;
+}
+
+.board .chip-name {
+  fill: #e7e3d8;
+  font: 700 11px Menlo, Consolas, "Courier New", monospace;
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
+
+.board .part.chosen .dip,
+.board .part.chosen .package,
+.board .part.chosen .cap {
+  stroke: #7ee08a;
+  stroke-width: 2;
+}
+
+.board .part.chosen .jumper {
+  stroke-dasharray: 6 4;
+}
+
+/* ---- the chip panel ---- */
+
+.inspector {
+  flex: none;
+  width: 260px;
+  padding: 14px;
+  border: 1px solid #2c2c33;
+  border-radius: 12px;
+  background: #1c1c21;
+  font-size: 0.85rem;
+}
+
+.inspector h2 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.inspector .sub {
+  color: #74747f;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.inspector .hint,
+.inspector .note {
+  margin: 10px 0 0;
+  color: #a5a19a;
+  line-height: 1.45;
+}
+
+.pinout {
+  width: 100%;
+  overflow: visible;
+}
+
+.pinout .dip { fill: #2a2a30; stroke: #15151a; }
+.pinout .notch { fill: #1c1c21; }
+.pinout .chip-name { fill: #e7e3d8; font: 700 13px Menlo, Consolas, monospace; dominant-baseline: middle; text-anchor: middle; }
+.pinout .pin { fill: #6f6f7a; }
+.pinout .pin.out { fill: #7ee08a; }
+.pinout .pin.power { fill: #d98a4f; }
+.pinout .pin.high { stroke: #d98a4f; stroke-width: 2; }
+.pinout .pin.low { stroke: #5f7f9c; stroke-width: 2; }
+.pinout .pin.floating { stroke: #74747f; stroke-width: 1; stroke-dasharray: 2 2; }
+.pinout .pin-num { fill: #74747f; font: 8px Menlo, Consolas, monospace; text-anchor: middle; }
+.pinout .pin-name { fill: #cfcbc2; font: 9px Menlo, Consolas, monospace; text-anchor: middle; }
+.pinout .pin-name.out { fill: #7ee08a; }
+.pinout .pin-name.power { fill: #d98a4f; }
+
+.legend {
+  margin: 12px 0 0;
+  color: #74747f;
+  font-size: 0.75rem;
+}
+
+.key {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin: 0 3px 0 8px;
+  border-radius: 2px;
+  background: #6f6f7a;
+}
+
+.key.out { background: #7ee08a; margin-left: 0; }
+.key.power { background: #d98a4f; }
+
+/* ---- the checks ---- */
+
+.checks {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 5;
+  max-height: 60%;
+  width: min(380px, calc(100% - 20px));
+  overflow-y: auto;
+  padding: 12px 14px;
+  border: 1.5px solid #2f2f38;
+  border-radius: 12px;
+  background: #1c1c21;
+  font-size: 0.85rem;
+}
+
+.checks[hidden] {
+  display: none;
+}
+
+.checks-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.close-btn {
+  padding: 0 6px;
+  border: none;
+  background: none;
+  color: #74747f;
+  font: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.checks .note {
+  margin: 8px 0 0;
+  padding-left: 12px;
+  border-left: 3px solid #3a3a44;
+  color: #cfcbc2;
+  line-height: 1.45;
+}
+
+.checks .note.bad { border-color: #ff8d82; }
+.checks .note.warn { border-color: #e0a63a; }
+.checks .note.good { border-color: #7ee08a; }
+
+@media (max-width: 860px) {
+  .work {
+    flex-direction: column;
+  }
+
+  .inspector {
+    width: auto;
+  }
+}
