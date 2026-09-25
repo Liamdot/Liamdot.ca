@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <rect width="100" height="100" fill="#ded8cb"/>
   <rect x="0" y="46" width="100" height="10" fill="#cdc6b6"/>
-  <line x1="8" y1="10" x2="92" y2="10" stroke="#d94f4f" stroke-width="1.4"/>
-  <line x1="8" y1="90" x2="92" y2="90" stroke="#3f7ad9" stroke-width="1.4"/>
+  <!-- the stripes sit outside their row of holes, as on the board itself -->
+  <line x1="10" y1="4" x2="90" y2="4" stroke="#d94f4f" stroke-width="1.4"/>
+  <line x1="10" y1="96" x2="90" y2="96" stroke="#3f7ad9" stroke-width="1.4"/>
   <g fill="#b3aa97">
     <rect x="12" y="8" width="4" height="4" rx="1"/>
     <rect x="24" y="8" width="4" height="4" rx="1"/>
