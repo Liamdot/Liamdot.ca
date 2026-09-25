@@ -70,6 +70,7 @@ let nextId = 1;
 let tool = "wire";
 let chipToPlace = "7400";
 let pending = null;        // the first leg of something being placed
+let moving = null;         // an end of something already placed, picked up
 let selected = null;
 let showChecks = false;
 
@@ -148,6 +149,17 @@ function boardSVG(state) {
   return svg;
 }
 
+// The little circles at each end. Clicking one picks that end up so it can
+// be put somewhere else, which is easier than deleting the whole thing and
+// starting again.
+function handles(part) {
+  return ["a", "b"].map((end) => {
+    const p = point(part[end]);
+    const held = moving && moving.id === part.id && moving.end === end ? " held" : "";
+    return `<circle class="grab${held}" data-part="${part.id}" data-end="${end}" cx="${p.x}" cy="${p.y}" r="6"/>`;
+  }).join("");
+}
+
 function partSVG(part, state) {
   const chosen = selected === part.id ? " chosen" : "";
 
@@ -182,7 +194,8 @@ function partSVG(part, state) {
     return `<g class="part wire${chosen}" data-part="${part.id}">
       <path class="jumper" d="M${a.x} ${a.y} Q ${mid.x} ${mid.y + sag} ${b.x} ${b.y}" stroke="${colour}"/>
       <circle class="end" cx="${a.x}" cy="${a.y}" r="3.5" fill="${colour}"/>
-      <circle class="end" cx="${b.x}" cy="${b.y}" r="3.5" fill="${colour}"/></g>`;
+      <circle class="end" cx="${b.x}" cy="${b.y}" r="3.5" fill="${colour}"/>
+      ${handles(part)}</g>`;
   }
 
   if (part.type === "resistor") {
@@ -193,7 +206,8 @@ function partSVG(part, state) {
       <rect x="-7" y="-6" width="3" height="12" fill="${b1}"/>
       <rect x="-2" y="-6" width="3" height="12" fill="${b2}"/>
       <rect x="3" y="-6" width="3" height="12" fill="${b3}"/>
-      <text class="value" x="0" y="-11" transform="rotate(${-angle})">${ohms(part.value)}&#8486;</text></g>`;
+      <text class="value" x="0" y="-11" transform="rotate(${-angle})">${ohms(part.value)}&#8486;</text>
+      </g><g class="part ${chosen}" data-part="${part.id}">${handles(part)}</g>`;
   }
 
   if (part.type === "led") {
@@ -202,17 +216,25 @@ function partSVG(part, state) {
     const colour = part.colour || "#d94f4f";
     // Round, with one side flattened - and the flat side is the cathode, the
     // leg that goes towards ground, which is the b end here.
+    //
+    // The flat is a chord, not a diameter: 6 across on a radius of 9 puts its
+    // ends at y = +/-sqrt(81 - 36), and leaves the bulb centred on the same
+    // point as its glow. Cutting it at the diameter would shift the bulb
+    // sideways from the halo.
+    const chord = Math.sqrt(81 - 36).toFixed(2);
     return `<g class="part led${lit}${chosen}" data-part="${part.id}" transform="translate(${mid.x} ${mid.y}) rotate(${angle})">
       <line class="lead" x1="${-half}" y1="0" x2="${half}" y2="0"/>
       <circle class="halo" cx="0" cy="0" r="15" fill="${colour}"/>
-      <path class="bulb" d="M6 -9 A9 9 0 1 0 6 9 Z" fill="${colour}"/></g>`;
+      <path class="bulb" d="M6 ${-chord} A9 9 0 1 0 6 ${chord} Z" fill="${colour}"/>
+      </g><g class="part ${chosen}" data-part="${part.id}">${handles(part)}</g>`;
   }
 
   if (part.type === "button") {
     return `<g class="part button${part.pressed ? " pressed" : ""}${chosen}" data-part="${part.id}">
       <line class="lead" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>
       <rect class="cap" x="${mid.x - 11}" y="${mid.y - 11}" width="22" height="22" rx="4"/>
-      <circle class="top" cx="${mid.x}" cy="${mid.y}" r="6"/></g>`;
+      <circle class="top" cx="${mid.x}" cy="${mid.y}" r="6"/>
+      ${handles(part)}</g>`;
   }
 
   return "";
@@ -349,8 +371,30 @@ function placeTwoLegged(hole) {
 }
 
 board.addEventListener("click", (e) => {
+  const grabEl = e.target.closest("[data-end]");
   const partEl = e.target.closest("[data-part]");
   const holeEl = e.target.closest("[data-hole]");
+
+  // Picking up an end, or putting down the one already in hand. Half-placed
+  // parts come first: if you're mid-way through a new one, an end is just a
+  // place to finish it.
+  if (grabEl && !pending) {
+    const id = Number(grabEl.dataset.part);
+    const end = grabEl.dataset.end;
+    moving = moving && moving.id === id && moving.end === end ? null : { id, end };
+    selected = id;
+    render();
+    return;
+  }
+
+  if (moving && holeEl) {
+    const part = parts.find((p) => p.id === moving.id);
+    const hole = holeFromKey(holeEl.dataset.hole);
+    if (part && hole) part[moving.end] = hole;
+    moving = null;
+    render();
+    return;
+  }
 
   // clicking a button presses it, wherever you are
   if (partEl) {
@@ -411,12 +455,16 @@ document.getElementById("clear-btn").addEventListener("click", () => {
   parts = [];
   selected = null;
   pending = null;
+  moving = null;
   render();
 });
 
 window.addEventListener("keydown", (e) => {
-  if (e.target.closest("input, textarea")) return;
-  if (e.key === "Escape") { pending = null; selected = null; render(); }
+  // what's focused, not what the event says: a key pressed with nothing
+  // focused arrives with the window as its target, which has no closest()
+  const focused = document.activeElement;
+  if (focused && focused.closest && focused.closest("input, textarea")) return;
+  if (e.key === "Escape") { pending = null; moving = null; selected = null; render(); }
   if ((e.key === "Delete" || e.key === "Backspace") && selected) {
     e.preventDefault();
     parts = parts.filter((p) => p.id !== selected);
