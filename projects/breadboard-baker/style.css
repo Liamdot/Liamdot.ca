@@ -121,6 +121,7 @@
 
 .board .rail-line {
   stroke-width: 1.5;
+  opacity: 0.45;
 }
 
 .board .rail-line.plus { stroke: #d94f4f; }

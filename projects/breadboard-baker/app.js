@@ -113,12 +113,15 @@ function boardSVG(state) {
   // the channel down the middle, and the rail stripes
   const channelY = Y.top[ROWS.length - 1] + PITCH - 6;
   svg += `<rect class="channel" x="8" y="${channelY}" width="${WIDTH - 16}" height="${CHANNEL - 8}" rx="3"/>`;
-  for (const [y, cls, label] of [
-    [Y.railPlusTop, "plus", "+"], [Y.railMinusTop, "minus", "−"],
-    [Y.railMinusBottom, "minus", "−"], [Y.railPlusBottom, "plus", "+"],
+  // The stripes run alongside their row of holes rather than through it, the
+  // way they do on a real board - the pair of rails ends up bracketed by
+  // them - and they start clear of the + and - marks so those stay readable.
+  for (const [y, cls, label, away] of [
+    [Y.railPlusTop, "plus", "+", -9], [Y.railMinusTop, "minus", "−", 9],
+    [Y.railMinusBottom, "minus", "−", -9], [Y.railPlusBottom, "plus", "+", 9],
   ]) {
-    svg += `<line class="rail-line ${cls}" x1="18" y1="${y}" x2="${WIDTH - 12}" y2="${y}"/>`
-      + `<text class="rail-label ${cls}" x="14" y="${y}">${label}</text>`;
+    svg += `<line class="rail-line ${cls}" x1="32" y1="${y + away}" x2="${WIDTH - 18}" y2="${y + away}"/>`
+      + `<text class="rail-label ${cls}" x="16" y="${y}">${label}</text>`;
   }
 
   // row letters and column numbers
