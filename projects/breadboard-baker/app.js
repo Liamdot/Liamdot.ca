@@ -120,8 +120,9 @@ function boardSVG(state) {
     [Y.railPlusTop, "plus", "+", -9], [Y.railMinusTop, "minus", "−", 9],
     [Y.railMinusBottom, "minus", "−", -9], [Y.railPlusBottom, "plus", "+", 9],
   ]) {
-    svg += `<line class="rail-line ${cls}" x1="32" y1="${y + away}" x2="${WIDTH - 18}" y2="${y + away}"/>`
-      + `<text class="rail-label ${cls}" x="16" y="${y}">${label}</text>`;
+    svg += `<line class="rail-line ${cls}" x1="32" y1="${y + away}" x2="${WIDTH - 32}" y2="${y + away}"/>`
+      + `<text class="rail-label ${cls}" x="16" y="${y}">${label}</text>`
+      + `<text class="rail-label ${cls}" x="${WIDTH - 16}" y="${y}">${label}</text>`;
   }
 
   // row letters and column numbers
