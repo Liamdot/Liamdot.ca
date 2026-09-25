@@ -408,7 +408,7 @@ board.addEventListener("click", (e) => {
       render();
       return;
     }
-    if (tool === "pick") {
+    if (tool === "select") {
       selected = part ? part.id : null;
       render();
       return;
@@ -422,7 +422,7 @@ board.addEventListener("click", (e) => {
   if (tool === "chip") {
     if (hole.kind === "rail") return;
     placeChip(hole.col);
-  } else if (tool !== "pick") {
+  } else if (tool !== "select") {
     placeTwoLegged(hole);
   }
   render();
