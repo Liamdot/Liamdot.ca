@@ -1,0 +1,208 @@
+/* Styles just for Bloom. Loaded after the site's style.css and game.css. */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  background: #16161a;
+  color: #f1ede4;
+}
+
+/* ---- the bar across the top ---- */
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  align-items: center;
+  padding: 9px 14px;
+  border-bottom: 1px solid #2c2c33;
+}
+
+.stat {
+  color: #74747f;
+  font-size: 0.8rem;
+}
+
+.stat strong {
+  margin-left: 4px;
+  color: #f1ede4;
+  font-variant-numeric: tabular-nums;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.pill {
+  padding: 4px 12px;
+  border: 1.5px solid #3a3a44;
+  border-radius: 20px;
+  background: none;
+  color: #cfcbc2;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.pill:hover {
+  border-color: #7ee08a;
+  color: #7ee08a;
+}
+
+.pill.strong {
+  border-color: #7ee08a;
+  background: #7ee08a;
+  color: #16161a;
+  font-weight: 700;
+}
+
+.pill.strong:hover {
+  background: #9bf0a5;
+  color: #16161a;
+}
+
+/* ---- the field ---- */
+
+.play {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.field {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.hint,
+.message {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 42px;
+  margin: 0;
+  color: #55555f;
+  font-size: 0.9rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+.message {
+  bottom: 74px;
+  color: #cfcbc2;
+  font-size: 1rem;
+}
+
+.message.good { color: #7ee08a; }
+.message.bad { color: #ff8d82; }
+
+.again {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.hint[hidden],
+.message[hidden],
+.again[hidden] {
+  display: none;
+}
+
+/* ---- the shop ---- */
+
+.shop {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(330px, 92%);
+  padding: 16px;
+  overflow-y: auto;
+  border-left: 1px solid #2c2c33;
+  background: #1c1c21;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shop.open {
+  transform: none;
+}
+
+.shop h2 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.shop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.buy {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  padding: 10px 12px;
+  border: 1.5px solid #2f2f38;
+  border-radius: 10px;
+  background: none;
+  color: #cfcbc2;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.buy.afford {
+  border-color: #3f7a4a;
+}
+
+.buy.afford:hover {
+  border-color: #7ee08a;
+  background: rgba(126, 224, 138, 0.08);
+}
+
+.buy:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.buy-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.buy-cost {
+  color: #f2c94c;
+  font-size: 0.8rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.buy-note {
+  grid-column: 1 / -1;
+  color: #74747f;
+  font-size: 0.78rem;
+}
+
+.pips {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  color: #3f7a4a;
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+}
+
+.buy.maxed .pips {
+  color: #7ee08a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop {
+    transition: none;
+  }
+}

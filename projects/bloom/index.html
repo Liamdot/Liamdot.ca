@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bloom - Liamdot</title>
+  <link rel="icon" href="../../logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../game.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="game-page">
+  <nav class="topbar">
+    <div class="crumbs">
+      <a class="home" href="../../"><img class="logo" src="../../logo.svg" alt=""><span class="home-long">Liamdot</span></a>
+      <span class="sep">/</span>
+      <span class="title">Bloom</span>
+    </div>
+
+    <div class="actions">
+      <button id="info-btn" aria-expanded="false" aria-controls="info-panel" aria-label="Info" title="Info">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <line x1="10" y1="9" x2="10" y2="14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="10" cy="5.9" r="1.2" fill="currentColor"/>
+        </svg>
+      </button>
+      <button id="fullscreen-btn" aria-label="Fullscreen" title="Fullscreen">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <path d="M3 7.5V3h4.5M12.5 3H17v4.5M17 12.5V17h-4.5M7.5 17H3v-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="info-panel" id="info-panel" hidden>
+      <h2>Bloom</h2>
+      <p class="meta">made September 2026</p>
+      <p>One click opens one bloom. Everything the bloom touches opens too, and so on, for as long as it keeps finding something.</p>
+
+      <h3>How to play</h3>
+      <ul>
+        <li>Click once, anywhere &mdash; timing and place are the whole decision</li>
+        <li>Open enough dots to clear the level</li>
+        <li>Every dot pays petals; petals buy permanent upgrades</li>
+        <li>Gold pays five, blue opens slowly but wider, purple throws off two more blooms</li>
+        <li>A long chain slows time down so you can watch it happen</li>
+      </ul>
+
+      <h3>Updates</h3>
+      <ul>
+        <li><strong>v1.0</strong> &ndash; the chain, the shop, and the noise it makes</li>
+      </ul>
+
+      <a class="more" href="../../">more stuff &rarr;</a>
+    </div>
+  </nav>
+
+  <main class="stage" id="stage">
+    <header class="bar">
+      <span class="stat">level <strong id="level">1</strong></span>
+      <span class="stat">opened <strong id="goal">0 / 0</strong></span>
+      <span class="stat">petals <strong id="petals">0</strong></span>
+      <span class="stat">best chain <strong id="best">0</strong></span>
+      <span class="spacer"></span>
+      <button class="pill" id="sound-btn">sound on</button>
+      <button class="pill" id="shop-btn" aria-expanded="false" aria-controls="shop">shop</button>
+    </header>
+
+    <div class="play">
+      <canvas class="field" id="field"></canvas>
+      <p class="hint" id="hint">click anywhere</p>
+      <p class="message" id="message" hidden></p>
+      <button class="pill strong again" id="again" hidden>next level</button>
+
+      <aside class="shop" id="shop">
+        <h2>Petals well spent</h2>
+        <div class="shop-list" id="shop-list"></div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="../../nav.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
