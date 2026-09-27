@@ -1,16 +1,19 @@
 // Bloom
 // One click. Everything it touches opens, and everything that opens touches
-// something else. Clear the round, take an upgrade, go again - until a round
-// beats you and the whole run goes with it.
+// something else. It starts pitiful - a dozen dots, a bloom the size of a
+// coin - and ends with half the field going up at once.
 //
-//   1. The run     - rounds, quotas, and what you've picked up
-//   2. The world   - dots drifting about
-//   3. Blooms      - the chain reaction itself
-//   4. Sound       - a note per link, climbing
-//   5. Feel        - particles, slow motion, the numbers that float up
-//   6. Upgrades    - the draft, three at a time
-//   7. Drawing     - all of it, once a frame
-//   8. Running     - the loop, the clicks, the saving
+// Each go pays pollen. Pollen buys upgrades. The upgrades are the game.
+//
+//   1. What's saved  - pollen, upgrades, records
+//   2. The shop      - everything you can buy, and what it does
+//   3. The field     - dots, and which of them are worth anything
+//   4. Blooms        - the chain reaction itself
+//   5. Scoring       - the multiplier that runs away with itself
+//   6. Sound         - a note per link, climbing
+//   7. Feel          - particles, slow motion, floating numbers
+//   8. Drawing       - all of it, once a frame
+//   9. Running       - the go, the shop, what there is to chase
 
 const SAVE_KEY = "bloom";
 
@@ -20,73 +23,125 @@ const ctx = canvas.getContext("2d");
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 const now = () => performance.now() / 1000;
+const commas = (n) => Math.round(n).toLocaleString();
 
 // ===========================================================================
-// 1. The run
+// 1. What's saved
 // ===========================================================================
 
-let round = 1;
-let opened = 0;            // this round
-let total = 0;             // this run
-let score = 0;             // this run, with multipliers
-let roundScore = 0;
-let quota = 0;
-let clicksLeft = 1;
-let phase = "ready";       // ready, going, offering, over
-let combo = 0;
-let bestChain = 0;
-let held = {};             // upgrade id -> how many of it you've taken
-let offer = [];            // the three on the table
+const save = {
+  pollen: 0,          // what there is to spend
+  levels: {},         // upgrade id -> how many bought
+  goes: 0,
+  bestChain: 0,
+  bestGo: 0,
+};
 
-const record = { runs: 0, bestRound: 1, bestChain: 0, bestTotal: 0, bestScore: 0 };
+const lvl = (id) => save.levels[id] || 0;
 
-const have = (id) => held[id] || 0;
+// ===========================================================================
+// 2. The shop
+// ===========================================================================
+//
+// Costs climb steeply, so each one is a decision - and every upgrade shows
+// the number it moves, so you can see what you're buying.
 
-// The chain pays flat until it gets going, and then every further link is
-// worth more than the last. Twenty links in, a plain dot is paying five
-// times what the first one did - which is the whole reason to keep watching.
-const MULT_FROM = () => Math.max(2, 5 - have("early"));
-const MULT_STEP = () => 0.25 + have("compound") * 0.12;
+const SHOP = [
+  {
+    group: "The field",
+    items: [
+      { id: "seed", name: "More dots", note: "four more dots out there", cost: 12, growth: 1.29, most: 90,
+        shows: () => `${fieldSize()} dots` },
+      { id: "chisel", name: "Fewer stones", note: "stones never open - clear them out", cost: 22, growth: 1.34, most: 10,
+        shows: () => `${Math.round(stoneShare() * 100)}% stone` },
+      { id: "gold", name: "Gold dots", note: "worth five times a plain one", cost: 70, growth: 1.55, most: 16,
+        shows: () => `${Math.round(chanceOf("gold") * 100)}% gold` },
+      { id: "heavy", name: "Heavy dots", note: "slow to open, but enormous", cost: 220, growth: 1.6, most: 14,
+        shows: () => `${Math.round(chanceOf("heavy") * 100)}% heavy` },
+      { id: "splitter", name: "Splitters", note: "throw off two more blooms each", cost: 400, growth: 1.65, most: 14,
+        shows: () => `${Math.round(chanceOf("splitter") * 100)}% splitter` },
+    ],
+  },
+  {
+    group: "The bloom",
+    items: [
+      { id: "wide", name: "Wider bloom", note: "every bloom reaches further", cost: 15, growth: 1.3, most: 80,
+        shows: () => `${Math.round(reach("plain", 0, false))} across` },
+      { id: "hold", name: "Slower to close", note: "stays open longer, so it catches more", cost: 45, growth: 1.4, most: 30,
+        shows: () => `${holdTime().toFixed(2)}s open` },
+      { id: "lucky", name: "Bigger first bloom", note: "the one you actually click", cost: 160, growth: 1.55, most: 12,
+        shows: () => `+${lvl("lucky") * 15}% on the first` },
+      { id: "click", name: "Another click", note: "a second go at the same field", cost: 900, growth: 3.4, most: 5,
+        shows: () => `${1 + lvl("click")} clicks` },
+    ],
+  },
+  {
+    group: "The chain",
+    items: [
+      { id: "step", name: "Steeper multiplier", note: "each link past the start pays more", cost: 60, growth: 1.46, most: 40,
+        shows: () => `+${multStep().toFixed(2)} a link` },
+      { id: "early", name: "Earlier multiplier", note: "it starts climbing sooner", cost: 300, growth: 2.1, most: 4,
+        shows: () => `from link ${multFrom()}` },
+      { id: "curve", name: "Runaway multiplier", note: "the longer it runs, the faster it climbs", cost: 500, growth: 1.95, most: 25,
+        shows: () => `×${multiplier(30).toFixed(1)} at 30 links` },
+      { id: "slow", name: "Longer slow motion", note: "more time to watch it happen", cost: 120, growth: 1.5, most: 8,
+        shows: () => `${(0.55 + lvl("slow") * 0.3).toFixed(1)}s` },
+    ],
+  },
+  {
+    group: "Tricks",
+    items: [
+      { id: "echo", name: "Echo", note: "dots sometimes bloom twice over", cost: 350, growth: 1.8, most: 10,
+        shows: () => `${Math.round(Math.min(lvl("echo") * 0.12, 0.8) * 100)}% twice` },
+      { id: "magnet", name: "Magnetism", note: "dots drift towards anything open", cost: 420, growth: 1.8, most: 6,
+        shows: () => (lvl("magnet") ? `pull ${lvl("magnet")}` : "off") },
+      { id: "momentum", name: "Momentum", note: "every link makes the next bloom wider", cost: 650, growth: 1.9, most: 12,
+        shows: () => `+${lvl("momentum") * 2}% a link` },
+      { id: "spark", name: "Spark", note: "every seventh link opens somewhere else entirely", cost: 800, growth: 2, most: 5,
+        shows: () => (lvl("spark") ? `${lvl("spark")} at a time` : "off") },
+      { id: "pollen", name: "Fertiliser", note: "everything pays more pollen", cost: 200, growth: 1.62, most: 40,
+        shows: () => `+${lvl("pollen") * 10}% pollen` },
+    ],
+  },
+];
 
-// Not a straight line: the further a chain goes the faster the multiplier
-// climbs, so the last few links of a long one are worth absurd amounts and
-// the numbers really take off.
-function multiplier(links) {
-  const over = Math.max(0, links - MULT_FROM());
-  return 1 + over * MULT_STEP() + over * over * 0.012;
+const ALL = SHOP.flatMap((group) => group.items);
+const itemOf = (id) => ALL.find((one) => one.id === id);
+const costOf = (item) => Math.round(item.cost * item.growth ** lvl(item.id));
+
+function buy(id) {
+  const item = itemOf(id);
+  if (!item || lvl(id) >= item.most) return;
+  const cost = costOf(item);
+  if (save.pollen < cost) return;
+  save.pollen -= cost;
+  save.levels[id] = lvl(id) + 1;
+  store();
+  showShop();
 }
 
-// Rounds get bigger, and a growing share of what's out there is stone, so
-// the dots that actually chain get further and further apart.
-const fieldSize = () => Math.round(26 + round * 3.6 + have("seed") * 7);
-// Stone climbs steeply on purpose. The field keeps growing, so without this
-// the dots that can chain would get denser every round and a good run would
-// never end - measured, and it didn't.
-const stoneShare = () => Math.max(0, Math.min(0.05 * (round - 2) - have("chisel") * 0.08, 0.8));
-
-// The quota only ever counts dots that can open, and it's worked out from
-// how many of those the round actually laid down.
-function quotaFor(live) {
-  if (round === 1) return 4;        // the first two rounds are an on-ramp
-  if (round === 2) return 6;
-  const share = Math.min(0.2 + round * 0.008, 0.62) * (1 - have("mercy") * 0.08);
-  return Math.max(2, Math.round(live * share));
-}
-
 // ===========================================================================
-// 2. The world
+// 3. The field
 // ===========================================================================
 
 const KINDS = {
   plain: { colour: "#7ee08a", worth: 10, size: 9 },
-  // Stones never open. They're what stops the game running away with itself:
-  // a field with more dots in it chains more easily, so without something
-  // thinning the ones that count, every late round would clear itself.
-  stone: { colour: "#4a4a55", worth: 0, size: 10, dead: true, chance: () => stoneShare() },
-  gold: { colour: "#f2c94c", worth: 50, size: 9, chance: () => 0.04 + have("gold") * 0.06 },
-  heavy: { colour: "#6fc3df", worth: 20, size: 13, slow: true, chance: () => have("heavy") * 0.08 },
-  splitter: { colour: "#d98ae0", worth: 30, size: 8, splits: true, chance: () => have("split") * 0.08 },
+  // Stones never open. You start with a field half full of them and buy them
+  // away, which is the first thing that makes the chains take off.
+  stone: { colour: "#4a4a55", worth: 0, size: 10, dead: true },
+  gold: { colour: "#f2c94c", worth: 50, size: 9 },
+  heavy: { colour: "#6fc3df", worth: 20, size: 13, slow: true },
+  splitter: { colour: "#d98ae0", worth: 30, size: 8, splits: true },
 };
+
+const fieldSize = () => 16 + lvl("seed") * 4;
+const stoneShare = () => Math.max(0, 0.35 - lvl("chisel") * 0.035);
+
+const chanceOf = (kind) => ({
+  gold: lvl("gold") * 0.02,
+  heavy: lvl("heavy") * 0.022,
+  splitter: lvl("splitter") * 0.02,
+}[kind] || 0);
 
 let dots = [];
 let blooms = [];
@@ -95,17 +150,23 @@ let floaters = [];
 let slowUntil = 0;
 let shake = 0;
 let barDirty = false;
-let missed = false;
+
+let phase = "ready";       // ready, going, done
+let clicksLeft = 1;
+let combo = 0;
+let bestChain = 0;
+let opened = 0;
+let earned = 0;            // pollen this go
 
 function pickKind() {
-  for (const [name, kind] of Object.entries(KINDS)) {
-    if (!kind.chance) continue;
-    if (Math.random() < kind.chance()) return name;
+  if (Math.random() < stoneShare()) return "stone";
+  for (const kind of ["gold", "heavy", "splitter"]) {
+    if (Math.random() < chanceOf(kind)) return kind;
   }
   return "plain";
 }
 
-function startRound() {
+function newGo() {
   const width = canvas.clientWidth;
   const height = canvas.clientHeight;
   dots = [];
@@ -113,15 +174,15 @@ function startRound() {
   sparks = [];
   floaters = [];
   opened = 0;
-  roundScore = 0;
+  earned = 0;
   combo = 0;
-  missed = false;
-  clicksLeft = 1 + have("click");
+  bestChain = 0;
+  clicksLeft = 1 + lvl("click");
   phase = "ready";
 
   for (let i = 0; i < fieldSize(); i++) {
     const kind = pickKind();
-    const speed = rand(24, 54) * (KINDS[kind].slow ? 0.6 : 1);
+    const speed = rand(22, 50) * (KINDS[kind].slow ? 0.6 : 1);
     const angle = rand(0, Math.PI * 2);
     dots.push({
       x: rand(40, width - 40),
@@ -133,41 +194,26 @@ function startRound() {
       wobble: rand(0, Math.PI * 2),
     });
   }
-
-  quota = quotaFor(dots.filter((dot) => !KINDS[dot.kind].dead).length);
+  hideShop();
   showBar();
   draw();
 }
 
-function newRun() {
-  round = 1;
-  total = 0;
-  score = 0;
-  bestChain = 0;
-  held = {};
-  phase = "ready";
-  document.getElementById("offer").hidden = true;   // get the panel out of the way
-  startRound();
-  showHeld();
-}
-
 // ===========================================================================
-// 3. Blooms
+// 4. Blooms
 // ===========================================================================
 
-const GROW = 0.55;
-const HOLD = 0.5;
-const CLOSE = 0.75;
+const GROW = 0.5;
+const CLOSE = 0.7;
 
-const holdTime = () => HOLD + have("linger") * 0.2;
+const holdTime = () => 0.35 + lvl("hold") * 0.08;
 
-// How wide a bloom opens. Every width upgrade lands here, including the ones
-// that only apply deep into a chain.
+// Everything that makes a bloom bigger lands here.
 function reach(kind, depth, first) {
-  let wide = 105 * (1 + have("wide") * 0.12);
+  let wide = 52 + lvl("wide") * 5;
   if (kind === "heavy") wide *= 1.45;
-  if (first) wide *= 1 + have("lucky") * 0.3;
-  if (have("momentum")) wide *= 1 + Math.min(depth * 0.03 * have("momentum"), 0.6);
+  if (first) wide *= 1 + lvl("lucky") * 0.15;
+  if (lvl("momentum")) wide *= 1 + Math.min(depth * 0.02 * lvl("momentum"), 1.5);
   return wide;
 }
 
@@ -204,38 +250,6 @@ function radiusOf(bloom) {
   return bloom.max * (1 - t * t);                    // ease in on the way back
 }
 
-function catchDot(bloom, index) {
-  const dot = dots[index];
-  dots.splice(index, 1);
-  opened++;
-  total++;
-  combo++;
-  bestChain = Math.max(bestChain, combo);
-
-  open(dot.x, dot.y, dot.kind, bloom.depth + 1);
-  if (have("echo") && Math.random() < 0.25 * have("echo")) {
-    open(dot.x, dot.y, "plain", bloom.depth + 1);    // it opens twice
-  }
-  if (have("spark") && combo % 7 === 0 && dots.length) {
-    const far = pick(dots);
-    open(far.x, far.y, "plain", bloom.depth + 1);    // and somewhere else entirely
-  }
-
-  const mult = multiplier(combo);
-  const paid = Math.max(1, Math.round(KINDS[dot.kind].worth * mult));
-  score += paid;
-  roundScore += paid;
-
-  burst(dot.x, dot.y, KINDS[dot.kind].colour, dot.kind === "gold" ? 26 : 14);
-  float(dot.x, dot.y, `+${paid}`, mult > 1 ? "#f2c94c" : KINDS[dot.kind].colour);
-  note(combo);
-  barDirty = true;
-  shake = Math.min(shake + (dot.kind === "gold" ? 5 : 2.2), 14);
-
-  const from = 6 - have("fuse");
-  if (combo >= from) slowUntil = now() + 0.55 + have("fuse") * 0.3;
-}
-
 function stepBlooms(dt) {
   for (const bloom of blooms) {
     bloom.age += dt;
@@ -247,15 +261,14 @@ function stepBlooms(dt) {
     if (bloom.age > bloom.life - CLOSE * 0.5) continue;   // closing blooms don't catch
     for (let i = dots.length - 1; i >= 0; i--) {
       const dot = dots[i];
-      if (KINDS[dot.kind].dead) continue;           // a stone just sits there
+      if (KINDS[dot.kind].dead) continue;                 // a stone just sits there
       if (Math.hypot(dot.x - bloom.x, dot.y - bloom.y) <= bloom.r + dot.r) catchDot(bloom, i);
     }
   }
 }
 
-// Dots lean towards whatever is open, if you've taken the upgrade for it.
 function pullDots(dt) {
-  if (!have("magnet") || !blooms.length) return;
+  if (!lvl("magnet") || !blooms.length) return;
   for (const dot of dots) {
     let closest = null;
     let near = Infinity;
@@ -263,19 +276,63 @@ function pullDots(dt) {
       const gap = Math.hypot(dot.x - bloom.x, dot.y - bloom.y);
       if (gap < near) { near = gap; closest = bloom; }
     }
-    if (!closest || near > 260) continue;
-    const pull = 40 * have("magnet") * dt;
+    if (!closest || near > 300) continue;
+    const pull = 34 * lvl("magnet") * dt;
     dot.vx += ((closest.x - dot.x) / near) * pull;
     dot.vy += ((closest.y - dot.y) / near) * pull;
   }
 }
 
 // ===========================================================================
-// 4. Sound
+// 5. Scoring
 // ===========================================================================
 //
-// One note per link, climbing a pentatonic scale, so a long chain plays a
-// little tune that goes up and up. This is most of the satisfaction.
+// The chain pays flat until it gets going, then every further link is worth
+// more than the last - and the climb itself steepens, so the end of a long
+// chain is where the pollen is.
+
+const multFrom = () => Math.max(2, 6 - lvl("early"));
+const multStep = () => 0.12 + lvl("step") * 0.06;
+const multCurve = () => lvl("curve") * 0.004;
+
+function multiplier(links) {
+  const over = Math.max(0, links - multFrom());
+  return 1 + over * multStep() + over * over * multCurve();
+}
+
+function catchDot(bloom, index) {
+  const dot = dots[index];
+  dots.splice(index, 1);
+  opened++;
+  combo++;
+  bestChain = Math.max(bestChain, combo);
+
+  const mult = multiplier(combo);
+  const paid = Math.max(1, Math.round(KINDS[dot.kind].worth * mult * (1 + lvl("pollen") * 0.1)));
+  earned += paid;
+
+  open(dot.x, dot.y, dot.kind, bloom.depth + 1);
+  if (lvl("echo") && Math.random() < Math.min(lvl("echo") * 0.12, 0.8)) {
+    open(dot.x, dot.y, "plain", bloom.depth + 1);
+  }
+  if (lvl("spark") && combo % 7 === 0) {
+    for (let i = 0; i < lvl("spark") && dots.length; i++) {
+      const far = pick(dots);
+      if (!KINDS[far.kind].dead) open(far.x, far.y, "plain", bloom.depth + 1);
+    }
+  }
+
+  burst(dot.x, dot.y, KINDS[dot.kind].colour, dot.kind === "gold" ? 26 : 14);
+  float(dot.x, dot.y, `+${commas(paid)}`, mult > 1.05 ? "#f2c94c" : KINDS[dot.kind].colour);
+  note(combo);
+  barDirty = true;
+  shake = Math.min(shake + (dot.kind === "gold" ? 5 : 2.2), 14);
+  if (combo >= multFrom() + 2) slowUntil = now() + 0.55 + lvl("slow") * 0.3;
+}
+
+// ===========================================================================
+// 6. Sound
+// ===========================================================================
 
 let audio = null;
 let sound = true;
@@ -315,7 +372,7 @@ const thud = () => tone((osc, gain, at) => {
 });
 
 // ===========================================================================
-// 5. Feel
+// 7. Feel
 // ===========================================================================
 
 function burst(x, y, colour, count) {
@@ -355,8 +412,8 @@ function stepFeel(dt) {
 }
 
 const WORDS = [
-  [3, "nice"], [5, "lovely"], [8, "chain!"], [12, "unstoppable"],
-  [16, "absurd"], [22, "ludicrous"], [30, "stop it"], [40, "you monster"],
+  [4, "nice"], [8, "lovely"], [14, "chain!"], [22, "unstoppable"],
+  [32, "absurd"], [45, "ludicrous"], [60, "stop it"], [80, "you monster"],
 ];
 
 const wordFor = (n) => {
@@ -366,54 +423,7 @@ const wordFor = (n) => {
 };
 
 // ===========================================================================
-// 6. Upgrades
-// ===========================================================================
-//
-// Taken three at a time between rounds, kept for the run, gone when it ends.
-
-const UPGRADES = [
-  { id: "wide", name: "Wider bloom", note: "every bloom opens 12% further", most: 6 },
-  { id: "linger", name: "Slow to close", note: "blooms stay open a fifth of a second longer", most: 5 },
-  { id: "seed", name: "Seeded field", note: "seven more dots every round", most: 5 },
-  { id: "click", name: "Another click", note: "one more go at starting a chain", most: 2 },
-  { id: "gold", name: "Golden touch", note: "far more gold dots, worth five each", most: 4 },
-  { id: "split", name: "Split happens", note: "more purple dots, which throw off two blooms", most: 4 },
-  { id: "heavy", name: "Heavy weather", note: "more blue dots: slow to open, but huge", most: 4 },
-  { id: "echo", name: "Echo", note: "a quarter of dots bloom twice over", most: 3 },
-  { id: "magnet", name: "Magnetism", note: "dots drift towards anything open", most: 3 },
-  { id: "momentum", name: "Momentum", note: "every link makes the next bloom wider", most: 3 },
-  { id: "spark", name: "Spark", note: "every seventh link opens somewhere else entirely", most: 2 },
-  { id: "fuse", name: "Long fuse", note: "slow motion starts sooner and lasts longer", most: 3 },
-  { id: "lucky", name: "Lucky start", note: "the bloom you click is 30% wider", most: 3 },
-  { id: "mercy", name: "Kind quota", note: "every round asks for 8% fewer", most: 3 },
-  { id: "chisel", name: "Chisel", note: "fewer grey stones, which never open", most: 4 },
-  { id: "compound", name: "Compound interest", note: "the chain multiplier climbs faster", most: 4 },
-  { id: "early", name: "Quick off the mark", note: "the multiplier starts three links sooner", most: 3 },
-];
-
-function offerUpgrades() {
-  const room = UPGRADES.filter((one) => have(one.id) < one.most);
-  offer = [];
-  while (offer.length < 3 && offer.length < room.length) {
-    const one = pick(room);
-    if (!offer.includes(one)) offer.push(one);
-  }
-  phase = "offering";
-  showOffer();
-}
-
-function take(id) {
-  if (phase !== "offering") return;
-  held[id] = have(id) + 1;
-  round++;
-  offer = [];
-  document.getElementById("offer").hidden = true;
-  showHeld();
-  startRound();
-}
-
-// ===========================================================================
-// 7. Drawing
+// 8. Drawing
 // ===========================================================================
 
 function fit() {
@@ -435,7 +445,7 @@ function draw() {
     ctx.beginPath();
     ctx.arc(dot.x, dot.y, dot.r + wobble, 0, Math.PI * 2);
     ctx.fillStyle = KINDS[dot.kind].colour;
-    ctx.globalAlpha = 0.9;
+    ctx.globalAlpha = KINDS[dot.kind].dead ? 0.5 : 0.9;
     ctx.fill();
     ctx.globalAlpha = 1;
     if (dot.kind === "splitter") {
@@ -478,19 +488,17 @@ function draw() {
 
   if (combo > 1 && phase === "going") {
     const mult = multiplier(combo);
-    const size = Math.min(34 + combo * 2.5, 92);
+    const size = Math.min(34 + combo * 2.2, 92);
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = "#f1ede4";
     ctx.font = `800 ${size}px ui-sans-serif, system-ui, sans-serif`;
     ctx.fillText(combo, width / 2, height / 2);
 
-    // The multiplier sits clear of the chain count, however big either gets,
-    // and drops its decimals once it's too big for them to matter.
-    if (mult > 1) {
+    if (mult > 1.05) {
       const shown = mult >= 10 ? Math.round(mult) : mult.toFixed(1);
       ctx.fillStyle = "#f2c94c";
       ctx.font = `800 ${Math.min(20 + mult * 1.6, 46)}px ui-sans-serif, system-ui, sans-serif`;
-      ctx.fillText(`\u00d7${shown}`, width / 2, height / 2 + size * 0.62);
+      ctx.fillText(`×${shown}`, width / 2, height / 2 + size * 0.62);
     }
 
     const word = wordFor(combo);
@@ -506,95 +514,93 @@ function draw() {
 }
 
 // ===========================================================================
-// 8. Running
+// 9. Running
 // ===========================================================================
 
 const bar = {
-  round: document.getElementById("round"),
-  quota: document.getElementById("quota"),
+  pollen: document.getElementById("pollen"),
+  thisGo: document.getElementById("this-go"),
   chain: document.getElementById("chain"),
-  score: document.getElementById("score"),
-  record: document.getElementById("record"),
+  best: document.getElementById("best"),
 };
 
 function showBar() {
-  bar.round.textContent = round;
-  bar.quota.textContent = `${opened} / ${quota}`;
-  bar.quota.parentElement.classList.toggle("met", opened >= quota);
-  bar.chain.textContent = bestChain;
-  bar.score.textContent = score.toLocaleString();
-  bar.record.textContent = `round ${record.bestRound} · ${record.bestScore.toLocaleString()}`;
+  bar.pollen.textContent = commas(save.pollen);
+  bar.thisGo.textContent = commas(earned);
+  bar.chain.textContent = combo > 1 ? combo : bestChain;
+  bar.best.textContent = `${commas(save.bestGo)} · chain ${save.bestChain}`;
 
   const hint = document.getElementById("hint");
   hint.hidden = phase !== "ready";
-  hint.textContent = missed
-    ? "nothing there - have another go"
-    : clicksLeft > 1 ? `click anywhere (${clicksLeft} clicks)` : "click anywhere";
+  hint.textContent = clicksLeft > 1 ? `click anywhere (${clicksLeft} clicks left)` : "click anywhere";
 }
 
-function showHeld() {
-  const list = document.getElementById("held");
-  const mine = UPGRADES.filter((one) => have(one.id));
-  list.replaceChildren(...mine.map((one) => {
-    const tag = document.createElement("span");
-    tag.className = "tag";
-    tag.title = one.note;
-    tag.textContent = have(one.id) > 1 ? `${one.name} ×${have(one.id)}` : one.name;
-    return tag;
-  }));
-  list.hidden = !mine.length;
-}
+// Something to chase, so the numbers mean something. The next one along is
+// always in view.
+const MILESTONES = [
+  [5, "a chain of five"],
+  [12, "a chain of twelve"],
+  [25, "a chain of twenty-five"],
+  [50, "half a hundred"],
+  [100, "a chain of a hundred"],
+  [200, "a chain of two hundred"],
+  [350, "a chain of three hundred and fifty"],
+  [500, "a chain of five hundred"],
+];
 
-function showOffer() {
-  const panel = document.getElementById("offer");
+const nextMilestone = () => MILESTONES.find(([n]) => save.bestChain < n);
+
+function showShop() {
+  const panel = document.getElementById("shop");
+  const next = nextMilestone();
+  const bestNow = earned > 0 && earned >= save.bestGo;
+
+  panel.innerHTML = `
+    <div class="shop-head">
+      <div>
+        <h2>${commas(save.pollen)} pollen</h2>
+        <p class="sub">${earned > 0
+          ? `that go paid ${commas(earned)}${bestNow ? " - your best yet" : ""}`
+          : "spend it on something"}</p>
+      </div>
+      <button class="pill strong" id="go-again">go again</button>
+    </div>
+    <p class="chase">${next
+      ? `next up: ${next[1]} <span class="chase-now">(best so far ${save.bestChain})</span>`
+      : `every chain there is, chained. Best ${save.bestChain}.`}</p>
+    ${SHOP.map((group) => `
+      <section class="group">
+        <h3>${group.group}</h3>
+        <div class="items">${group.items.map((item) => {
+          const at = lvl(item.id);
+          const maxed = at >= item.most;
+          const cost = costOf(item);
+          const can = !maxed && save.pollen >= cost;
+          return `<button class="item${can ? " can" : ""}${maxed ? " maxed" : ""}" data-id="${item.id}"${maxed || !can ? " disabled" : ""}>
+            <span class="item-name">${item.name}</span>
+            <span class="item-cost">${maxed ? "done" : commas(cost)}</span>
+            <span class="item-note">${item.note}</span>
+            <span class="item-now">${item.shows()}</span>
+            <span class="item-bar"><span style="width:${(at / item.most) * 100}%"></span></span>
+          </button>`;
+        }).join("")}</div>
+      </section>`).join("")}`;
+
   panel.hidden = false;
-  panel.innerHTML = `<h2>Round ${round} cleared</h2>
-    <p class="sub">${opened} opened for ${roundScore.toLocaleString()}. Take one.</p>
-    <div class="cards">${offer.map((one) => `
-      <button class="card" data-id="${one.id}">
-        <span class="card-name">${one.name}</span>
-        <span class="card-note">${one.note}</span>
-        <span class="card-have">${have(one.id) ? `you have ${have(one.id)}` : ""}</span>
-      </button>`).join("")}</div>`;
+  document.getElementById("go-again").addEventListener("click", newGo);
+  showBar();
 }
 
-// A run is counted when it ends, not when it starts, so the one you're in
-// the middle of isn't in the tally yet.
-function finishRun() {
-  phase = "over";
-  record.runs++;
-  record.bestChain = Math.max(record.bestChain, bestChain);
-  record.bestTotal = Math.max(record.bestTotal, total);
-  record.bestScore = Math.max(record.bestScore, score);
+const hideShop = () => { document.getElementById("shop").hidden = true; };
+
+function endGo() {
+  phase = "done";
+  save.goes++;
+  save.pollen += earned;
+  save.bestGo = Math.max(save.bestGo, earned);
+  save.bestChain = Math.max(save.bestChain, bestChain);
   store();
-  showOver();
-}
-
-function showOver() {
-  const panel = document.getElementById("offer");
-  panel.hidden = false;
-  const far = round > record.bestRound;
-  panel.innerHTML = `<h2>${far ? "Best run yet" : "Run over"}</h2>
-    <p class="sub">Run ${record.runs} &middot; <strong>${score.toLocaleString()} points</strong><br>
-      round ${round}, ${total} dots opened, longest chain ${bestChain}.</p>
-    <div class="cards"><button class="card wide-card" id="new-run">
-      <span class="card-name">Go again</span>
-      <span class="card-note">new run, no upgrades, same nerve</span>
-    </button></div>`;
-  document.getElementById("new-run").addEventListener("click", newRun);
-}
-
-function endRound() {
-  if (opened >= quota) {
-    record.bestRound = Math.max(record.bestRound, round + 1);
-    record.bestChain = Math.max(record.bestChain, bestChain);
-    record.bestTotal = Math.max(record.bestTotal, total);
-    record.bestScore = Math.max(record.bestScore, score);
-    store();
-    offerUpgrades();
-  } else {
-    finishRun();
-  }
+  showShop();
   showBar();
 }
 
@@ -606,7 +612,7 @@ function frame() {
   last = time;
   if (time < slowUntil) dt *= 0.35;      // everything drags out on a big chain
 
-  if (phase === "going" || phase === "ready") {
+  if (phase !== "done") {
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
     pullDots(dt);
@@ -623,19 +629,9 @@ function frame() {
   if (phase === "going") {
     stepBlooms(dt);
     if (!blooms.length) {
-      // A bloom that caught nothing doesn't count - it just didn't happen.
-      // Ending a run on one bad click, with nothing to watch, is the least
-      // satisfying thing a game like this could do.
-      if (opened === 0) {
-        clicksLeft = Math.max(clicksLeft, 1);
-        phase = "ready";
-        missed = true;
-      } else if (clicksLeft > 0 && opened < quota) {
-        phase = "ready";
-      } else {
-        endRound();
-      }
       combo = 0;
+      if (clicksLeft > 0) phase = "ready";
+      else endGo();
       showBar();
     }
   }
@@ -655,16 +651,20 @@ canvas.addEventListener("pointerdown", (e) => {
   clicksLeft--;
   phase = "going";
   combo = 0;
-  missed = false;
   open(e.clientX - box.left, e.clientY - box.top, "plain", 0, true);
   thud();
   shake = 4;
   showBar();
 });
 
-document.getElementById("offer").addEventListener("click", (e) => {
-  const card = e.target.closest("[data-id]");
-  if (card) take(card.dataset.id);
+document.getElementById("shop").addEventListener("click", (e) => {
+  const item = e.target.closest("[data-id]");
+  if (item) buy(item.dataset.id);
+});
+
+document.getElementById("shop-btn").addEventListener("click", () => {
+  if (document.getElementById("shop").hidden) showShop();
+  else hideShop();
 });
 
 document.getElementById("sound-btn").addEventListener("click", (e) => {
@@ -672,32 +672,26 @@ document.getElementById("sound-btn").addEventListener("click", (e) => {
   e.currentTarget.textContent = sound ? "sound on" : "sound off";
 });
 
-document.getElementById("give-up").addEventListener("click", () => {
-  if (phase === "offering" || phase === "over") return;
-  if (confirm("Give up this run?")) finishRun();
-});
-
 function store() {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(record));
+    localStorage.setItem(SAVE_KEY, JSON.stringify(save));
   } catch (e) {
-    // private browsing - the game still plays, it just won't be remembered
+    // private browsing - it still plays, it just won't be remembered
   }
 }
 
 function load() {
   try {
-    Object.assign(record, JSON.parse(localStorage.getItem(SAVE_KEY)) || {});
+    Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY)) || {});
   } catch (e) {
     // nothing saved yet
   }
+  save.levels = save.levels || {};
 }
 
 window.addEventListener("resize", () => { fit(); draw(); });
 
 load();
 fit();
-startRound();
-showHeld();
-showBar();
+newGo();
 requestAnimationFrame(frame);
