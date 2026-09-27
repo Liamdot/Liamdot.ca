@@ -1,19 +1,19 @@
 // Bloom
 // One click. Everything it touches opens, and everything that opens touches
-// something else. It starts pitiful - a dozen dots, a bloom the size of a
-// coin - and ends with half the field going up at once.
+// something else. Each go pays pollen, pollen buys upgrades, and when a place
+// has nothing left to teach you, you move on and start again somewhere
+// harder - keeping a seed, which pays for ever.
 //
-// Each go pays pollen. Pollen buys upgrades. The upgrades are the game.
-//
-//   1. What's saved  - pollen, upgrades, records
-//   2. The shop      - everything you can buy, and what it does
-//   3. The field     - dots, and which of them are worth anything
-//   4. Blooms        - the chain reaction itself
-//   5. Scoring       - the multiplier that runs away with itself
-//   6. Sound         - a note per link, climbing
-//   7. Feel          - particles, slow motion, floating numbers
-//   8. Drawing       - all of it, once a frame
-//   9. Running       - the go, the shop, what there is to chase
+//   1. Saved         - pollen, upgrades, which place you're in
+//   2. Places        - the five of them, and what makes each harder
+//   3. The shop      - everything you can buy, some of it locked away
+//   4. The field     - dots, stones, and the armoured ones
+//   5. Blooms        - the chain reaction itself
+//   6. Scoring       - the multiplier that runs away with itself
+//   7. Sound         - a note per link, climbing
+//   8. Feel          - particles, slow motion, floating numbers
+//   9. Drawing       - all of it, once a frame
+//  10. Running       - the go, the tally, the shop, moving on
 
 const SAVE_KEY = "bloom";
 
@@ -23,15 +23,24 @@ const ctx = canvas.getContext("2d");
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 const now = () => performance.now() / 1000;
-const commas = (n) => Math.round(n).toLocaleString();
+
+// Eight digits of pollen is just noise once it gets going.
+function commas(n) {
+  n = Math.round(n);
+  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  return n.toLocaleString();
+}
 
 // ===========================================================================
-// 1. What's saved
+// 1. Saved
 // ===========================================================================
 
 const save = {
-  pollen: 0,          // what there is to spend
-  levels: {},         // upgrade id -> how many bought
+  pollen: 0,
+  levels: {},
+  area: 0,          // which place you're in
+  seeds: 0,         // one for every place left behind, kept for ever
   goes: 0,
   bestChain: 0,
   bestGo: 0,
@@ -40,11 +49,45 @@ const save = {
 const lvl = (id) => save.levels[id] || 0;
 
 // ===========================================================================
-// 2. The shop
+// 2. Places
 // ===========================================================================
 //
-// Costs climb steeply, so each one is a decision - and every upgrade shows
-// the number it moves, so you can see what you're buying.
+// Each is harder in a way upgrades can't simply out-scale: more of the field
+// is armoured, and armour takes more than one knock. Moving on wipes the
+// pollen and the upgrades and hands back a seed.
+
+// Targets are a measured share of what each place can pay when everything in
+// its shop is bought, so they're a stretch without being out of reach.
+const PLACES = [
+  { name: "the meadow", stone: 0.35, armour: 0, armourHits: 1, worth: 1,
+    target: 2e6, blurb: "soft ground, nothing in the way" },
+  { name: "the orchard", stone: 0.3, armour: 0.18, armourHits: 2, worth: 2.2,
+    target: 130e6, blurb: "some of it takes two knocks", unlocks: ["pierce", "heavy"] },
+  { name: "the thicket", stone: 0.26, armour: 0.34, armourHits: 2, worth: 5,
+    target: 850e6, blurb: "thick with the stubborn sort", unlocks: ["pods", "echo"] },
+  { name: "the cavern", stone: 0.22, armour: 0.5, armourHits: 3, worth: 12,
+    target: 4e9, blurb: "half of it fights back", unlocks: ["resonance", "magnet"] },
+  { name: "the canopy", stone: 0.18, armour: 0.62, armourHits: 3, worth: 30,
+    target: 19e9, blurb: "the last place, and it knows it", unlocks: ["momentum", "spark"] },
+];
+
+const place = () => PLACES[Math.min(save.area, PLACES.length - 1)];
+
+// Past the last place it keeps going, twenty times harder each time.
+const targetNow = () => (save.area < PLACES.length
+  ? place().target
+  : place().target * 20 ** (save.area - PLACES.length + 1));
+
+const seedBonus = () => 1 + save.seeds * 0.6;
+
+const unlocked = (id) => {
+  const needed = PLACES.findIndex((one) => (one.unlocks || []).includes(id));
+  return needed === -1 || save.area >= needed;
+};
+
+// ===========================================================================
+// 3. The shop
+// ===========================================================================
 
 const SHOP = [
   {
@@ -58,8 +101,8 @@ const SHOP = [
         shows: () => `${Math.round(chanceOf("gold") * 100)}% gold` },
       { id: "heavy", name: "Heavy dots", note: "slow to open, but enormous", cost: 220, growth: 1.6, most: 14,
         shows: () => `${Math.round(chanceOf("heavy") * 100)}% heavy` },
-      { id: "splitter", name: "Splitters", note: "throw off two more blooms each", cost: 400, growth: 1.65, most: 14,
-        shows: () => `${Math.round(chanceOf("splitter") * 100)}% splitter` },
+      { id: "pods", name: "Seed pods", note: "burst and throw seeds, which bloom where they land", cost: 400, growth: 1.65, most: 14,
+        shows: () => `${Math.round(chanceOf("pod") * 100)}% pods` },
     ],
   },
   {
@@ -71,8 +114,8 @@ const SHOP = [
         shows: () => `${holdTime().toFixed(2)}s open` },
       { id: "lucky", name: "Bigger first bloom", note: "the one you actually click", cost: 160, growth: 1.55, most: 12,
         shows: () => `+${lvl("lucky") * 15}% on the first` },
-      { id: "click", name: "Another click", note: "a second go at the same field", cost: 900, growth: 3.4, most: 5,
-        shows: () => `${1 + lvl("click")} clicks` },
+      { id: "pierce", name: "Sharper bloom", note: "hits armour harder, so it cracks in fewer goes", cost: 260, growth: 1.7, most: 6,
+        shows: () => `${1 + lvl("pierce")} knocks a bloom` },
     ],
   },
   {
@@ -97,6 +140,8 @@ const SHOP = [
         shows: () => (lvl("magnet") ? `pull ${lvl("magnet")}` : "off") },
       { id: "momentum", name: "Momentum", note: "every link makes the next bloom wider", cost: 650, growth: 1.9, most: 12,
         shows: () => `+${lvl("momentum") * 2}% a link` },
+      { id: "resonance", name: "Resonance", note: "every tenth link opens something enormous", cost: 900, growth: 2, most: 6,
+        shows: () => (lvl("resonance") ? `×${(2 + lvl("resonance") * 0.5).toFixed(1)} wide` : "off") },
       { id: "spark", name: "Spark", note: "every seventh link opens somewhere else entirely", cost: 800, growth: 2, most: 5,
         shows: () => (lvl("spark") ? `${lvl("spark")} at a time` : "off") },
       { id: "pollen", name: "Fertiliser", note: "everything pays more pollen", cost: 200, growth: 1.62, most: 40,
@@ -107,11 +152,13 @@ const SHOP = [
 
 const ALL = SHOP.flatMap((group) => group.items);
 const itemOf = (id) => ALL.find((one) => one.id === id);
-const costOf = (item) => Math.round(item.cost * item.growth ** lvl(item.id));
+// Everything costs more in a harder place, so arriving with a seed's worth of
+// income doesn't mean buying the whole shop back in three goes.
+const costOf = (item) => Math.round(item.cost * item.growth ** lvl(item.id) * 8 ** save.area);
 
 function buy(id) {
   const item = itemOf(id);
-  if (!item || lvl(id) >= item.most) return;
+  if (!item || !unlocked(id) || lvl(id) >= item.most) return;
   const cost = costOf(item);
   if (save.pollen < cost) return;
   save.pollen -= cost;
@@ -121,30 +168,32 @@ function buy(id) {
 }
 
 // ===========================================================================
-// 3. The field
+// 4. The field
 // ===========================================================================
 
 const KINDS = {
   plain: { colour: "#7ee08a", worth: 10, size: 9 },
-  // Stones never open. You start with a field half full of them and buy them
-  // away, which is the first thing that makes the chains take off.
   stone: { colour: "#4a4a55", worth: 0, size: 10, dead: true },
   gold: { colour: "#f2c94c", worth: 50, size: 9 },
   heavy: { colour: "#6fc3df", worth: 20, size: 13, slow: true },
-  splitter: { colour: "#d98ae0", worth: 30, size: 8, splits: true },
+  pod: { colour: "#d98ae0", worth: 30, size: 9, pod: true },
+  // Armour takes more than one knock. It's what stops a big chain simply
+  // eating the whole field, however wide the blooms get.
+  armour: { colour: "#9a96a5", worth: 40, size: 11, tough: true },
 };
 
 const fieldSize = () => 16 + lvl("seed") * 4;
-const stoneShare = () => Math.max(0, 0.35 - lvl("chisel") * 0.035);
+const stoneShare = () => Math.max(0, place().stone - lvl("chisel") * 0.035);
 
 const chanceOf = (kind) => ({
   gold: lvl("gold") * 0.02,
   heavy: lvl("heavy") * 0.022,
-  splitter: lvl("splitter") * 0.02,
+  pod: lvl("pods") * 0.02,
 }[kind] || 0);
 
 let dots = [];
 let blooms = [];
+let flying = [];           // seeds thrown by pods, which bloom where they land
 let sparks = [];
 let floaters = [];
 let slowUntil = 0;
@@ -152,15 +201,16 @@ let shake = 0;
 let barDirty = false;
 
 let phase = "ready";       // ready, going, done
-let clicksLeft = 1;
 let combo = 0;
 let bestChain = 0;
 let opened = 0;
-let earned = 0;            // pollen this go
+let liveAtStart = 0;
+let earned = 0;
 
 function pickKind() {
   if (Math.random() < stoneShare()) return "stone";
-  for (const kind of ["gold", "heavy", "splitter"]) {
+  if (Math.random() < place().armour) return "armour";
+  for (const kind of ["gold", "heavy", "pod"]) {
     if (Math.random() < chanceOf(kind)) return kind;
   }
   return "plain";
@@ -171,13 +221,13 @@ function newGo() {
   const height = canvas.clientHeight;
   dots = [];
   blooms = [];
+  flying = [];
   sparks = [];
   floaters = [];
   opened = 0;
   earned = 0;
   combo = 0;
   bestChain = 0;
-  clicksLeft = 1 + lvl("click");
   phase = "ready";
 
   for (let i = 0; i < fieldSize(); i++) {
@@ -191,16 +241,20 @@ function newGo() {
       vy: Math.sin(angle) * speed,
       r: KINDS[kind].size,
       kind,
+      knocks: KINDS[kind].tough ? place().armourHits : 1,
       wobble: rand(0, Math.PI * 2),
     });
   }
-  hideShop();
+
+  liveAtStart = dots.filter((dot) => !KINDS[dot.kind].dead).length;
+  hide("tally");
+  hide("shop");
   showBar();
   draw();
 }
 
 // ===========================================================================
-// 4. Blooms
+// 5. Blooms
 // ===========================================================================
 
 const GROW = 0.5;
@@ -208,7 +262,6 @@ const CLOSE = 0.7;
 
 const holdTime = () => 0.35 + lvl("hold") * 0.08;
 
-// Everything that makes a bloom bigger lands here.
 function reach(kind, depth, first) {
   let wide = 52 + lvl("wide") * 5;
   if (kind === "heavy") wide *= 1.45;
@@ -217,26 +270,45 @@ function reach(kind, depth, first) {
   return wide;
 }
 
-function open(x, y, kind = "plain", depth = 0, first = false) {
-  const max = reach(kind, depth, first);
+function open(x, y, kind = "plain", depth = 0, first = false, big = 1) {
   blooms.push({
-    x, y, kind, depth, max,
+    x, y, kind, depth,
+    max: reach(kind, depth, first) * big,
     r: 0,
     age: 0,
     life: GROW + holdTime() + CLOSE,
     grow: kind === "heavy" ? GROW * 1.6 : GROW,
+    knocked: new Set(),          // one bloom can't knock the same dot twice
   });
+}
 
-  if (KINDS[kind].splits) {
-    for (let i = 0; i < 2; i++) {
-      const angle = rand(0, Math.PI * 2);
-      blooms.push({
-        x: x + Math.cos(angle) * 40, y: y + Math.sin(angle) * 40,
-        kind: "plain", depth, max: max * 0.6, r: 0, age: 0,
-        life: GROW + holdTime() + CLOSE, grow: GROW,
-      });
-    }
+// A pod bursts and throws seeds outwards; each blooms where it lands, which
+// is how a chain crosses a gap it could never reach on its own.
+function throwSeeds(x, y, depth) {
+  const count = 3;
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count + rand(-0.4, 0.4);
+    const far = rand(100, 160) * (1 + lvl("pods") * 0.03);
+    flying.push({
+      x, y, depth,
+      vx: Math.cos(angle) * far,
+      vy: Math.sin(angle) * far,
+      life: 1,
+      age: 0,
+    });
   }
+}
+
+function stepSeeds(dt) {
+  for (const seed of flying) {
+    seed.age += dt;
+    seed.x += seed.vx * dt;
+    seed.y += seed.vy * dt;
+  }
+  for (const seed of flying) {
+    if (seed.age >= seed.life) open(seed.x, seed.y, "plain", seed.depth);
+  }
+  flying = flying.filter((seed) => seed.age < seed.life);
 }
 
 function radiusOf(bloom) {
@@ -262,7 +334,17 @@ function stepBlooms(dt) {
     for (let i = dots.length - 1; i >= 0; i--) {
       const dot = dots[i];
       if (KINDS[dot.kind].dead) continue;                 // a stone just sits there
-      if (Math.hypot(dot.x - bloom.x, dot.y - bloom.y) <= bloom.r + dot.r) catchDot(bloom, i);
+      if (bloom.knocked.has(dot)) continue;
+      if (Math.hypot(dot.x - bloom.x, dot.y - bloom.y) > bloom.r + dot.r) continue;
+
+      bloom.knocked.add(dot);
+      dot.knocks -= 1 + lvl("pierce");
+      if (dot.knocks > 0) {
+        burst(dot.x, dot.y, "#9a96a5", 5);               // armour, still holding
+        shake = Math.min(shake + 1, 14);
+      } else {
+        catchDot(bloom, i);
+      }
     }
   }
 }
@@ -284,12 +366,8 @@ function pullDots(dt) {
 }
 
 // ===========================================================================
-// 5. Scoring
+// 6. Scoring
 // ===========================================================================
-//
-// The chain pays flat until it gets going, then every further link is worth
-// more than the last - and the climb itself steepens, so the end of a long
-// chain is where the pollen is.
 
 const multFrom = () => Math.max(2, 6 - lvl("early"));
 const multStep = () => 0.12 + lvl("step") * 0.06;
@@ -300,6 +378,9 @@ function multiplier(links) {
   return 1 + over * multStep() + over * over * multCurve();
 }
 
+const payFor = (kind, links) => Math.max(1, Math.round(
+  KINDS[kind].worth * place().worth * multiplier(links) * (1 + lvl("pollen") * 0.1) * seedBonus()));
+
 function catchDot(bloom, index) {
   const dot = dots[index];
   dots.splice(index, 1);
@@ -308,10 +389,11 @@ function catchDot(bloom, index) {
   bestChain = Math.max(bestChain, combo);
 
   const mult = multiplier(combo);
-  const paid = Math.max(1, Math.round(KINDS[dot.kind].worth * mult * (1 + lvl("pollen") * 0.1)));
+  const paid = payFor(dot.kind, combo);
   earned += paid;
 
   open(dot.x, dot.y, dot.kind, bloom.depth + 1);
+  if (KINDS[dot.kind].pod) throwSeeds(dot.x, dot.y, bloom.depth + 1);
   if (lvl("echo") && Math.random() < Math.min(lvl("echo") * 0.12, 0.8)) {
     open(dot.x, dot.y, "plain", bloom.depth + 1);
   }
@@ -320,6 +402,10 @@ function catchDot(bloom, index) {
       const far = pick(dots);
       if (!KINDS[far.kind].dead) open(far.x, far.y, "plain", bloom.depth + 1);
     }
+  }
+  if (lvl("resonance") && combo % 10 === 0) {
+    open(dot.x, dot.y, "plain", bloom.depth + 1, false, 2 + lvl("resonance") * 0.5);
+    shake = Math.min(shake + 8, 18);
   }
 
   burst(dot.x, dot.y, KINDS[dot.kind].colour, dot.kind === "gold" ? 26 : 14);
@@ -331,7 +417,7 @@ function catchDot(bloom, index) {
 }
 
 // ===========================================================================
-// 6. Sound
+// 7. Sound
 // ===========================================================================
 
 let audio = null;
@@ -372,7 +458,7 @@ const thud = () => tone((osc, gain, at) => {
 });
 
 // ===========================================================================
-// 7. Feel
+// 8. Feel
 // ===========================================================================
 
 function burst(x, y, colour, count) {
@@ -423,7 +509,7 @@ const wordFor = (n) => {
 };
 
 // ===========================================================================
-// 8. Drawing
+// 9. Drawing
 // ===========================================================================
 
 function fit() {
@@ -441,18 +527,39 @@ function draw() {
   ctx.clearRect(-20, -20, width + 40, height + 40);
 
   for (const dot of dots) {
+    const kind = KINDS[dot.kind];
     const wobble = Math.sin(now() * 2 + dot.wobble) * 1.2;
     ctx.beginPath();
     ctx.arc(dot.x, dot.y, dot.r + wobble, 0, Math.PI * 2);
-    ctx.fillStyle = KINDS[dot.kind].colour;
-    ctx.globalAlpha = KINDS[dot.kind].dead ? 0.5 : 0.9;
+    ctx.fillStyle = kind.colour;
+    ctx.globalAlpha = kind.dead ? 0.5 : 0.9;
     ctx.fill();
     ctx.globalAlpha = 1;
-    if (dot.kind === "splitter") {
+
+    // armour wears a ring for every knock it has left
+    if (kind.tough) {
+      for (let i = 0; i < dot.knocks; i++) {
+        ctx.beginPath();
+        ctx.arc(dot.x, dot.y, dot.r + 4 + i * 3.5, 0, Math.PI * 2);
+        ctx.strokeStyle = "#9a96a5";
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
+    if (kind.pod) {
       ctx.strokeStyle = "#16161a";
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.stroke();
     }
+  }
+
+  for (const seed of flying) {
+    ctx.beginPath();
+    ctx.arc(seed.x, seed.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "#d98ae0";
+    ctx.fill();
   }
 
   for (const bloom of blooms) {
@@ -486,6 +593,9 @@ function draw() {
   }
   ctx.globalAlpha = 1;
 
+  // The word sits a full line above the count and the multiplier a line
+  // below, both measured from the count's own size, so however big the
+  // numbers get they never land on each other.
   if (combo > 1 && phase === "going") {
     const mult = multiplier(combo);
     const size = Math.min(34 + combo * 2.2, 92);
@@ -498,14 +608,14 @@ function draw() {
       const shown = mult >= 10 ? Math.round(mult) : mult.toFixed(1);
       ctx.fillStyle = "#f2c94c";
       ctx.font = `800 ${Math.min(20 + mult * 1.6, 46)}px ui-sans-serif, system-ui, sans-serif`;
-      ctx.fillText(`×${shown}`, width / 2, height / 2 + size * 0.62);
+      ctx.fillText(`×${shown}`, width / 2, height / 2 + size * 0.72);
     }
 
     const word = wordFor(combo);
     if (word) {
       ctx.font = "600 17px ui-sans-serif, system-ui, sans-serif";
       ctx.fillStyle = "#7ee08a";
-      ctx.fillText(word, width / 2, height / 2 - size * 0.62);
+      ctx.fillText(word, width / 2, height / 2 - size * 0.95);
     }
     ctx.globalAlpha = 1;
   }
@@ -514,64 +624,68 @@ function draw() {
 }
 
 // ===========================================================================
-// 9. Running
+// 10. Running
 // ===========================================================================
 
 const bar = {
+  place: document.getElementById("place"),
   pollen: document.getElementById("pollen"),
   thisGo: document.getElementById("this-go"),
   chain: document.getElementById("chain"),
-  best: document.getElementById("best"),
+  target: document.getElementById("target"),
 };
 
+const show = (id) => { document.getElementById(id).hidden = false; };
+const hide = (id) => { document.getElementById(id).hidden = true; };
+
 function showBar() {
+  bar.place.textContent = place().name;
   bar.pollen.textContent = commas(save.pollen);
   bar.thisGo.textContent = commas(earned);
   bar.chain.textContent = combo > 1 ? combo : bestChain;
-  bar.best.textContent = `${commas(save.bestGo)} · chain ${save.bestChain}`;
-
-  const hint = document.getElementById("hint");
-  hint.hidden = phase !== "ready";
-  hint.textContent = clicksLeft > 1 ? `click anywhere (${clicksLeft} clicks left)` : "click anywhere";
+  bar.target.textContent = `${commas(save.bestGo)} / ${commas(targetNow())}`;
+  bar.target.parentElement.classList.toggle("met", save.bestGo >= targetNow());
+  document.getElementById("hint").hidden = phase !== "ready";
 }
 
-// Something to chase, so the numbers mean something. The next one along is
-// always in view.
-const MILESTONES = [
-  [5, "a chain of five"],
-  [12, "a chain of twelve"],
-  [25, "a chain of twenty-five"],
-  [50, "half a hundred"],
-  [100, "a chain of a hundred"],
-  [200, "a chain of two hundred"],
-  [350, "a chain of three hundred and fifty"],
-  [500, "a chain of five hundred"],
-];
-
-const nextMilestone = () => MILESTONES.find(([n]) => save.bestChain < n);
+// What the go was worth, said properly, before anything else happens.
+function showTally(full, bonus) {
+  const panel = document.getElementById("tally");
+  const ready = save.bestGo >= targetNow();
+  panel.innerHTML = `
+    ${full ? '<p class="full-clear">full clear!</p>' : ""}
+    <p class="tally-pollen">+${commas(earned)}</p>
+    <p class="tally-line">a chain of ${bestChain}${full ? ` &middot; +${commas(bonus)} for leaving nothing standing` : ""}</p>
+    <div class="tally-buttons">
+      <button class="pill strong" id="tally-again">go again</button>
+      <button class="pill" id="tally-shop">shop</button>
+      ${ready ? `<button class="pill gold" id="tally-move">leave ${place().name}</button>` : ""}
+    </div>`;
+  panel.hidden = false;
+  document.getElementById("tally-again").addEventListener("click", newGo);
+  document.getElementById("tally-shop").addEventListener("click", () => { hide("tally"); showShop(); });
+  if (ready) document.getElementById("tally-move").addEventListener("click", showMove);
+}
 
 function showShop() {
   const panel = document.getElementById("shop");
-  const next = nextMilestone();
-  const bestNow = earned > 0 && earned >= save.bestGo;
-
   panel.innerHTML = `
     <div class="shop-head">
       <div>
         <h2>${commas(save.pollen)} pollen</h2>
-        <p class="sub">${earned > 0
-          ? `that go paid ${commas(earned)}${bestNow ? " - your best yet" : ""}`
-          : "spend it on something"}</p>
+        <p class="sub">${place().name} &middot; ${place().blurb}${save.seeds
+          ? ` &middot; ${save.seeds} seed${save.seeds === 1 ? "" : "s"}, so everything pays ×${seedBonus().toFixed(1)}`
+          : ""}</p>
       </div>
       <button class="pill strong" id="go-again">go again</button>
     </div>
-    <p class="chase">${next
-      ? `next up: ${next[1]} <span class="chase-now">(best so far ${save.bestChain})</span>`
-      : `every chain there is, chained. Best ${save.bestChain}.`}</p>
-    ${SHOP.map((group) => `
-      <section class="group">
+    <p class="chase">best go here ${commas(save.bestGo)} &middot; ${commas(targetNow())} to move on</p>
+    ${SHOP.map((group) => {
+      const items = group.items.filter((item) => unlocked(item.id));
+      if (!items.length) return "";
+      return `<section class="group">
         <h3>${group.group}</h3>
-        <div class="items">${group.items.map((item) => {
+        <div class="items">${items.map((item) => {
           const at = lvl(item.id);
           const maxed = at >= item.most;
           const cost = costOf(item);
@@ -584,23 +698,61 @@ function showShop() {
             <span class="item-bar"><span style="width:${(at / item.most) * 100}%"></span></span>
           </button>`;
         }).join("")}</div>
-      </section>`).join("")}`;
+      </section>`;
+    }).join("")}
+    ${save.area + 1 < PLACES.length ? `<p class="locked">There's more of this in ${PLACES[save.area + 1].name}.</p>` : ""}`;
 
   panel.hidden = false;
+  hide("tally");
   document.getElementById("go-again").addEventListener("click", newGo);
   showBar();
 }
 
-const hideShop = () => { document.getElementById("shop").hidden = true; };
+// Leaving costs everything except the seed, which is the point of leaving.
+function showMove() {
+  const next = PLACES[Math.min(save.area + 1, PLACES.length - 1)];
+  const gets = save.area + 1 < PLACES.length ? next.unlocks || [] : [];
+  const panel = document.getElementById("tally");
+  panel.innerHTML = `
+    <p class="full-clear">${place().name} is done with you</p>
+    <p class="tally-line">Leaving takes every upgrade and all your pollen with it.
+      You keep a seed, and everything pays ×${(1 + (save.seeds + 1) * 0.6).toFixed(1)} from here on.</p>
+    <p class="tally-line">Next: ${next.name} &mdash; ${next.blurb}.
+      ${gets.length ? `New in the shop: ${gets.map((id) => itemOf(id).name.toLowerCase()).join(", ")}.` : ""}</p>
+    <div class="tally-buttons">
+      <button class="pill gold" id="do-move">move on</button>
+      <button class="pill" id="stay">stay a while</button>
+    </div>`;
+  panel.hidden = false;
+  document.getElementById("do-move").addEventListener("click", moveOn);
+  document.getElementById("stay").addEventListener("click", newGo);
+}
+
+function moveOn() {
+  save.area++;
+  save.seeds++;
+  save.pollen = 0;
+  save.levels = {};
+  save.bestGo = 0;
+  store();
+  newGo();
+}
 
 function endGo() {
   phase = "done";
   save.goes++;
+
+  // Nothing left standing pays half as much again.
+  const full = liveAtStart > 0 && opened >= liveAtStart;
+  const bonus = full ? Math.round(earned * 0.5) : 0;
+  earned += bonus;
+  if (full) shake = 16;
+
   save.pollen += earned;
   save.bestGo = Math.max(save.bestGo, earned);
   save.bestChain = Math.max(save.bestChain, bestChain);
   store();
-  showShop();
+  showTally(full, bonus);
   showBar();
 }
 
@@ -627,11 +779,11 @@ function frame() {
   }
 
   if (phase === "going") {
+    stepSeeds(dt);
     stepBlooms(dt);
-    if (!blooms.length) {
+    if (!blooms.length && !flying.length) {
       combo = 0;
-      if (clicksLeft > 0) phase = "ready";
-      else endGo();
+      endGo();
       showBar();
     }
   }
@@ -646,9 +798,8 @@ function frame() {
 }
 
 canvas.addEventListener("pointerdown", (e) => {
-  if (phase !== "ready" || clicksLeft <= 0) return;
+  if (phase !== "ready") return;
   const box = canvas.getBoundingClientRect();
-  clicksLeft--;
   phase = "going";
   combo = 0;
   open(e.clientX - box.left, e.clientY - box.top, "plain", 0, true);
@@ -664,7 +815,7 @@ document.getElementById("shop").addEventListener("click", (e) => {
 
 document.getElementById("shop-btn").addEventListener("click", () => {
   if (document.getElementById("shop").hidden) showShop();
-  else hideShop();
+  else hide("shop");
 });
 
 document.getElementById("sound-btn").addEventListener("click", (e) => {

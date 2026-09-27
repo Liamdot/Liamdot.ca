@@ -117,6 +117,84 @@
   color: #55555f;
 }
 
+.place-name {
+  color: #7ee08a;
+  font-weight: 700;
+}
+
+.stat.target.met strong {
+  color: #f2c94c;
+}
+
+.pill.gold {
+  border-color: #f2c94c;
+  color: #f2c94c;
+}
+
+.pill.gold:hover {
+  background: #f2c94c;
+  color: #16161a;
+}
+
+/* ---- what a go was worth ---- */
+
+.tally {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px;
+  background: rgba(22, 22, 26, 0.86);
+  backdrop-filter: blur(3px);
+  text-align: center;
+}
+
+.tally[hidden] {
+  display: none;
+}
+
+.full-clear {
+  margin: 0;
+  color: #f2c94c;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.tally-pollen {
+  margin: 0;
+  color: #7ee08a;
+  font-size: clamp(2.6rem, 11vw, 4.4rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.tally-line {
+  max-width: 34rem;
+  margin: 0;
+  color: #a5a19a;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.tally-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.locked {
+  margin: 4px 0 0;
+  color: #55555f;
+  font-size: 0.8rem;
+}
+
 /* ---- the shop ---- */
 
 .shop {

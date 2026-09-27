@@ -42,6 +42,9 @@
         <li>Click once, anywhere &mdash; where and when is the whole decision</li>
         <li>Whatever the chain opens pays pollen; spend it in the shop, then go again</li>
         <li>Nothing is ever lost &mdash; a bad go just pays less</li>
+        <li>Leave nothing standing and the go pays half as much again</li>
+        <li>Grey rings are armour: each ring is another knock before it opens</li>
+        <li>Once a place has paid you enough, move on. That costs every upgrade and all your pollen, and hands back a seed that pays for ever &mdash; and the next place is harder, with more in the shop</li>
         <li>Past the sixth link the multiplier starts climbing, and the climb itself gets steeper</li>
         <li>Grey stones never open. Half the field is stone to begin with; clear them out</li>
         <li>Gold pays five times a plain dot, blue opens slowly but huge, purple throws off two more blooms</li>
@@ -59,10 +62,11 @@
 
   <main class="stage" id="stage">
     <header class="bar">
+      <span class="stat place-name" id="place">the meadow</span>
       <span class="stat">pollen <strong id="pollen">0</strong></span>
       <span class="stat">this go <strong id="this-go">0</strong></span>
       <span class="stat">chain <strong id="chain">0</strong></span>
-      <span class="stat quiet">best <strong id="best">0</strong></span>
+      <span class="stat target">to move on <strong id="target">0 / 0</strong></span>
       <span class="spacer"></span>
       <button class="pill" id="sound-btn">sound on</button>
       <button class="pill" id="shop-btn">shop</button>
@@ -71,6 +75,7 @@
     <div class="play">
       <canvas class="field" id="field"></canvas>
       <p class="hint" id="hint">click anywhere</p>
+      <section class="tally" id="tally" hidden></section>
       <section class="shop" id="shop" hidden></section>
     </div>
   </main>
