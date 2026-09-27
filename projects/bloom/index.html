@@ -35,20 +35,22 @@
     <div class="info-panel" id="info-panel" hidden>
       <h2>Bloom</h2>
       <p class="meta">made September 2026</p>
-      <p>One click opens one bloom. Everything the bloom touches opens too, and so on, for as long as it keeps finding something.</p>
+      <p>One click opens one bloom. Everything the bloom touches opens too, and so on, for as long as it keeps finding something. Clear the round, take an upgrade, go again &mdash; until a round beats you and the run is over.</p>
 
       <h3>How to play</h3>
       <ul>
-        <li>Click once, anywhere &mdash; timing and place are the whole decision</li>
-        <li>Open enough dots to clear the level</li>
-        <li>Every dot pays petals; petals buy permanent upgrades</li>
-        <li>Gold pays five, blue opens slowly but wider, purple throws off two more blooms</li>
+        <li>Click once, anywhere &mdash; where and when is the whole decision</li>
+        <li>Open enough dots to meet the round's quota</li>
+        <li>Clear it and you pick one of three upgrades, which last as long as the run does</li>
+        <li>Miss it and the run ends; everything you picked up goes with it</li>
+        <li>Gold is worth five, blue opens slowly but huge, purple throws off two more blooms</li>
+        <li>Grey stones never open. There are more of them every round, so the dots that matter get further apart</li>
         <li>A long chain slows time down so you can watch it happen</li>
       </ul>
 
       <h3>Updates</h3>
       <ul>
-        <li><strong>v1.0</strong> &ndash; the chain, the shop, and the noise it makes</li>
+        <li><strong>v1.0</strong> &ndash; runs, the draft, and the noise it makes</li>
       </ul>
 
       <a class="more" href="../../">more stuff &rarr;</a>
@@ -57,25 +59,21 @@
 
   <main class="stage" id="stage">
     <header class="bar">
-      <span class="stat">level <strong id="level">1</strong></span>
-      <span class="stat">opened <strong id="goal">0 / 0</strong></span>
-      <span class="stat">petals <strong id="petals">0</strong></span>
-      <span class="stat">best chain <strong id="best">0</strong></span>
+      <span class="stat">round <strong id="round">1</strong></span>
+      <span class="stat quota">quota <strong id="quota">0 / 0</strong></span>
+      <span class="stat">longest chain <strong id="chain">0</strong></span>
+      <span class="stat quiet">best <strong id="record">round 1</strong></span>
       <span class="spacer"></span>
       <button class="pill" id="sound-btn">sound on</button>
-      <button class="pill" id="shop-btn" aria-expanded="false" aria-controls="shop">shop</button>
+      <button class="pill quiet" id="give-up">give up</button>
     </header>
+
+    <div class="held" id="held" hidden></div>
 
     <div class="play">
       <canvas class="field" id="field"></canvas>
       <p class="hint" id="hint">click anywhere</p>
-      <p class="message" id="message" hidden></p>
-      <button class="pill strong again" id="again" hidden>next level</button>
-
-      <aside class="shop" id="shop">
-        <h2>Petals well spent</h2>
-        <div class="shop-list" id="shop-list"></div>
-      </aside>
+      <section class="offer" id="offer" hidden></section>
     </div>
   </main>
 
