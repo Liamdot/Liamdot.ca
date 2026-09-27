@@ -128,6 +128,7 @@ function newRun() {
   bestChain = 0;
   held = {};
   phase = "ready";
+  document.getElementById("offer").hidden = true;   // get the panel out of the way
   startRound();
   showHeld();
 }
