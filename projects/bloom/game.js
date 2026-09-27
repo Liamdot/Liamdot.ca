@@ -28,6 +28,8 @@ const now = () => performance.now() / 1000;
 let round = 1;
 let opened = 0;            // this round
 let total = 0;             // this run
+let score = 0;             // this run, with multipliers
+let roundScore = 0;
 let quota = 0;
 let clicksLeft = 1;
 let phase = "ready";       // ready, going, offering, over
@@ -36,9 +38,23 @@ let bestChain = 0;
 let held = {};             // upgrade id -> how many of it you've taken
 let offer = [];            // the three on the table
 
-const record = { runs: 0, bestRound: 1, bestChain: 0, bestTotal: 0 };
+const record = { runs: 0, bestRound: 1, bestChain: 0, bestTotal: 0, bestScore: 0 };
 
 const have = (id) => held[id] || 0;
+
+// The chain pays flat until it gets going, and then every further link is
+// worth more than the last. Twenty links in, a plain dot is paying five
+// times what the first one did - which is the whole reason to keep watching.
+const MULT_FROM = () => Math.max(2, 5 - have("early"));
+const MULT_STEP = () => 0.25 + have("compound") * 0.12;
+
+// Not a straight line: the further a chain goes the faster the multiplier
+// climbs, so the last few links of a long one are worth absurd amounts and
+// the numbers really take off.
+function multiplier(links) {
+  const over = Math.max(0, links - MULT_FROM());
+  return 1 + over * MULT_STEP() + over * over * 0.012;
+}
 
 // Rounds get bigger, and a growing share of what's out there is stone, so
 // the dots that actually chain get further and further apart.
@@ -62,14 +78,14 @@ function quotaFor(live) {
 // ===========================================================================
 
 const KINDS = {
-  plain: { colour: "#7ee08a", worth: 1, size: 9 },
+  plain: { colour: "#7ee08a", worth: 10, size: 9 },
   // Stones never open. They're what stops the game running away with itself:
   // a field with more dots in it chains more easily, so without something
   // thinning the ones that count, every late round would clear itself.
   stone: { colour: "#4a4a55", worth: 0, size: 10, dead: true, chance: () => stoneShare() },
-  gold: { colour: "#f2c94c", worth: 5, size: 9, chance: () => 0.04 + have("gold") * 0.06 },
-  heavy: { colour: "#6fc3df", worth: 2, size: 13, slow: true, chance: () => have("heavy") * 0.08 },
-  splitter: { colour: "#d98ae0", worth: 3, size: 8, splits: true, chance: () => have("split") * 0.08 },
+  gold: { colour: "#f2c94c", worth: 50, size: 9, chance: () => 0.04 + have("gold") * 0.06 },
+  heavy: { colour: "#6fc3df", worth: 20, size: 13, slow: true, chance: () => have("heavy") * 0.08 },
+  splitter: { colour: "#d98ae0", worth: 30, size: 8, splits: true, chance: () => have("split") * 0.08 },
 };
 
 let dots = [];
@@ -97,6 +113,7 @@ function startRound() {
   sparks = [];
   floaters = [];
   opened = 0;
+  roundScore = 0;
   combo = 0;
   missed = false;
   clicksLeft = 1 + have("click");
@@ -125,6 +142,7 @@ function startRound() {
 function newRun() {
   round = 1;
   total = 0;
+  score = 0;
   bestChain = 0;
   held = {};
   phase = "ready";
@@ -203,8 +221,13 @@ function catchDot(bloom, index) {
     open(far.x, far.y, "plain", bloom.depth + 1);    // and somewhere else entirely
   }
 
+  const mult = multiplier(combo);
+  const paid = Math.max(1, Math.round(KINDS[dot.kind].worth * mult));
+  score += paid;
+  roundScore += paid;
+
   burst(dot.x, dot.y, KINDS[dot.kind].colour, dot.kind === "gold" ? 26 : 14);
-  float(dot.x, dot.y, `+${KINDS[dot.kind].worth}`, KINDS[dot.kind].colour);
+  float(dot.x, dot.y, `+${paid}`, mult > 1 ? "#f2c94c" : KINDS[dot.kind].colour);
   note(combo);
   barDirty = true;
   shake = Math.min(shake + (dot.kind === "gold" ? 5 : 2.2), 14);
@@ -364,6 +387,8 @@ const UPGRADES = [
   { id: "lucky", name: "Lucky start", note: "the bloom you click is 30% wider", most: 3 },
   { id: "mercy", name: "Kind quota", note: "every round asks for 8% fewer", most: 3 },
   { id: "chisel", name: "Chisel", note: "fewer grey stones, which never open", most: 4 },
+  { id: "compound", name: "Compound interest", note: "the chain multiplier climbs faster", most: 4 },
+  { id: "early", name: "Quick off the mark", note: "the multiplier starts three links sooner", most: 3 },
 ];
 
 function offerUpgrades() {
@@ -452,15 +477,27 @@ function draw() {
   ctx.globalAlpha = 1;
 
   if (combo > 1 && phase === "going") {
-    ctx.fillStyle = "#f1ede4";
+    const mult = multiplier(combo);
+    const size = Math.min(34 + combo * 2.5, 92);
     ctx.globalAlpha = 0.9;
-    ctx.font = `800 ${Math.min(34 + combo * 2.5, 92)}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.fillStyle = "#f1ede4";
+    ctx.font = `800 ${size}px ui-sans-serif, system-ui, sans-serif`;
     ctx.fillText(combo, width / 2, height / 2);
+
+    // The multiplier sits clear of the chain count, however big either gets,
+    // and drops its decimals once it's too big for them to matter.
+    if (mult > 1) {
+      const shown = mult >= 10 ? Math.round(mult) : mult.toFixed(1);
+      ctx.fillStyle = "#f2c94c";
+      ctx.font = `800 ${Math.min(20 + mult * 1.6, 46)}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.fillText(`\u00d7${shown}`, width / 2, height / 2 + size * 0.62);
+    }
+
     const word = wordFor(combo);
     if (word) {
       ctx.font = "600 17px ui-sans-serif, system-ui, sans-serif";
       ctx.fillStyle = "#7ee08a";
-      ctx.fillText(word, width / 2, height / 2 + 30);
+      ctx.fillText(word, width / 2, height / 2 - size * 0.62);
     }
     ctx.globalAlpha = 1;
   }
@@ -476,6 +513,7 @@ const bar = {
   round: document.getElementById("round"),
   quota: document.getElementById("quota"),
   chain: document.getElementById("chain"),
+  score: document.getElementById("score"),
   record: document.getElementById("record"),
 };
 
@@ -484,7 +522,8 @@ function showBar() {
   bar.quota.textContent = `${opened} / ${quota}`;
   bar.quota.parentElement.classList.toggle("met", opened >= quota);
   bar.chain.textContent = bestChain;
-  bar.record.textContent = `round ${record.bestRound}`;
+  bar.score.textContent = score.toLocaleString();
+  bar.record.textContent = `round ${record.bestRound} · ${record.bestScore.toLocaleString()}`;
 
   const hint = document.getElementById("hint");
   hint.hidden = phase !== "ready";
@@ -510,7 +549,7 @@ function showOffer() {
   const panel = document.getElementById("offer");
   panel.hidden = false;
   panel.innerHTML = `<h2>Round ${round} cleared</h2>
-    <p class="sub">${opened} opened. Take one.</p>
+    <p class="sub">${opened} opened for ${roundScore.toLocaleString()}. Take one.</p>
     <div class="cards">${offer.map((one) => `
       <button class="card" data-id="${one.id}">
         <span class="card-name">${one.name}</span>
@@ -526,6 +565,7 @@ function finishRun() {
   record.runs++;
   record.bestChain = Math.max(record.bestChain, bestChain);
   record.bestTotal = Math.max(record.bestTotal, total);
+  record.bestScore = Math.max(record.bestScore, score);
   store();
   showOver();
 }
@@ -535,7 +575,8 @@ function showOver() {
   panel.hidden = false;
   const far = round > record.bestRound;
   panel.innerHTML = `<h2>${far ? "Best run yet" : "Run over"}</h2>
-    <p class="sub">Run ${record.runs}. Round ${round}, ${total} dots opened, longest chain ${bestChain}.</p>
+    <p class="sub">Run ${record.runs} &middot; <strong>${score.toLocaleString()} points</strong><br>
+      round ${round}, ${total} dots opened, longest chain ${bestChain}.</p>
     <div class="cards"><button class="card wide-card" id="new-run">
       <span class="card-name">Go again</span>
       <span class="card-note">new run, no upgrades, same nerve</span>
@@ -548,6 +589,7 @@ function endRound() {
     record.bestRound = Math.max(record.bestRound, round + 1);
     record.bestChain = Math.max(record.bestChain, bestChain);
     record.bestTotal = Math.max(record.bestTotal, total);
+    record.bestScore = Math.max(record.bestScore, score);
     store();
     offerUpgrades();
   } else {
