@@ -61,15 +61,15 @@ const lvl = (id) => save.levels[id] || 0;
 // its shop is bought, so they're a stretch without being out of reach.
 const PLACES = [
   { name: "the meadow", stone: 0.35, armour: 0, armourHits: 1, worth: 1,
-    soil: 6, regrow: 1, target: 1.1e9, blurb: "soft ground, nothing in the way" },
+    soil: 6, regrow: 1, target: 200e6, blurb: "soft ground, nothing in the way" },
   { name: "the orchard", stone: 0.3, armour: 0.18, armourHits: 2, worth: 2.2,
-    soil: 6.5, regrow: 1, target: 5.5e9, blurb: "some of it takes two knocks", unlocks: ["pierce", "heavy"] },
+    soil: 6.5, regrow: 1, target: 1.2e9, blurb: "some of it takes two knocks", unlocks: ["pierce", "heavy"] },
   { name: "the thicket", stone: 0.26, armour: 0.34, armourHits: 2, worth: 5,
-    soil: 7, regrow: 1.05, target: 22e9, blurb: "thick with the stubborn sort", unlocks: ["pods", "echo"] },
+    soil: 7, regrow: 1.05, target: 3.2e9, blurb: "thick with the stubborn sort", unlocks: ["pods", "echo"] },
   { name: "the cavern", stone: 0.22, armour: 0.5, armourHits: 3, worth: 12,
-    soil: 7.5, regrow: 1.05, target: 70e9, blurb: "half of it fights back", unlocks: ["resonance", "magnet"] },
+    soil: 7.5, regrow: 1.05, target: 14e9, blurb: "half of it fights back", unlocks: ["resonance", "magnet"] },
   { name: "the canopy", stone: 0.18, armour: 0.62, armourHits: 3, worth: 30,
-    soil: 8, regrow: 1.1, target: 360e9, blurb: "the last place, and it knows it", unlocks: ["momentum", "spark"] },
+    soil: 8, regrow: 1.1, target: 60e9, blurb: "the last place, and it knows it", unlocks: ["momentum", "spark"] },
 ];
 
 const place = () => PLACES[Math.min(save.area, PLACES.length - 1)];
@@ -281,7 +281,9 @@ let liveAtStart = 0;
 let sownTotal = 0;
 let lasted = 0;
 let offered = 0;
-let topMult = 1;           // the best the multiplier got to this go
+let topMult = 1;           // what the chain got the multiplier up to
+let gathered = 0;          // the pile, before the multiplier lands on it
+let slam = null;           // the multiplier on its way up
 let earned = 0;
 
 function pickKind() {
@@ -514,14 +516,18 @@ function pullDots(dt) {
 // ===========================================================================
 
 const multFrom = () => Math.max(2, 6 - lvl("early"));
-const multStep = () => 0.12 + lvl("step") * 0.06;
-const multCurve = () => lvl("curve") * 0.004;
+const multStep = () => 0.04 + lvl("step") * 0.02;
+const multCurve = () => lvl("curve") * 0.0012;
 
 // The curve is what makes a long chain feel like it's getting away from you.
 // It's quadratic up to a point and merely steep after it - without that ceiling
-// a chain in the hundreds pays hundreds of thousands of times over, and the
-// whole ladder gets bought out in an afternoon.
-const CURVE_TOP = 200;
+// a chain in the hundreds pays hundreds of thousands of times over.
+//
+// These are a fifth of what they were, because the multiplier used to be worked
+// out per dot as the chain went - so a dot caught early got a small one. Now the
+// whole pile is multiplied by what the chain finished on, and every dot gets the
+// best of it, which is worth several times as much for the same numbers.
+const CURVE_TOP = 60;
 
 function multiplier(links) {
   if (!lvl("rhythm")) return 1;           // no rhythm, no reward for a long one
@@ -529,8 +535,11 @@ function multiplier(links) {
   return 1 + over * multStep() + over * Math.min(over, CURVE_TOP) * multCurve();
 }
 
-const payFor = (kind, links) => Math.max(1, Math.round(
-  KINDS[kind].worth * place().worth * multiplier(links) * (1 + lvl("pollen") * 0.1) * seedBonus()));
+// What a dot is worth on its own. The multiplier isn't in here any more - the
+// chain gathers a pile and the multiplier lands on the whole pile at the end,
+// which is the only way you can watch it happen.
+const payFor = (kind) => Math.max(1, Math.round(
+  KINDS[kind].worth * place().worth * (1 + lvl("pollen") * 0.1) * seedBonus()));
 
 function catchDot(bloom, index) {
   const dot = dots[index];
@@ -539,8 +548,7 @@ function catchDot(bloom, index) {
   combo++;
   bestChain = Math.max(bestChain, combo);
 
-  const mult = multiplier(combo);
-  const paid = payFor(dot.kind, combo);
+  const paid = payFor(dot.kind);
   earned += paid;
 
   open(dot.x, dot.y, dot.kind, bloom.depth + 1);
@@ -566,7 +574,7 @@ function catchDot(bloom, index) {
   ripple(dot.x, dot.y, KINDS[dot.kind].colour, dot.r);
   punch = Math.min(punch + 0.4, 1.3);
   glow = Math.min(glow + 0.07, 1);
-  float(dot.x, dot.y, `+${commas(paid)}`, mult > 1.05 ? "#f2c94c" : KINDS[dot.kind].colour);
+  float(dot.x, dot.y, `+${commas(paid)}`, KINDS[dot.kind].colour);
   plop(combo, dot.kind, dot.x);
   barDirty = true;
   shake = Math.min(shake + (dot.kind === "gold" ? 5 : 2.2), 14);
@@ -987,29 +995,52 @@ function draw() {
   }
   ctx.globalAlpha = 1;
 
-  // The word sits a full line above the count and the multiplier a line
-  // below, both measured from the count's own size, so however big the
-  // numbers get they never land on each other.
-  if (combo > 1 && phase === "going") {
-    const mult = multiplier(combo);
-    const size = Math.min(34 + combo * 2.2, 92) * (1 + punch * 0.09);
-    ctx.globalAlpha = 0.9;
-    ctx.fillStyle = "#f1ede4";
-    ctx.font = `800 ${size}px ui-sans-serif, system-ui, sans-serif`;
-    ctx.fillText(combo, width / 2, height / 2);
+  // The pile sits in the middle of the plot while the chain gathers it, with
+  // what the multiplier has reached waiting underneath. When the go ends the
+  // multiplier comes up off the bottom of the plot, hits the pile, and the
+  // pile turns into the total.
+  if ((phase === "going" && combo > 0) || (phase === "slam" && slam)) {
+    const mid = height / 2;
+    const inSlam = phase === "slam";
+    const landed = inSlam && slam.hit;
+    const after = landed ? slam.age - SLAM_RISE : 0;
 
-    if (mult > 1.05) {
-      const shown = mult >= 10 ? Math.round(mult) : mult.toFixed(1);
+    const run = Math.min(1, after / 0.5);
+    const shown = landed
+      ? gathered + (gathered * topMult - gathered) * (1 - (1 - run) ** 3)
+      : earned;
+
+    const kick = landed ? Math.max(0, 1 - after / 0.45) : punch;
+    const label = commas(shown);
+    const size = Math.min(38 + label.length * 4.5, 84) * (1 + kick * 0.34);
+
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = landed ? "#f2c94c" : "#f1ede4";
+    ctx.font = `800 ${size}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.fillText(label, width / 2, mid);
+
+    const mult = inSlam ? topMult : multiplier(combo);
+    if (mult > 1.05 && !landed) {
+      const face = `×${mult >= 10 ? commas(mult) : mult.toFixed(1)}`;
+      let y = mid + size * 0.8;
+      let ms = Math.min(20 + mult * 1.2, 44);
+      if (inSlam) {
+        // slow off the mark and then very fast, so it arrives like a fist
+        const t = Math.min(1, slam.age / SLAM_RISE);
+        const eased = t * t * t;
+        y = height + 100 + (mid + 12 - (height + 100)) * eased;
+        ms = 38 + eased * 44;
+      }
       ctx.fillStyle = "#f2c94c";
-      ctx.font = `800 ${Math.min(20 + mult * 1.6, 46)}px ui-sans-serif, system-ui, sans-serif`;
-      ctx.fillText(`×${shown}`, width / 2, height / 2 + size * 0.72);
+      ctx.font = `800 ${ms}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.fillText(face, width / 2, y);
     }
 
-    const word = wordFor(combo);
+    const word = phase === "going" ? wordFor(combo) : "";
     if (word) {
       ctx.font = "600 17px ui-sans-serif, system-ui, sans-serif";
       ctx.fillStyle = "#7ee08a";
-      ctx.fillText(word, width / 2, height / 2 - size * 0.95);
+      ctx.fillText(word, width / 2, mid - size * 0.9);
     }
     ctx.globalAlpha = 1;
   }
@@ -1067,15 +1098,13 @@ function showBar() {
 function showTally(full, bonus) {
   const panel = document.getElementById("tally");
   const ready = save.bestGo >= targetNow();
-  // What the chain was worth arrives first and lands on the total, so you see
-  // the multiplier do the work rather than reading a number it already did.
-  const slams = topMult > 1.05;
   panel.innerHTML = `
     ${full ? '<p class="full-clear">not one missed!</p>' : ""}
-    ${slams ? `<p class="tally-mult" id="tally-mult">×${topMult >= 10 ? commas(topMult) : topMult.toFixed(1)}</p>` : ""}
-    <p class="tally-pollen${slams ? " waiting" : " landed"}" id="tally-count">+0</p>
-    <p class="tally-line">a chain of ${bestChain} &middot; ${opened} of ${offered} caught &middot; ${
-      lasted.toFixed(1)}s${full ? ` &middot; +${commas(bonus)} for missing nothing` : ""}</p>
+    <p class="tally-pollen landed" id="tally-count">+0</p>
+    <p class="tally-line">a chain of ${bestChain} gathered ${commas(gathered)}${
+      topMult > 1.05 ? `, times ${topMult >= 10 ? commas(topMult) : topMult.toFixed(1)}` : ""
+      }${full ? ` &middot; +${commas(bonus)} for missing nothing` : ""}</p>
+    <p class="tally-line">${opened} of ${offered} caught &middot; ${lasted.toFixed(1)}s</p>
     <div class="tally-buttons">
       <button class="pill strong" id="tally-again">go again</button>
       <button class="pill" id="tally-shop">shop</button>
@@ -1085,18 +1114,8 @@ function showTally(full, bonus) {
   panel.classList.remove("arriving");
   void panel.offsetWidth;              // let the animation start again
   panel.classList.add("arriving");
-  const count = document.getElementById("tally-count");
-  const land = () => {
-    if (slams) {
-      count.classList.remove("waiting");
-      count.classList.add("hit");     // the bounce belongs to being hit
-      shake = Math.max(shake, 12);
-      thud();
-    }
-    countUp(count, earned, full ? 1100 : 750);
-    swell(full);
-  };
-  if (slams) setTimeout(land, 430); else land();
+  countUp(document.getElementById("tally-count"), earned, full ? 900 : 700);
+  if (full) swell(true);
   document.getElementById("tally-again").addEventListener("click", newGo);
   document.getElementById("tally-shop").addEventListener("click", () => { hide("tally"); showShop(); });
   if (ready) document.getElementById("tally-move").addEventListener("click", showMove);
@@ -1221,17 +1240,51 @@ function moveOn() {
   curtainTo(place().name, place().blurb, newGo);
 }
 
-function endGo() {
-  phase = "done";
-  save.goes++;
+// How long the multiplier takes to come up, and how long the whole business
+// runs before the tally arrives.
+const SLAM_RISE = 0.52;
+const SLAM_OVER = 1.55;
 
-  // Nothing standing and nothing left in the ground pays half as much again.
-  // It's a real achievement now: the chain has to outlast the regrowth.
-  // The bonus is for missing nothing at all: everything that was standing and
-  // everything the ground pushed up while the chain ran. Wilted is missed.
+function endGo() {
   lasted = goTime;
   topMult = multiplier(bestChain);
   offered = liveAtStart + (sownTotal - soil);
+  gathered = earned;
+
+  // With nothing to multiply by there's nothing to watch, so a go without the
+  // rhythm - or without much of a chain - just settles.
+  if (topMult > 1.05) {
+    phase = "slam";
+    slam = { age: 0, hit: false };
+  } else {
+    settleGo();
+  }
+}
+
+function stepSlam(dt) {
+  slam.age += dt;
+  if (!slam.hit && slam.age >= SLAM_RISE) {
+    slam.hit = true;
+    shake = 24;
+    flash = 0.75;
+    burst(PLOT.w / 2, PLOT.h / 2, "#f2c94c", 38);
+    ripple(PLOT.w / 2, PLOT.h / 2, "#f2c94c", 26);
+    thud(PLOT.w / 2);
+    swell(false);
+  }
+  if (slam.age >= SLAM_OVER) settleGo();
+}
+
+function settleGo() {
+  phase = "done";
+  slam = null;
+  save.goes++;
+
+  earned = Math.round(gathered * topMult);
+
+  // Nothing standing and nothing left in the ground pays half as much again.
+  // The bonus is for missing nothing at all: everything that was standing and
+  // everything the ground pushed up while the chain ran. Wilted is missed.
   const full = offered > 0 && opened >= offered;
   const bonus = full ? Math.round(earned * 0.5) : 0;
   earned += bonus;
@@ -1267,6 +1320,8 @@ function step(dt) {
       dot.y = Math.max(dot.r, Math.min(height - dot.r, dot.y));
     }
   }
+
+  if (phase === "slam") stepSlam(dt);
 
   if (phase === "going") {
     sow(dt);

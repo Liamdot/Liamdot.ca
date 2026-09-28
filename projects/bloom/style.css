@@ -488,45 +488,10 @@
   animation: rise 0.6s 0.45s ease both;
 }
 
-/* ---- the multiplier landing on the total ---- */
+/* ---- the payout ---- */
 
-.tally-mult {
-  margin: 0 0 4px;
-  color: #f2c94c;
-  font-size: clamp(2.2rem, 9vw, 3.6rem);
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.tally.arriving .tally-mult {
-  animation: slam 0.44s cubic-bezier(0.35, 0, 0.2, 1) both;
-}
-
-@keyframes slam {
-  0% { opacity: 0; transform: scale(4.2); }
-  60% { opacity: 1; transform: scale(4.2); }
-  92% { opacity: 1; transform: scale(0.9); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-/* Held back with visibility, not opacity: the total fades itself in when it
-   lands, and two rules animating the same property is how the shop cards ended
-   up ignoring their own state. */
-.tally-pollen.waiting {
-  visibility: hidden;
-}
-
+/* The multiplier lands on the plot itself now, not in here, so the total just
+   arrives and counts itself up. */
 .tally-pollen.landed {
   animation: land 0.42s 0.06s cubic-bezier(0.16, 1.1, 0.3, 1.2) both;
-}
-
-.tally-pollen.hit {
-  animation: hit 0.6s cubic-bezier(0.2, 1.5, 0.35, 1) both;
-}
-
-@keyframes hit {
-  0% { transform: scale(1.45); color: #fbf8f1; }
-  55% { transform: scale(0.97); color: #7ee08a; }
-  100% { transform: scale(1); color: #7ee08a; }
 }
