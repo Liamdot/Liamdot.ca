@@ -61,15 +61,15 @@ const lvl = (id) => save.levels[id] || 0;
 // its shop is bought, so they're a stretch without being out of reach.
 const PLACES = [
   { name: "the meadow", stone: 0.35, armour: 0, armourHits: 1, worth: 1,
-    soil: 5, regrow: 1, target: 200e6, blurb: "soft ground, nothing in the way" },
+    soil: 11, regrow: 1, target: 1.1e9, blurb: "soft ground, nothing in the way" },
   { name: "the orchard", stone: 0.3, armour: 0.18, armourHits: 2, worth: 2.2,
-    soil: 5.5, regrow: 1, target: 1e9, blurb: "some of it takes two knocks", unlocks: ["pierce", "heavy"] },
+    soil: 12, regrow: 1, target: 5.5e9, blurb: "some of it takes two knocks", unlocks: ["pierce", "heavy"] },
   { name: "the thicket", stone: 0.26, armour: 0.34, armourHits: 2, worth: 5,
-    soil: 6, regrow: 1.05, target: 4e9, blurb: "thick with the stubborn sort", unlocks: ["pods", "echo"] },
+    soil: 13, regrow: 1.05, target: 22e9, blurb: "thick with the stubborn sort", unlocks: ["pods", "echo"] },
   { name: "the cavern", stone: 0.22, armour: 0.5, armourHits: 3, worth: 12,
-    soil: 6.5, regrow: 1.05, target: 15e9, blurb: "half of it fights back", unlocks: ["resonance", "magnet"] },
+    soil: 14, regrow: 1.05, target: 70e9, blurb: "half of it fights back", unlocks: ["resonance", "magnet"] },
   { name: "the canopy", stone: 0.18, armour: 0.62, armourHits: 3, worth: 30,
-    soil: 7, regrow: 1.1, target: 50e9, blurb: "the last place, and it knows it", unlocks: ["momentum", "spark"] },
+    soil: 15, regrow: 1.1, target: 360e9, blurb: "the last place, and it knows it", unlocks: ["momentum", "spark"] },
 ];
 
 const place = () => PLACES[Math.min(save.area, PLACES.length - 1)];
@@ -98,11 +98,11 @@ const SHOP = [
   {
     group: "The field",
     items: [
-      { id: "seed", name: "More dots", note: "four more standing on the plot at once", cost: 12, growth: 1.34, most: 18,
+      { id: "seed", name: "More dots", note: "four more standing on the plot at once", cost: 12, growth: 1.46, most: 18,
         shows: () => `${fieldSize()} dots` },
-      { id: "soil", name: "Richer ground", note: "more under the plot, and it comes up faster", cost: 90, growth: 1.56, most: 10,
+      { id: "soil", name: "Richer ground", note: "more under the plot, and it comes up faster", cost: 140, growth: 1.92, most: 10,
         shows: () => `${soilFor()} in the ground` },
-      { id: "chisel", name: "Fewer stones", note: "stones never open - clear them out", cost: 22, growth: 1.34, most: 10,
+      { id: "chisel", name: "Fewer stones", note: "stones never open - clear them out", cost: 22, growth: 1.5, most: 10,
         shows: () => `${Math.round(stoneShare() * 100)}% stone` },
       { id: "gold", name: "Gold dots", note: "worth five times a plain one", cost: 70, growth: 1.55, most: 16,
         shows: () => `${Math.round(chanceOf("gold") * 100)}% gold` },
@@ -120,13 +120,13 @@ const SHOP = [
       // carries or it doesn't - so once it does, another fifty levels of reach
       // would buy you nothing at all. What makes the numbers grow after that is
       // the ground, the dots and the multiplier, and those are priced to match.
-      { id: "wide", name: "Wider bloom", note: "every bloom reaches further, so the chain gets going at all", cost: 15, growth: 1.5, most: 8,
+      { id: "wide", name: "Wider bloom", note: "every bloom reaches further, so the chain gets going at all", cost: 20, growth: 1.85, most: 8,
         shows: () => `${Math.round(reach("plain", 0, false))} across` },
       { id: "hold", name: "Slower to close", note: "hangs about over bare ground, catching what comes up under it", cost: 45, growth: 1.44, most: 8,
         shows: () => `${holdTime().toFixed(2)}s open` },
       { id: "lucky", name: "Bigger first bloom", note: "the one you actually click", cost: 160, growth: 1.6, most: 6,
         shows: () => `+${lvl("lucky") * 15}% on the first` },
-      { id: "air", name: "Room in the air", note: "more blooms open at once, so the chain covers more ground", cost: 70, growth: 1.5, most: 12,
+      { id: "air", name: "Room in the air", note: "more blooms open at once, so the chain covers more ground", cost: 90, growth: 1.75, most: 6,
         shows: () => `${airCap()} at once` },
       { id: "pierce", name: "Sharper bloom", note: "hits armour harder, so it cracks in fewer goes", cost: 260, growth: 1.7, most: 6,
         shows: () => `${1 + lvl("pierce")} knocks a bloom` },
@@ -135,11 +135,11 @@ const SHOP = [
   {
     group: "The chain",
     items: [
-      { id: "step", name: "Steeper multiplier", note: "each link past the start pays more", cost: 60, growth: 1.48, most: 26,
+      { id: "step", name: "Steeper multiplier", note: "each link past the start pays more", cost: 60, growth: 1.6, most: 26,
         shows: () => `+${multStep().toFixed(2)} a link` },
       { id: "early", name: "Earlier multiplier", note: "it starts climbing sooner", cost: 300, growth: 2.1, most: 4,
         shows: () => `from link ${multFrom()}` },
-      { id: "curve", name: "Runaway multiplier", note: "the longer it runs, the faster it climbs", cost: 500, growth: 1.95, most: 18,
+      { id: "curve", name: "Runaway multiplier", note: "the longer it runs, the faster it climbs", cost: 500, growth: 2.15, most: 18,
         shows: () => `×${multiplier(30).toFixed(1)} at 30 links` },
       { id: "slow", name: "Longer slow motion", note: "every tenth link drops into slow motion - this holds it there", cost: 120, growth: 1.5, most: 8,
         shows: () => `${(0.4 + lvl("slow") * 0.12).toFixed(2)}s a time` },
@@ -158,7 +158,7 @@ const SHOP = [
         shows: () => (lvl("resonance") ? `×${(2 + lvl("resonance") * 0.5).toFixed(1)} wide` : "off") },
       { id: "spark", name: "Spark", note: "every seventh link opens somewhere else entirely", cost: 800, growth: 2, most: 5,
         shows: () => (lvl("spark") ? `${lvl("spark")} at a time` : "off") },
-      { id: "pollen", name: "Fertiliser", note: "everything pays more pollen", cost: 200, growth: 1.62, most: 30,
+      { id: "pollen", name: "Fertiliser", note: "everything pays more pollen", cost: 200, growth: 1.78, most: 30,
         shows: () => `+${lvl("pollen") * 10}% pollen` },
     ],
   },
@@ -382,7 +382,7 @@ function reach(kind, depth, first) {
 // them, and then how far any one of them reaches stops mattering at all -
 // which is what made half the shop pointless. A new bloom crowds out the
 // oldest one, so the chain still carries; it just can't blanket the place.
-const airCap = () => 4 + lvl("air");
+const airCap = () => 4 + lvl("air") * 2;
 
 // Crowded out means sent away to close, not taken away. Deleting the oldest
 // outright meant that in a busy chain no bloom ever reached its closing half -
