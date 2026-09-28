@@ -286,13 +286,17 @@
   background: rgba(126, 224, 138, 0.07);
 }
 
+/* Dimmed with a filter rather than opacity, because the cards animate their
+   opacity as they arrive - and a running animation beats a plain declaration,
+   so these came up at full strength and only dropped back once the entrance
+   was over. filter and opacity are separate properties and don't fight. */
 .item:disabled {
   cursor: default;
-  opacity: 0.45;
+  filter: opacity(0.45);
 }
 
 .item.maxed {
-  opacity: 0.7;
+  filter: opacity(0.72);
   border-color: #3f7a4a;
 }
 
