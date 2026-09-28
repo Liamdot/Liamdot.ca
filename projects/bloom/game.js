@@ -1099,8 +1099,14 @@ function showTally(full, bonus) {
   if (ready) document.getElementById("tally-move").addEventListener("click", showMove);
 }
 
+let arrivingTimer = 0;
+
 function showShop(justBought) {
   const panel = document.getElementById("shop");
+  // Buying rebuilds the shop, so hold on to where the page was and whether
+  // this is the shop opening or just redrawing itself.
+  const fresh = panel.hidden;
+  const wasAt = panel.scrollTop;
   let shown = 0;
   panel.innerHTML = `
     <div class="shop-head">
@@ -1135,12 +1141,18 @@ function showShop(justBought) {
     }).join("")}
     ${save.area + 1 < PLACES.length ? `<p class="locked">There's more of this in ${PLACES[save.area + 1].name}.</p>` : ""}`;
 
-  const fresh = panel.hidden;
   panel.hidden = false;
+  panel.scrollTop = wasAt;
   if (fresh) {
+    // The cards deal themselves out when the shop opens. The class has to come
+    // off once they have, or every purchase redraws the shop and every card
+    // animates in from nothing all over again - which reads as the whole thing
+    // blinking out from under you.
     panel.classList.remove("arriving");
     void panel.offsetWidth;
     panel.classList.add("arriving");
+    clearTimeout(arrivingTimer);
+    arrivingTimer = setTimeout(() => panel.classList.remove("arriving"), 900);
   }
   hide("tally");
   document.getElementById("go-again").addEventListener("click", newGo);
