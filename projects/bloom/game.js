@@ -12,7 +12,7 @@
 //   6. Blooms        - the chain reaction itself
 //   7. Scoring       - the multiplier that runs away with itself
 //   8. Sound         - a note per link, climbing
-//   9. Feel          - particles, slow motion, floating numbers
+//   9. Feel          - particles, ripples, floating numbers
 //  10. Drawing       - all of it, once a frame
 //  11. Running       - the go, the tally, the shop, moving on
 
@@ -148,8 +148,6 @@ const SHOP = [
         shows: () => `from link ${multFrom()}` },
       { id: "curve", name: "Runaway multiplier", note: "the longer it runs, the faster it climbs", cost: 500, growth: 2.15, most: 18, needs: "rhythm",
         shows: () => `×${multiplier(30).toFixed(1)} at 30 links` },
-      { id: "slow", name: "Longer slow motion", note: "every tenth link drops into slow motion - this holds it there", cost: 120, growth: 1.5, most: 8, needs: "rhythm",
-        shows: () => `${(0.4 + lvl("slow") * 0.12).toFixed(2)}s a time` },
     ],
   },
   {
@@ -272,19 +270,18 @@ let floaters = [];
 let punch = 0;             // the kick the counter gets on every catch
 let glow = 0;              // how hot the plot is running
 let flash = 0;             // a white-out for the big moments
-let slowUntil = 0;
 let shake = 0;
 let barDirty = false;
 
 let phase = "ready";       // ready, going, done
 let combo = 0;
-let nextSlow = 10;         // the next chain length worth slowing down for
 let bestChain = 0;
 let opened = 0;
 let liveAtStart = 0;
 let sownTotal = 0;
 let lasted = 0;
 let offered = 0;
+let topMult = 1;           // the best the multiplier got to this go
 let earned = 0;
 
 function pickKind() {
@@ -333,7 +330,6 @@ function newGo() {
   opened = 0;
   earned = 0;
   combo = 0;
-  nextSlow = Math.max(10, multFrom() + 4);
   bestChain = 0;
   phase = "ready";
 
@@ -574,13 +570,6 @@ function catchDot(bloom, index) {
   plop(combo, dot.kind, dot.x);
   barDirty = true;
   shake = Math.min(shake + (dot.kind === "gold" ? 5 : 2.2), 14);
-  // Slow motion is punctuation, not a setting. It lands when the chain doubles
-  // - 10, 20, 40, 80 - so a chain of a thousand gets about seven of them, not a
-  // hundred. Left latched on it turned every good go into a minute of syrup.
-  if (combo >= nextSlow) {
-    nextSlow *= 2;
-    slowUntil = now() + 0.4 + lvl("slow") * 0.12;
-  }
 }
 
 // ===========================================================================
@@ -1078,9 +1067,13 @@ function showBar() {
 function showTally(full, bonus) {
   const panel = document.getElementById("tally");
   const ready = save.bestGo >= targetNow();
+  // What the chain was worth arrives first and lands on the total, so you see
+  // the multiplier do the work rather than reading a number it already did.
+  const slams = topMult > 1.05;
   panel.innerHTML = `
     ${full ? '<p class="full-clear">not one missed!</p>' : ""}
-    <p class="tally-pollen" id="tally-count">+0</p>
+    ${slams ? `<p class="tally-mult" id="tally-mult">×${topMult >= 10 ? commas(topMult) : topMult.toFixed(1)}</p>` : ""}
+    <p class="tally-pollen${slams ? " waiting" : " landed"}" id="tally-count">+0</p>
     <p class="tally-line">a chain of ${bestChain} &middot; ${opened} of ${offered} caught &middot; ${
       lasted.toFixed(1)}s${full ? ` &middot; +${commas(bonus)} for missing nothing` : ""}</p>
     <div class="tally-buttons">
@@ -1092,8 +1085,18 @@ function showTally(full, bonus) {
   panel.classList.remove("arriving");
   void panel.offsetWidth;              // let the animation start again
   panel.classList.add("arriving");
-  countUp(document.getElementById("tally-count"), earned, full ? 1100 : 750);
-  swell(full);
+  const count = document.getElementById("tally-count");
+  const land = () => {
+    if (slams) {
+      count.classList.remove("waiting");
+      count.classList.add("hit");     // the bounce belongs to being hit
+      shake = Math.max(shake, 12);
+      thud();
+    }
+    countUp(count, earned, full ? 1100 : 750);
+    swell(full);
+  };
+  if (slams) setTimeout(land, 430); else land();
   document.getElementById("tally-again").addEventListener("click", newGo);
   document.getElementById("tally-shop").addEventListener("click", () => { hide("tally"); showShop(); });
   if (ready) document.getElementById("tally-move").addEventListener("click", showMove);
@@ -1227,6 +1230,7 @@ function endGo() {
   // The bonus is for missing nothing at all: everything that was standing and
   // everything the ground pushed up while the chain ran. Wilted is missed.
   lasted = goTime;
+  topMult = multiplier(bestChain);
   offered = liveAtStart + (sownTotal - soil);
   const full = offered > 0 && opened >= offered;
   const bonus = full ? Math.round(earned * 0.5) : 0;
@@ -1284,9 +1288,8 @@ function step(dt) {
 
 function frame() {
   const time = now();
-  let dt = Math.min(time - last, 0.05);
+  const dt = Math.min(time - last, 0.05);
   last = time;
-  if (time < slowUntil) dt *= 0.35;      // everything drags out on a big chain
   step(dt);
   draw();
   requestAnimationFrame(frame);
