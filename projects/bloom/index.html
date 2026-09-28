@@ -18,6 +18,17 @@
     </div>
 
     <div class="actions">
+      <button id="sound-btn" aria-pressed="true" aria-label="Sound" title="Sound">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <path d="M4 7.5h3L11 4v12L7 12.5H4z" fill="currentColor"/>
+          <g class="waves" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <path d="M13.6 7.2a4 4 0 0 1 0 5.6"/>
+            <path d="M15.8 5a7 7 0 0 1 0 10"/>
+          </g>
+          <line class="slash" x1="13.5" y1="6.5" x2="18" y2="13.5"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
       <button id="info-btn" aria-expanded="false" aria-controls="info-panel" aria-label="Info" title="Info">
         <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
           <circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.8"/>
@@ -60,6 +71,10 @@
         <li><strong>v1.0</strong> &ndash; runs, the draft, and the noise it makes</li>
       </ul>
 
+      <p class="wipe-line">
+        <button type="button" class="wipe" id="wipe-btn">clear my save</button>
+      </p>
+
       <a class="more" href="../../">more stuff &rarr;</a>
     </div>
   </nav>
@@ -73,7 +88,6 @@
       <span class="stat">ground <strong id="ground">0</strong></span>
       <span class="stat target">to move on <strong id="target">0 / 0</strong></span>
       <span class="spacer"></span>
-      <button class="pill" id="sound-btn">sound on</button>
       <button class="pill" id="shop-btn">shop</button>
     </header>
 

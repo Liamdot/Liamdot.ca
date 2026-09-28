@@ -317,6 +317,7 @@ function newGo() {
   opened = 0;
   earned = 0;
   combo = 0;
+  arp = 0;
   nextSlow = Math.max(10, multFrom() + 4);
   bestChain = 0;
   phase = "ready";
@@ -559,10 +560,15 @@ let audio = null;
 let master = null;
 let sound = true;
 let lastNote = 0;          // when the last note actually sounded
+let arp = 0;               // how far up the run we are
 
-// Two octaves of pentatonic, gone round and round rather than climbed. The old
-// ladder carried on up a semitone at a time until it was a whistle, and then
-// stayed there for the rest of the chain.
+// Two octaves of pentatonic, walked up a step at a time and then back to the
+// bottom - an arpeggio, and one that starts again with every go.
+//
+// The step is counted per note that actually sounds, not per dot opened. Taking
+// it from the chain instead meant the run jumped five or six steps between one
+// note and the next, which is why it came out sounding like nothing in
+// particular however neatly the scale was laid out.
 const STEPS = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
 
 // A chain can open forty dots a second. Nobody can hear forty notes a second -
@@ -618,9 +624,11 @@ function note(n) {
   if (at - lastNote < NOTE_GAP) return;
   lastNote = at;
 
-  // Softer the longer the chain runs, so a good go swells rather than shouts.
+  // Softer the longer the chain runs, so a good go swells rather than shouts,
+  // and up an octave once it's going properly.
   const level = 0.12 * (0.4 + 0.6 / (1 + n * 0.012));
-  const step = STEPS[(n - 1) % STEPS.length] + (n > 60 ? 12 : 0);
+  const step = STEPS[arp % STEPS.length] + (n > 60 ? 12 : 0);
+  arp++;
 
   try {
     const soften = ctx.createBiquadFilter();
@@ -1041,9 +1049,47 @@ document.getElementById("shop-btn").addEventListener("click", () => {
   else hide("shop");
 });
 
-document.getElementById("sound-btn").addEventListener("click", (e) => {
+const soundBtn = document.getElementById("sound-btn");
+
+soundBtn.addEventListener("click", () => {
   sound = !sound;
-  e.currentTarget.textContent = sound ? "sound on" : "sound off";
+  soundBtn.setAttribute("aria-pressed", sound);
+  soundBtn.title = sound ? "Sound" : "Sound off";
+});
+
+// Starting over, behind a second click so it can't happen by accident.
+const wipeBtn = document.getElementById("wipe-btn");
+let wipeArmed = false;
+
+// clicking away forgets that you were half way through asking
+document.addEventListener("click", (e) => {
+  if (wipeArmed && e.target !== wipeBtn) {
+    wipeArmed = false;
+    wipeBtn.classList.remove("sure");
+    wipeBtn.textContent = "clear my save";
+  }
+});
+
+wipeBtn.addEventListener("click", () => {
+  if (!wipeArmed) {
+    wipeArmed = true;
+    wipeBtn.classList.add("sure");
+    wipeBtn.textContent = "really? this clears everything";
+    return;
+  }
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch (e) {
+    // nothing was saved anyway
+  }
+  Object.assign(save, {
+    pollen: 0, levels: {}, area: 0, seeds: 0, goes: 0, bestChain: 0, bestGo: 0,
+  });
+  wipeArmed = false;
+  wipeBtn.classList.remove("sure");
+  wipeBtn.textContent = "cleared - back to the meadow";
+  setTimeout(() => { wipeBtn.textContent = "clear my save"; }, 2500);
+  newGo();
 });
 
 function store() {

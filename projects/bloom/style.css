@@ -342,3 +342,46 @@
   border-radius: 2px;
   background: #3f7a4a;
 }
+
+/* ---- the sound toggle, up with the info button ---- */
+
+#sound-btn .slash { display: none; }
+
+#sound-btn[aria-pressed="false"] .waves { display: none; }
+#sound-btn[aria-pressed="false"] .slash { display: block; }
+
+#sound-btn[aria-pressed="false"] {
+  color: #999;
+}
+
+/* ---- starting over, tucked under the info panel ---- */
+
+/* The panel lives inside .topbar, whose buttons are all 32px circles - so this
+   one has to say otherwise. */
+.info-panel .wipe-line {
+  margin: 16px 0 0;
+}
+
+.info-panel .wipe {
+  width: auto;
+  height: auto;
+  padding: 5px 12px;
+  border: 2px solid #ddd;
+  border-radius: 20px;
+  background: none;
+  color: #999;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.info-panel .wipe:hover {
+  border-color: #d94f4f;
+  color: #d94f4f;
+}
+
+.info-panel .wipe.sure {
+  border-color: #d94f4f;
+  background: #d94f4f;
+  color: #fbf8f1;
+}
