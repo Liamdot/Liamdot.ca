@@ -186,8 +186,9 @@ function buy(id) {
   if (save.pollen < cost) return;
   save.pollen -= cost;
   save.levels[id] = lvl(id) + 1;
+  chime();
   store();
-  showShop();
+  showShop(id);
 }
 
 // ===========================================================================
@@ -266,7 +267,11 @@ let goTime = 0;            // how long this go has been running
 let blooms = [];
 let flying = [];           // seeds thrown by pods, which bloom where they land
 let sparks = [];
+let rings = [];            // the ripple left behind when something opens
 let floaters = [];
+let punch = 0;             // the kick the counter gets on every catch
+let glow = 0;              // how hot the plot is running
+let flash = 0;             // a white-out for the big moments
 let slowUntil = 0;
 let shake = 0;
 let barDirty = false;
@@ -294,7 +299,7 @@ function pickKind() {
 // One dot, anywhere on the plot. `up` is how far through coming up it is:
 // a sprouted one pushes through the ground rather than blinking into being,
 // and can't be caught until it's most of the way out.
-function makeDot(up = 1) {
+function makeDot(up = 1, keep = false) {
   const kind = pickKind();
   const speed = rand(22, 50) * (KINDS[kind].slow ? 0.6 : 1);
   const angle = rand(0, Math.PI * 2);
@@ -311,7 +316,7 @@ function makeDot(up = 1) {
     // What comes up mid-chain doesn't wait around. Miss it and it's gone, which
     // is why a wider bloom that covers more ground is worth having however
     // much else you've bought. What was standing when you clicked never wilts.
-    wilt: up < 1 ? WILT : Infinity,
+    wilt: keep ? Infinity : WILT,
   };
 }
 
@@ -320,7 +325,11 @@ function newGo() {
   blooms = [];
   flying = [];
   sparks = [];
+  rings = [];
   floaters = [];
+  punch = 0;
+  glow = 0;
+  flash = 0;
   opened = 0;
   earned = 0;
   combo = 0;
@@ -328,7 +337,7 @@ function newGo() {
   bestChain = 0;
   phase = "ready";
 
-  for (let i = 0; i < fieldSize(); i++) dots.push(makeDot());
+  for (let i = 0; i < fieldSize(); i++) dots.push(makeDot(0, true));   // they come up as you watch
 
   soil = soilFor();
   sownTotal = soil;
@@ -469,7 +478,9 @@ function stepBlooms(dt) {
     for (let i = dots.length - 1; i >= 0; i--) {
       const dot = dots[i];
       if (KINDS[dot.kind].dead) continue;                 // a stone just sits there
-      if (dot.up < 0.7) continue;                         // still coming up
+      // Only what comes up mid-chain has to finish arriving. The starting field
+      // grows in for the look of it, and is catchable the instant you click.
+      if (dot.wilt !== Infinity && dot.up < 0.7) continue;
       if (bloom.knocked.has(dot)) continue;
       if (Math.hypot(dot.x - bloom.x, dot.y - bloom.y) > bloom.r + dot.r) continue;
 
@@ -556,6 +567,9 @@ function catchDot(bloom, index) {
   }
 
   burst(dot.x, dot.y, KINDS[dot.kind].colour, dot.kind === "gold" ? 26 : 14);
+  ripple(dot.x, dot.y, KINDS[dot.kind].colour, dot.r);
+  punch = Math.min(punch + 0.4, 1.3);
+  glow = Math.min(glow + 0.07, 1);
   float(dot.x, dot.y, `+${commas(paid)}`, mult > 1.05 ? "#f2c94c" : KINDS[dot.kind].colour);
   plop(combo, dot.kind, dot.x);
   barDirty = true;
@@ -733,6 +747,35 @@ function spritz(x) {
   }
 }
 
+// Something bought: a seed dropped into a tin.
+function chime() {
+  const ctx = wake();
+  if (!ctx) return;
+  try {
+    const at = ctx.currentTime;
+    const out = placeAt(ctx, PLOT.w / 2);
+    bubble(ctx, at, out, 780, 0.17, 0.05);
+    hiss(ctx, at, out, { level: 0.08, length: 0.085, freq: 4400, q: 2, sweep: 1.6 });
+  } catch (e) {
+    sound = false;
+  }
+}
+
+// A go paying out. The big one is for a go that missed nothing.
+function swell(big) {
+  const ctx = wake();
+  if (!ctx) return;
+  try {
+    const at = ctx.currentTime;
+    const out = placeAt(ctx, PLOT.w / 2);
+    hiss(ctx, at, out, { level: big ? 0.15 : 0.08, length: big ? 0.9 : 0.5,
+      freq: 700, q: 0.6, sweep: big ? 4 : 2.4 });
+    bubble(ctx, at, out, big ? 330 : 250, big ? 0.22 : 0.13, big ? 0.3 : 0.2);
+  } catch (e) {
+    sound = false;
+  }
+}
+
 // The click that starts it all: a soft low knock with a breath of air on it.
 function thud(x) {
   const ctx = wake();
@@ -770,9 +813,17 @@ function burst(x, y, colour, count) {
       vy: Math.sin(angle) * speed,
       life: rand(0.3, 0.8),
       age: 0,
-      size: rand(1.5, 3.5),
+      size: rand(1.6, 4.2),
+      spin: rand(-6, 6),
+      turn: rand(0, Math.PI * 2),
     });
   }
+}
+
+// The ripple a bloom leaves on the air. It costs nothing and it's most of the
+// reason a chain reads as a chain rather than a lot of circles.
+function ripple(x, y, colour, size) {
+  rings.push({ x, y, colour, r: size, max: size + 46, age: 0, life: 0.42 });
 }
 
 const float = (x, y, text, colour) => floaters.push({ x, y, text, colour, age: 0, life: 0.9 });
@@ -782,10 +833,15 @@ function stepFeel(dt) {
     spark.age += dt;
     spark.x += spark.vx * dt;
     spark.y += spark.vy * dt;
+    spark.vy += 220 * dt;            // they fall, which is what makes them petals
     spark.vx *= 1 - 2.4 * dt;
-    spark.vy *= 1 - 2.4 * dt;
+    spark.vy *= 1 - 1.1 * dt;
+    spark.turn += spark.spin * dt;
   }
   sparks = sparks.filter((spark) => spark.age < spark.life);
+
+  for (const ring of rings) ring.age += dt;
+  rings = rings.filter((ring) => ring.age < ring.life);
 
   for (const one of floaters) {
     one.age += dt;
@@ -794,6 +850,9 @@ function stepFeel(dt) {
   floaters = floaters.filter((one) => one.age < one.life);
 
   shake = Math.max(0, shake - 34 * dt);
+  punch = Math.max(0, punch - 3.4 * dt);
+  glow = Math.max(0, glow - 0.5 * dt);
+  flash = Math.max(0, flash - 1.7 * dt);
 }
 
 const WORDS = [
@@ -837,6 +896,17 @@ function draw() {
   ctx.save();
   ctx.clip();
 
+  // The plot warms up as the chain runs and cools when it stops, so a big go
+  // is visibly hotter than a small one before you've read a single number.
+  if (glow > 0.01) {
+    const warm = ctx.createRadialGradient(width / 2, height / 2, 0,
+      width / 2, height / 2, Math.max(width, height) * 0.62);
+    warm.addColorStop(0, `rgba(126, 224, 138, ${0.13 * glow})`);
+    warm.addColorStop(1, "rgba(126, 224, 138, 0)");
+    ctx.fillStyle = warm;
+    ctx.fillRect(0, 0, width, height);
+  }
+
   for (const dot of dots) {
     const kind = KINDS[dot.kind];
     const wobble = Math.sin(now() * 2 + dot.wobble) * 1.2;
@@ -877,6 +947,17 @@ function draw() {
     ctx.fill();
   }
 
+  for (const ring of rings) {
+    const t = ring.age / ring.life;
+    ctx.beginPath();
+    ctx.arc(ring.x, ring.y, ring.r + (ring.max - ring.r) * (1 - (1 - t) ** 2), 0, Math.PI * 2);
+    ctx.strokeStyle = ring.colour;
+    ctx.globalAlpha = (1 - t) * 0.55;
+    ctx.lineWidth = 2.4 * (1 - t) + 0.4;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
   for (const bloom of blooms) {
     const kind = KINDS[bloom.kind] || KINDS.plain;
     const fade = Math.min(1, (bloom.life - bloom.age) / 0.4);
@@ -893,17 +974,26 @@ function draw() {
   }
 
   for (const spark of sparks) {
-    ctx.globalAlpha = 1 - spark.age / spark.life;
+    const left = 1 - spark.age / spark.life;
+    ctx.save();
+    ctx.translate(spark.x, spark.y);
+    ctx.rotate(spark.turn);
+    ctx.globalAlpha = left;
     ctx.fillStyle = spark.colour;
-    ctx.fillRect(spark.x, spark.y, spark.size, spark.size);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, spark.size * left, spark.size * 0.62 * left, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
   ctx.globalAlpha = 1;
 
   ctx.textAlign = "center";
   for (const one of floaters) {
-    ctx.globalAlpha = 1 - one.age / one.life;
+    const t = one.age / one.life;
+    const up = Math.min(1, t * 6);                 // pops out, then drifts
+    ctx.globalAlpha = 1 - t * t;
     ctx.fillStyle = one.colour;
-    ctx.font = "700 15px ui-sans-serif, system-ui, sans-serif";
+    ctx.font = `700 ${(13 + up * 4).toFixed(1)}px ui-sans-serif, system-ui, sans-serif`;
     ctx.fillText(one.text, one.x, one.y);
   }
   ctx.globalAlpha = 1;
@@ -913,7 +1003,7 @@ function draw() {
   // numbers get they never land on each other.
   if (combo > 1 && phase === "going") {
     const mult = multiplier(combo);
-    const size = Math.min(34 + combo * 2.2, 92);
+    const size = Math.min(34 + combo * 2.2, 92) * (1 + punch * 0.09);
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = "#f1ede4";
     ctx.font = `800 ${size}px ui-sans-serif, system-ui, sans-serif`;
@@ -935,6 +1025,11 @@ function draw() {
     ctx.globalAlpha = 1;
   }
 
+  if (flash > 0.01) {
+    ctx.fillStyle = `rgba(242, 201, 76, ${flash * 0.55})`;
+    ctx.fillRect(0, 0, width, height);
+  }
+
   ctx.restore();   // the plot's clip
   ctx.restore();
 }
@@ -953,6 +1048,19 @@ const bar = {
 };
 
 const show = (id) => { document.getElementById(id).hidden = false; };
+
+// A total that lands all at once is just a number. One that runs up to itself
+// is the paying-out, which is the part worth watching.
+function countUp(el, to, ms) {
+  const from = 0;
+  const started = performance.now();
+  (function tick(at) {
+    const t = Math.min(1, (at - started) / ms);
+    const eased = 1 - (1 - t) ** 3;
+    el.textContent = `+${commas(from + (to - from) * eased)}`;
+    if (t < 1) requestAnimationFrame(tick);
+  })(started);
+}
 const hide = (id) => { document.getElementById(id).hidden = true; };
 
 function showBar() {
@@ -972,7 +1080,7 @@ function showTally(full, bonus) {
   const ready = save.bestGo >= targetNow();
   panel.innerHTML = `
     ${full ? '<p class="full-clear">not one missed!</p>' : ""}
-    <p class="tally-pollen">+${commas(earned)}</p>
+    <p class="tally-pollen" id="tally-count">+0</p>
     <p class="tally-line">a chain of ${bestChain} &middot; ${opened} of ${offered} caught &middot; ${
       lasted.toFixed(1)}s${full ? ` &middot; +${commas(bonus)} for missing nothing` : ""}</p>
     <div class="tally-buttons">
@@ -981,13 +1089,19 @@ function showTally(full, bonus) {
       ${ready ? `<button class="pill gold" id="tally-move">leave ${place().name}</button>` : ""}
     </div>`;
   panel.hidden = false;
+  panel.classList.remove("arriving");
+  void panel.offsetWidth;              // let the animation start again
+  panel.classList.add("arriving");
+  countUp(document.getElementById("tally-count"), earned, full ? 1100 : 750);
+  swell(full);
   document.getElementById("tally-again").addEventListener("click", newGo);
   document.getElementById("tally-shop").addEventListener("click", () => { hide("tally"); showShop(); });
   if (ready) document.getElementById("tally-move").addEventListener("click", showMove);
 }
 
-function showShop() {
+function showShop(justBought) {
   const panel = document.getElementById("shop");
+  let shown = 0;
   panel.innerHTML = `
     <div class="shop-head">
       <div>
@@ -1009,7 +1123,7 @@ function showShop() {
           const maxed = at >= item.most;
           const cost = costOf(item);
           const can = !maxed && save.pollen >= cost;
-          return `<button class="item${can ? " can" : ""}${maxed ? " maxed" : ""}" data-id="${item.id}"${maxed || !can ? " disabled" : ""}>
+          return `<button class="item${can ? " can" : ""}${maxed ? " maxed" : ""}" data-id="${item.id}"${maxed || !can ? " disabled" : ""} style="--in:${(shown++ % 14) * 26}ms">
             <span class="item-name">${item.name}</span>
             <span class="item-cost">${maxed ? "done" : commas(cost)}</span>
             <span class="item-note">${item.note}</span>
@@ -1021,9 +1135,19 @@ function showShop() {
     }).join("")}
     ${save.area + 1 < PLACES.length ? `<p class="locked">There's more of this in ${PLACES[save.area + 1].name}.</p>` : ""}`;
 
+  const fresh = panel.hidden;
   panel.hidden = false;
+  if (fresh) {
+    panel.classList.remove("arriving");
+    void panel.offsetWidth;
+    panel.classList.add("arriving");
+  }
   hide("tally");
   document.getElementById("go-again").addEventListener("click", newGo);
+  if (justBought) {
+    const card = panel.querySelector(`[data-id="${justBought}"]`);
+    if (card) card.classList.add("bought");
+  }
   showBar();
 }
 
@@ -1047,6 +1171,29 @@ function showMove() {
   document.getElementById("stay").addEventListener("click", newGo);
 }
 
+// Arriving somewhere should feel like arriving. The ground closes over, the
+// new place says its name, and the plot is already laid out underneath by the
+// time it clears.
+function curtainTo(name, line, midway) {
+  const panel = document.getElementById("curtain");
+  panel.innerHTML = `<div class="curtain-in">
+    <p class="curtain-name">${name}</p>
+    <p class="curtain-line">${line}</p>
+  </div>`;
+  panel.hidden = false;
+  panel.classList.remove("open");
+  void panel.offsetWidth;
+  panel.classList.add("open");
+  setTimeout(midway, 520);
+  setTimeout(() => {
+    panel.classList.add("going");
+    setTimeout(() => {
+      panel.hidden = true;
+      panel.classList.remove("open", "going");
+    }, 520);
+  }, 1750);
+}
+
 function moveOn() {
   save.area++;
   save.seeds++;
@@ -1054,7 +1201,9 @@ function moveOn() {
   save.levels = {};
   save.bestGo = 0;
   store();
-  newGo();
+  hide("tally");
+  hide("shop");
+  curtainTo(place().name, place().blurb, newGo);
 }
 
 function endGo() {
@@ -1070,7 +1219,10 @@ function endGo() {
   const full = offered > 0 && opened >= offered;
   const bonus = full ? Math.round(earned * 0.5) : 0;
   earned += bonus;
-  if (full) shake = 16;
+  if (full) {
+    shake = 18;
+    flash = 1;
+  }
 
   save.pollen += earned;
   save.bestGo = Math.max(save.bestGo, earned);
