@@ -556,39 +556,94 @@ function catchDot(bloom, index) {
 // ===========================================================================
 
 let audio = null;
+let master = null;
 let sound = true;
+let lastNote = 0;          // when the last note actually sounded
 
-const STEPS = [0, 2, 4, 7, 9];   // pentatonic: no wrong notes, however long the chain
+// Two octaves of pentatonic, gone round and round rather than climbed. The old
+// ladder carried on up a semitone at a time until it was a whistle, and then
+// stayed there for the rest of the chain.
+const STEPS = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
 
-function tone(setup) {
-  if (!sound) return;
+// A chain can open forty dots a second. Nobody can hear forty notes a second -
+// it just arrives as noise - so notes are spaced out and the ones in between
+// pass quietly. What's left is an arpeggio rolling along under the chain.
+const NOTE_GAP = 0.07;
+
+function wake() {
+  if (!sound) return null;
   try {
-    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    if (!audio) {
+      audio = new (window.AudioContext || window.webkitAudioContext)();
+      // Everything goes through a compressor, so a hundred overlapping notes
+      // lean on each other instead of piling up into a wall.
+      const squash = audio.createDynamicsCompressor();
+      squash.threshold.value = -24;
+      squash.knee.value = 12;
+      squash.ratio.value = 12;
+      squash.attack.value = 0.004;
+      squash.release.value = 0.25;
+      master = audio.createGain();
+      master.gain.value = 0.85;
+      master.connect(squash).connect(audio.destination);
+    }
     if (audio.state === "suspended") audio.resume();
-    const osc = audio.createOscillator();
-    const gain = audio.createGain();
-    osc.type = "sine";
-    osc.connect(gain).connect(audio.destination);
-    setup(osc, gain, audio.currentTime);
-    osc.start();
-    osc.stop(audio.currentTime + 0.6);
+    return audio;
   } catch (e) {
     sound = false;   // no audio here; the game is fine without it
+    return null;
   }
 }
 
-const note = (n) => tone((osc, gain, at) => {
-  const step = STEPS[(n - 1) % STEPS.length] + 12 * Math.floor((n - 1) / STEPS.length);
-  osc.frequency.value = 261.6 * 2 ** (Math.min(step, 38) / 12);
-  gain.gain.setValueAtTime(0.0001, at);
-  gain.gain.exponentialRampToValueAtTime(0.16, at + 0.012);
-  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.5);
-});
+function tone(setup, through) {
+  const ctx = wake();
+  if (!ctx) return;
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(through || master);
+    setup(osc, gain, ctx.currentTime);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.6);
+  } catch (e) {
+    sound = false;
+  }
+}
+
+function note(n) {
+  const ctx = wake();
+  if (!ctx) return;
+  const at = ctx.currentTime;
+  if (at - lastNote < NOTE_GAP) return;
+  lastNote = at;
+
+  // Softer the longer the chain runs, so a good go swells rather than shouts.
+  const level = 0.12 * (0.4 + 0.6 / (1 + n * 0.012));
+  const step = STEPS[(n - 1) % STEPS.length] + (n > 60 ? 12 : 0);
+
+  try {
+    const soften = ctx.createBiquadFilter();
+    soften.type = "lowpass";
+    soften.frequency.value = 2200;
+    soften.connect(master);
+    tone((osc, gain) => {
+      osc.type = "triangle";
+      osc.frequency.value = 261.6 * 2 ** (step / 12);
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(level, at + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.36);
+    }, soften);
+  } catch (e) {
+    sound = false;
+  }
+}
 
 const thud = () => tone((osc, gain, at) => {
+  osc.type = "sine";
   osc.frequency.setValueAtTime(180, at);
   osc.frequency.exponentialRampToValueAtTime(60, at + 0.25);
-  gain.gain.setValueAtTime(0.2, at);
+  gain.gain.setValueAtTime(0.18, at);
   gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.3);
 });
 
