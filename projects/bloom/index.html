@@ -35,24 +35,28 @@
     <div class="info-panel" id="info-panel" hidden>
       <h2>Bloom</h2>
       <p class="meta">made September 2026</p>
-      <p>One click opens one bloom. Everything the bloom touches opens too, and so on, for as long as it keeps finding something. Each go pays pollen, pollen buys upgrades, and the upgrades are the game. It starts pitiful on purpose.</p>
+      <p>One click opens one bloom. Everything the bloom touches opens too, and so on, for as long as it keeps finding something &mdash; and the ground keeps pushing up more while it runs, so a chain lives as long as you can feed it. Each go pays pollen, pollen buys upgrades, and the upgrades are the game. It starts pitiful on purpose.</p>
 
       <h3>How to play</h3>
       <ul>
         <li>Click once, anywhere &mdash; where and when is the whole decision</li>
         <li>Whatever the chain opens pays pollen; spend it in the shop, then go again</li>
         <li>Nothing is ever lost &mdash; a bad go just pays less</li>
-        <li>Leave nothing standing and the go pays half as much again</li>
-        <li>Grey rings are armour: each ring is another knock before it opens</li>
-        <li>Once a place has paid you enough, move on. That costs every upgrade and all your pollen, and hands back a seed that pays for ever &mdash; and the next place is harder, with more in the shop</li>
+        <li><strong>ground</strong> is what's still under the plot. While the chain runs it keeps pushing dots up, quickly at first and slower as the go goes on, until there's nothing left to give</li>
+        <li>What comes up mid-chain wilts if nothing reaches it, so a chain dies the moment it stops keeping pace</li>
+        <li>Catch every last one, standing and sprouted, and the go pays half as much again</li>
         <li>Past the sixth link the multiplier starts climbing, and the climb itself gets steeper</li>
-        <li>Grey stones never open. Half the field is stone to begin with; clear them out</li>
-        <li>Gold pays five times a plain dot, blue opens slowly but huge, purple throws off two more blooms</li>
-        <li>A long chain slows time down so you can watch it happen</li>
+        <li>Grey rings are armour: each ring is another knock before it opens</li>
+        <li>Grey stones never open. A third of the plot is stone to begin with; clear them out</li>
+        <li>Gold pays five times a plain dot, blue opens slowly but huge, purple bursts and throws seeds that bloom where they land</li>
+        <li>Only so many blooms fit in the air at once &mdash; a new one crowds out the oldest</li>
+        <li>Once a place has paid you enough, move on. That costs every upgrade and all your pollen, and hands back a seed that pays for ever &mdash; and the next place is harder, with more in the shop</li>
+        <li>The plot is the same size on every screen, so resizing the window changes nothing</li>
       </ul>
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v1.1</strong> &ndash; a fixed plot, and ground that keeps giving while the chain runs</li>
         <li><strong>v1.0</strong> &ndash; runs, the draft, and the noise it makes</li>
       </ul>
 
@@ -66,6 +70,7 @@
       <span class="stat">pollen <strong id="pollen">0</strong></span>
       <span class="stat">this go <strong id="this-go">0</strong></span>
       <span class="stat">chain <strong id="chain">0</strong></span>
+      <span class="stat">ground <strong id="ground">0</strong></span>
       <span class="stat target">to move on <strong id="target">0 / 0</strong></span>
       <span class="spacer"></span>
       <button class="pill" id="sound-btn">sound on</button>

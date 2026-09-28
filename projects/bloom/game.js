@@ -7,13 +7,14 @@
 //   1. Saved         - pollen, upgrades, which place you're in
 //   2. Places        - the five of them, and what makes each harder
 //   3. The shop      - everything you can buy, some of it locked away
-//   4. The field     - dots, stones, and the armoured ones
-//   5. Blooms        - the chain reaction itself
-//   6. Scoring       - the multiplier that runs away with itself
-//   7. Sound         - a note per link, climbing
-//   8. Feel          - particles, slow motion, floating numbers
-//   9. Drawing       - all of it, once a frame
-//  10. Running       - the go, the tally, the shop, moving on
+//   4. The plot      - the fixed patch of ground everyone plays on
+//   5. The field     - dots, stones, armour, and the ground they grow back from
+//   6. Blooms        - the chain reaction itself
+//   7. Scoring       - the multiplier that runs away with itself
+//   8. Sound         - a note per link, climbing
+//   9. Feel          - particles, slow motion, floating numbers
+//  10. Drawing       - all of it, once a frame
+//  11. Running       - the go, the tally, the shop, moving on
 
 const SAVE_KEY = "bloom";
 
@@ -60,23 +61,27 @@ const lvl = (id) => save.levels[id] || 0;
 // its shop is bought, so they're a stretch without being out of reach.
 const PLACES = [
   { name: "the meadow", stone: 0.35, armour: 0, armourHits: 1, worth: 1,
-    target: 2e6, blurb: "soft ground, nothing in the way" },
+    soil: 5, regrow: 1, target: 200e6, blurb: "soft ground, nothing in the way" },
   { name: "the orchard", stone: 0.3, armour: 0.18, armourHits: 2, worth: 2.2,
-    target: 130e6, blurb: "some of it takes two knocks", unlocks: ["pierce", "heavy"] },
+    soil: 5.5, regrow: 1, target: 1e9, blurb: "some of it takes two knocks", unlocks: ["pierce", "heavy"] },
   { name: "the thicket", stone: 0.26, armour: 0.34, armourHits: 2, worth: 5,
-    target: 850e6, blurb: "thick with the stubborn sort", unlocks: ["pods", "echo"] },
+    soil: 6, regrow: 1.05, target: 4e9, blurb: "thick with the stubborn sort", unlocks: ["pods", "echo"] },
   { name: "the cavern", stone: 0.22, armour: 0.5, armourHits: 3, worth: 12,
-    target: 4e9, blurb: "half of it fights back", unlocks: ["resonance", "magnet"] },
+    soil: 6.5, regrow: 1.05, target: 15e9, blurb: "half of it fights back", unlocks: ["resonance", "magnet"] },
   { name: "the canopy", stone: 0.18, armour: 0.62, armourHits: 3, worth: 30,
-    target: 19e9, blurb: "the last place, and it knows it", unlocks: ["momentum", "spark"] },
+    soil: 7, regrow: 1.1, target: 50e9, blurb: "the last place, and it knows it", unlocks: ["momentum", "spark"] },
 ];
 
 const place = () => PLACES[Math.min(save.area, PLACES.length - 1)];
 
-// Past the last place it keeps going, twenty times harder each time.
-const targetNow = () => (save.area < PLACES.length
-  ? place().target
-  : place().target * 20 ** (save.area - PLACES.length + 1));
+// Past the last place it keeps going. Takings there rise with the seeds you're
+// carrying, so the bar rises the same way, plus a little each time.
+const targetNow = () => {
+  if (save.area < PLACES.length) return place().target;
+  const atLast = 1 + (PLACES.length - 1) * 0.6;
+  const extra = save.area - PLACES.length + 1;
+  return place().target * (seedBonus() / atLast) * 1.4 ** extra;
+};
 
 const seedBonus = () => 1 + save.seeds * 0.6;
 
@@ -93,8 +98,10 @@ const SHOP = [
   {
     group: "The field",
     items: [
-      { id: "seed", name: "More dots", note: "four more dots out there", cost: 12, growth: 1.29, most: 90,
+      { id: "seed", name: "More dots", note: "four more standing on the plot at once", cost: 12, growth: 1.34, most: 18,
         shows: () => `${fieldSize()} dots` },
+      { id: "soil", name: "Richer ground", note: "more under the plot, and it comes up faster", cost: 90, growth: 1.56, most: 10,
+        shows: () => `${soilFor()} in the ground` },
       { id: "chisel", name: "Fewer stones", note: "stones never open - clear them out", cost: 22, growth: 1.34, most: 10,
         shows: () => `${Math.round(stoneShare() * 100)}% stone` },
       { id: "gold", name: "Gold dots", note: "worth five times a plain one", cost: 70, growth: 1.55, most: 16,
@@ -108,12 +115,19 @@ const SHOP = [
   {
     group: "The bloom",
     items: [
-      { id: "wide", name: "Wider bloom", note: "every bloom reaches further", cost: 15, growth: 1.3, most: 80,
+      // Short ladders on purpose, and cheap. Everything in this group is about
+      // getting a chain to carry in the first place, and a chain reaction either
+      // carries or it doesn't - so once it does, another fifty levels of reach
+      // would buy you nothing at all. What makes the numbers grow after that is
+      // the ground, the dots and the multiplier, and those are priced to match.
+      { id: "wide", name: "Wider bloom", note: "every bloom reaches further, so the chain gets going at all", cost: 15, growth: 1.5, most: 8,
         shows: () => `${Math.round(reach("plain", 0, false))} across` },
-      { id: "hold", name: "Slower to close", note: "stays open longer, so it catches more", cost: 45, growth: 1.4, most: 30,
+      { id: "hold", name: "Slower to close", note: "hangs about over bare ground, catching what comes up under it", cost: 45, growth: 1.44, most: 8,
         shows: () => `${holdTime().toFixed(2)}s open` },
-      { id: "lucky", name: "Bigger first bloom", note: "the one you actually click", cost: 160, growth: 1.55, most: 12,
+      { id: "lucky", name: "Bigger first bloom", note: "the one you actually click", cost: 160, growth: 1.6, most: 6,
         shows: () => `+${lvl("lucky") * 15}% on the first` },
+      { id: "air", name: "Room in the air", note: "more blooms open at once, so the chain covers more ground", cost: 70, growth: 1.5, most: 12,
+        shows: () => `${airCap()} at once` },
       { id: "pierce", name: "Sharper bloom", note: "hits armour harder, so it cracks in fewer goes", cost: 260, growth: 1.7, most: 6,
         shows: () => `${1 + lvl("pierce")} knocks a bloom` },
     ],
@@ -121,14 +135,14 @@ const SHOP = [
   {
     group: "The chain",
     items: [
-      { id: "step", name: "Steeper multiplier", note: "each link past the start pays more", cost: 60, growth: 1.46, most: 40,
+      { id: "step", name: "Steeper multiplier", note: "each link past the start pays more", cost: 60, growth: 1.48, most: 26,
         shows: () => `+${multStep().toFixed(2)} a link` },
       { id: "early", name: "Earlier multiplier", note: "it starts climbing sooner", cost: 300, growth: 2.1, most: 4,
         shows: () => `from link ${multFrom()}` },
-      { id: "curve", name: "Runaway multiplier", note: "the longer it runs, the faster it climbs", cost: 500, growth: 1.95, most: 25,
+      { id: "curve", name: "Runaway multiplier", note: "the longer it runs, the faster it climbs", cost: 500, growth: 1.95, most: 18,
         shows: () => `×${multiplier(30).toFixed(1)} at 30 links` },
-      { id: "slow", name: "Longer slow motion", note: "more time to watch it happen", cost: 120, growth: 1.5, most: 8,
-        shows: () => `${(0.55 + lvl("slow") * 0.3).toFixed(1)}s` },
+      { id: "slow", name: "Longer slow motion", note: "every tenth link drops into slow motion - this holds it there", cost: 120, growth: 1.5, most: 8,
+        shows: () => `${(0.4 + lvl("slow") * 0.12).toFixed(2)}s a time` },
     ],
   },
   {
@@ -144,7 +158,7 @@ const SHOP = [
         shows: () => (lvl("resonance") ? `×${(2 + lvl("resonance") * 0.5).toFixed(1)} wide` : "off") },
       { id: "spark", name: "Spark", note: "every seventh link opens somewhere else entirely", cost: 800, growth: 2, most: 5,
         shows: () => (lvl("spark") ? `${lvl("spark")} at a time` : "off") },
-      { id: "pollen", name: "Fertiliser", note: "everything pays more pollen", cost: 200, growth: 1.62, most: 40,
+      { id: "pollen", name: "Fertiliser", note: "everything pays more pollen", cost: 200, growth: 1.62, most: 30,
         shows: () => `+${lvl("pollen") * 10}% pollen` },
     ],
   },
@@ -152,9 +166,11 @@ const SHOP = [
 
 const ALL = SHOP.flatMap((group) => group.items);
 const itemOf = (id) => ALL.find((one) => one.id === id);
-// Everything costs more in a harder place, so arriving with a seed's worth of
-// income doesn't mean buying the whole shop back in three goes.
-const costOf = (item) => Math.round(item.cost * item.growth ** lvl(item.id) * 8 ** save.area);
+// Prices rise with a place exactly as its takings do, so every place is climbed
+// at the same pace - and arriving with a pocketful of seeds doesn't mean buying
+// the whole shop back in three goes.
+const costOf = (item) => Math.round(
+  item.cost * item.growth ** lvl(item.id) * place().worth * seedBonus());
 
 function buy(id) {
   const item = itemOf(id);
@@ -168,7 +184,29 @@ function buy(id) {
 }
 
 // ===========================================================================
-// 4. The field
+// 4. The plot
+// ===========================================================================
+//
+// The plot is the same size for everyone, always. The canvas is only a window
+// onto it: whatever shape the window is, the plot is scaled to fit and centred
+// inside it. A big monitor gets a bigger picture of exactly the same ground,
+// and dragging the window narrow no longer herds the dots into a huddle -
+// which used to be the cheapest trick in the game.
+
+const PLOT = { w: 840, h: 540 };
+const view = { scale: 1, ox: 0, oy: 0 };
+
+function fitView() {
+  view.scale = Math.min(canvas.clientWidth / PLOT.w, canvas.clientHeight / PLOT.h) || 1;
+  view.ox = (canvas.clientWidth - PLOT.w * view.scale) / 2;
+  view.oy = (canvas.clientHeight - PLOT.h * view.scale) / 2;
+}
+
+// screen -> plot
+const toPlot = (x, y) => ({ x: (x - view.ox) / view.scale, y: (y - view.oy) / view.scale });
+
+// ===========================================================================
+// 5. The field
 // ===========================================================================
 
 const KINDS = {
@@ -182,8 +220,31 @@ const KINDS = {
   armour: { colour: "#9a96a5", worth: 40, size: 11, tough: true },
 };
 
-const fieldSize = () => 16 + lvl("seed") * 4;
+const fieldSize = () => 28 + lvl("seed") * 4;
 const stoneShare = () => Math.max(0, place().stone - lvl("chisel") * 0.035);
+
+// How much the ground has to give over a whole go. It doesn't hand it over on
+// demand: it gives quickly at first and slower and slower after that, and it
+// stops altogether once the go has run its course.
+//
+// That's the point of the whole thing. A chain lives only while a bloom keeps
+// landing on something, so as the ground slows down the chain has to work
+// harder to stay alive - and a bloom that reaches further, or hangs about
+// longer, or throws off more blooms, is exactly what keeps it going. There's
+// no amount of upgrading that just eats the lot, because what you take is
+// decided by how long you last, not by what's down there.
+const soilFor = () => Math.round(fieldSize() * (place().soil + lvl("soil") * 0.6));
+
+const GROUND_SECONDS = 22;    // after this the ground has nothing left
+const GROUND_FADE = 5;        // how sharply it slows down
+const FADE_TOTAL = GROUND_FADE * Math.log(1 + GROUND_SECONDS / GROUND_FADE);
+
+// Dots a second, right now. Sustain the chain for the whole go and the total
+// comes to everything the ground had.
+function groundRate() {
+  if (goTime >= GROUND_SECONDS) return 0;
+  return (soilFor() / FADE_TOTAL) / (1 + goTime / GROUND_FADE) * place().regrow;
+}
 
 const chanceOf = (kind) => ({
   gold: lvl("gold") * 0.02,
@@ -192,6 +253,9 @@ const chanceOf = (kind) => ({
 }[kind] || 0);
 
 let dots = [];
+let soil = 0;              // still under the ground, waiting to sprout
+let sownAt = 0;            // how much of the next one has come up
+let goTime = 0;            // how long this go has been running
 let blooms = [];
 let flying = [];           // seeds thrown by pods, which bloom where they land
 let sparks = [];
@@ -202,9 +266,13 @@ let barDirty = false;
 
 let phase = "ready";       // ready, going, done
 let combo = 0;
+let nextSlow = 10;         // the next chain length worth slowing down for
 let bestChain = 0;
 let opened = 0;
 let liveAtStart = 0;
+let sownTotal = 0;
+let lasted = 0;
+let offered = 0;
 let earned = 0;
 
 function pickKind() {
@@ -216,9 +284,31 @@ function pickKind() {
   return "plain";
 }
 
+// One dot, anywhere on the plot. `up` is how far through coming up it is:
+// a sprouted one pushes through the ground rather than blinking into being,
+// and can't be caught until it's most of the way out.
+function makeDot(up = 1) {
+  const kind = pickKind();
+  const speed = rand(22, 50) * (KINDS[kind].slow ? 0.6 : 1);
+  const angle = rand(0, Math.PI * 2);
+  return {
+    x: rand(40, PLOT.w - 40),
+    y: rand(40, PLOT.h - 40),
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    r: KINDS[kind].size,
+    kind,
+    knocks: KINDS[kind].tough ? place().armourHits : 1,
+    wobble: rand(0, Math.PI * 2),
+    up,
+    // What comes up mid-chain doesn't wait around. Miss it and it's gone, which
+    // is why a wider bloom that covers more ground is worth having however
+    // much else you've bought. What was standing when you clicked never wilts.
+    wilt: up < 1 ? WILT : Infinity,
+  };
+}
+
 function newGo() {
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
   dots = [];
   blooms = [];
   flying = [];
@@ -227,25 +317,16 @@ function newGo() {
   opened = 0;
   earned = 0;
   combo = 0;
+  nextSlow = Math.max(10, multFrom() + 4);
   bestChain = 0;
   phase = "ready";
 
-  for (let i = 0; i < fieldSize(); i++) {
-    const kind = pickKind();
-    const speed = rand(22, 50) * (KINDS[kind].slow ? 0.6 : 1);
-    const angle = rand(0, Math.PI * 2);
-    dots.push({
-      x: rand(40, width - 40),
-      y: rand(40, height - 40),
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      r: KINDS[kind].size,
-      kind,
-      knocks: KINDS[kind].tough ? place().armourHits : 1,
-      wobble: rand(0, Math.PI * 2),
-    });
-  }
+  for (let i = 0; i < fieldSize(); i++) dots.push(makeDot());
 
+  soil = soilFor();
+  sownTotal = soil;
+  sownAt = 0;
+  goTime = 0;
   liveAtStart = dots.filter((dot) => !KINDS[dot.kind].dead).length;
   hide("tally");
   hide("shop");
@@ -253,24 +334,62 @@ function newGo() {
   draw();
 }
 
+// While a chain is running the ground keeps giving dots back, faster the
+// emptier the plot is, until the soil runs out. That's what a chain feeds on
+// once it has eaten everything that was standing at the start.
+//
+function sow(dt) {
+  goTime += dt;
+  if (soil <= 0) return;
+  sownAt -= dt * groundRate();
+  sownAt = Math.max(sownAt, -3);          // a full plot doesn't bank a backlog
+  while (sownAt <= 0 && soil > 0 && dots.length < 500) {
+    dots.push(makeDot(0));
+    soil--;
+    sownAt += 1;
+    barDirty = true;
+  }
+}
+
+const WILT = 2.5;           // seconds a sprouted dot stands before it goes
+
+function growDots(dt) {
+  for (const dot of dots) if (dot.up < 1) dot.up = Math.min(1, dot.up + dt * 3.2);
+  if (phase !== "going") return;
+  for (const dot of dots) dot.wilt -= dt;
+  dots = dots.filter((dot) => dot.wilt > -0.7);
+}
+
 // ===========================================================================
-// 5. Blooms
+// 6. Blooms
 // ===========================================================================
 
 const GROW = 0.5;
 const CLOSE = 0.7;
 
-const holdTime = () => 0.35 + lvl("hold") * 0.08;
+const holdTime = () => 0.35 + lvl("hold") * 0.12;
 
 function reach(kind, depth, first) {
-  let wide = 52 + lvl("wide") * 5;
+  let wide = 56 + lvl("wide") * 8;
   if (kind === "heavy") wide *= 1.45;
   if (first) wide *= 1 + lvl("lucky") * 0.15;
   if (lvl("momentum")) wide *= 1 + Math.min(depth * 0.02 * lvl("momentum"), 1.5);
   return wide;
 }
 
+// The air only holds so many blooms at once. Without that ceiling the chain
+// just makes more and more of them until they cover the whole plot between
+// them, and then how far any one of them reaches stops mattering at all -
+// which is what made half the shop pointless. A new bloom crowds out the
+// oldest one, so the chain still carries; it just can't blanket the place.
+const airCap = () => 4 + lvl("air");
+
 function open(x, y, kind = "plain", depth = 0, first = false, big = 1) {
+  if (blooms.length >= airCap()) {
+    let oldest = 0;
+    for (let i = 1; i < blooms.length; i++) if (blooms[i].age > blooms[oldest].age) oldest = i;
+    blooms.splice(oldest, 1);
+  }
   blooms.push({
     x, y, kind, depth,
     max: reach(kind, depth, first) * big,
@@ -306,7 +425,10 @@ function stepSeeds(dt) {
     seed.y += seed.vy * dt;
   }
   for (const seed of flying) {
-    if (seed.age >= seed.life) open(seed.x, seed.y, "plain", seed.depth);
+    if (seed.age >= seed.life) {
+      open(Math.max(0, Math.min(PLOT.w, seed.x)), Math.max(0, Math.min(PLOT.h, seed.y)),
+        "plain", seed.depth);
+    }
   }
   flying = flying.filter((seed) => seed.age < seed.life);
 }
@@ -334,6 +456,7 @@ function stepBlooms(dt) {
     for (let i = dots.length - 1; i >= 0; i--) {
       const dot = dots[i];
       if (KINDS[dot.kind].dead) continue;                 // a stone just sits there
+      if (dot.up < 0.7) continue;                         // still coming up
       if (bloom.knocked.has(dot)) continue;
       if (Math.hypot(dot.x - bloom.x, dot.y - bloom.y) > bloom.r + dot.r) continue;
 
@@ -366,16 +489,22 @@ function pullDots(dt) {
 }
 
 // ===========================================================================
-// 6. Scoring
+// 7. Scoring
 // ===========================================================================
 
 const multFrom = () => Math.max(2, 6 - lvl("early"));
 const multStep = () => 0.12 + lvl("step") * 0.06;
 const multCurve = () => lvl("curve") * 0.004;
 
+// The curve is what makes a long chain feel like it's getting away from you.
+// It's quadratic up to a point and merely steep after it - without that ceiling
+// a chain in the hundreds pays hundreds of thousands of times over, and the
+// whole ladder gets bought out in an afternoon.
+const CURVE_TOP = 200;
+
 function multiplier(links) {
   const over = Math.max(0, links - multFrom());
-  return 1 + over * multStep() + over * over * multCurve();
+  return 1 + over * multStep() + over * Math.min(over, CURVE_TOP) * multCurve();
 }
 
 const payFor = (kind, links) => Math.max(1, Math.round(
@@ -413,11 +542,17 @@ function catchDot(bloom, index) {
   note(combo);
   barDirty = true;
   shake = Math.min(shake + (dot.kind === "gold" ? 5 : 2.2), 14);
-  if (combo >= multFrom() + 2) slowUntil = now() + 0.55 + lvl("slow") * 0.3;
+  // Slow motion is punctuation, not a setting. It lands when the chain doubles
+  // - 10, 20, 40, 80 - so a chain of a thousand gets about seven of them, not a
+  // hundred. Left latched on it turned every good go into a minute of syrup.
+  if (combo >= nextSlow) {
+    nextSlow *= 2;
+    slowUntil = now() + 0.4 + lvl("slow") * 0.12;
+  }
 }
 
 // ===========================================================================
-// 7. Sound
+// 8. Sound
 // ===========================================================================
 
 let audio = null;
@@ -458,7 +593,7 @@ const thud = () => tone((osc, gain, at) => {
 });
 
 // ===========================================================================
-// 8. Feel
+// 9. Feel
 // ===========================================================================
 
 function burst(x, y, colour, count) {
@@ -509,7 +644,7 @@ const wordFor = (n) => {
 };
 
 // ===========================================================================
-// 9. Drawing
+// 10. Drawing
 // ===========================================================================
 
 function fit() {
@@ -517,27 +652,41 @@ function fit() {
   canvas.width = canvas.clientWidth * ratio;
   canvas.height = canvas.clientHeight * ratio;
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  fitView();
 }
 
 function draw() {
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
+  const width = PLOT.w;
+  const height = PLOT.h;
+  ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
   ctx.save();
+  ctx.translate(view.ox, view.oy);
+  ctx.scale(view.scale, view.scale);
   if (shake > 0.2) ctx.translate(rand(-shake, shake) * 0.3, rand(-shake, shake) * 0.3);
-  ctx.clearRect(-20, -20, width + 40, height + 40);
+
+  // the edge of the plot, so it's obvious the ground is a fixed size
+  ctx.beginPath();
+  ctx.roundRect(0.5, 0.5, width - 1, height - 1, 10);
+  ctx.strokeStyle = "#282830";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.save();
+  ctx.clip();
 
   for (const dot of dots) {
     const kind = KINDS[dot.kind];
     const wobble = Math.sin(now() * 2 + dot.wobble) * 1.2;
+    const going = dot.wilt < 0 ? Math.max(0, 1 + dot.wilt / 0.7) : 1;
+    const size = Math.max(0.5, (dot.r + wobble) * (0.35 + dot.up * 0.65) * going);
     ctx.beginPath();
-    ctx.arc(dot.x, dot.y, dot.r + wobble, 0, Math.PI * 2);
+    ctx.arc(dot.x, dot.y, size, 0, Math.PI * 2);
     ctx.fillStyle = kind.colour;
-    ctx.globalAlpha = kind.dead ? 0.5 : 0.9;
+    ctx.globalAlpha = (kind.dead ? 0.5 : 0.9) * (0.3 + dot.up * 0.7) * going;
     ctx.fill();
     ctx.globalAlpha = 1;
 
     // armour wears a ring for every knock it has left
-    if (kind.tough) {
+    if (kind.tough && dot.up > 0.7) {
       for (let i = 0; i < dot.knocks; i++) {
         ctx.beginPath();
         ctx.arc(dot.x, dot.y, dot.r + 4 + i * 3.5, 0, Math.PI * 2);
@@ -548,7 +697,9 @@ function draw() {
         ctx.globalAlpha = 1;
       }
     }
-    if (kind.pod) {
+    if (kind.pod && dot.up > 0.7) {
+      ctx.beginPath();
+      ctx.arc(dot.x, dot.y, size, 0, Math.PI * 2);
       ctx.strokeStyle = "#16161a";
       ctx.lineWidth = 2.5;
       ctx.stroke();
@@ -620,11 +771,12 @@ function draw() {
     ctx.globalAlpha = 1;
   }
 
+  ctx.restore();   // the plot's clip
   ctx.restore();
 }
 
 // ===========================================================================
-// 10. Running
+// 11. Running
 // ===========================================================================
 
 const bar = {
@@ -632,6 +784,7 @@ const bar = {
   pollen: document.getElementById("pollen"),
   thisGo: document.getElementById("this-go"),
   chain: document.getElementById("chain"),
+  ground: document.getElementById("ground"),
   target: document.getElementById("target"),
 };
 
@@ -643,6 +796,7 @@ function showBar() {
   bar.pollen.textContent = commas(save.pollen);
   bar.thisGo.textContent = commas(earned);
   bar.chain.textContent = combo > 1 ? combo : bestChain;
+  bar.ground.textContent = phase === "going" ? soil : soilFor();
   bar.target.textContent = `${commas(save.bestGo)} / ${commas(targetNow())}`;
   bar.target.parentElement.classList.toggle("met", save.bestGo >= targetNow());
   document.getElementById("hint").hidden = phase !== "ready";
@@ -653,9 +807,10 @@ function showTally(full, bonus) {
   const panel = document.getElementById("tally");
   const ready = save.bestGo >= targetNow();
   panel.innerHTML = `
-    ${full ? '<p class="full-clear">full clear!</p>' : ""}
+    ${full ? '<p class="full-clear">not one missed!</p>' : ""}
     <p class="tally-pollen">+${commas(earned)}</p>
-    <p class="tally-line">a chain of ${bestChain}${full ? ` &middot; +${commas(bonus)} for leaving nothing standing` : ""}</p>
+    <p class="tally-line">a chain of ${bestChain} &middot; ${opened} of ${offered} caught &middot; ${
+      lasted.toFixed(1)}s${full ? ` &middot; +${commas(bonus)} for missing nothing` : ""}</p>
     <div class="tally-buttons">
       <button class="pill strong" id="tally-again">go again</button>
       <button class="pill" id="tally-shop">shop</button>
@@ -742,8 +897,13 @@ function endGo() {
   phase = "done";
   save.goes++;
 
-  // Nothing left standing pays half as much again.
-  const full = liveAtStart > 0 && opened >= liveAtStart;
+  // Nothing standing and nothing left in the ground pays half as much again.
+  // It's a real achievement now: the chain has to outlast the regrowth.
+  // The bonus is for missing nothing at all: everything that was standing and
+  // everything the ground pushed up while the chain ran. Wilted is missed.
+  lasted = goTime;
+  offered = liveAtStart + (sownTotal - soil);
+  const full = offered > 0 && opened >= offered;
   const bonus = full ? Math.round(earned * 0.5) : 0;
   earned += bonus;
   if (full) shake = 16;
@@ -758,15 +918,13 @@ function endGo() {
 
 let last = now();
 
-function frame() {
-  const time = now();
-  let dt = Math.min(time - last, 0.05);
-  last = time;
-  if (time < slowUntil) dt *= 0.35;      // everything drags out on a big chain
-
+// One tick of the world. Split out from the frame so a go can be run through
+// as fast as the machine will allow, which is how the places were balanced.
+function step(dt) {
   if (phase !== "done") {
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
+    const width = PLOT.w;
+    const height = PLOT.h;
+    growDots(dt);
     pullDots(dt);
     for (const dot of dots) {
       dot.x += dot.vx * dt;
@@ -779,6 +937,7 @@ function frame() {
   }
 
   if (phase === "going") {
+    sow(dt);
     stepSeeds(dt);
     stepBlooms(dt);
     if (!blooms.length && !flying.length) {
@@ -793,6 +952,14 @@ function frame() {
     showBar();
     barDirty = false;
   }
+}
+
+function frame() {
+  const time = now();
+  let dt = Math.min(time - last, 0.05);
+  last = time;
+  if (time < slowUntil) dt *= 0.35;      // everything drags out on a big chain
+  step(dt);
   draw();
   requestAnimationFrame(frame);
 }
@@ -800,9 +967,10 @@ function frame() {
 canvas.addEventListener("pointerdown", (e) => {
   if (phase !== "ready") return;
   const box = canvas.getBoundingClientRect();
+  const at = toPlot(e.clientX - box.left, e.clientY - box.top);
   phase = "going";
   combo = 0;
-  open(e.clientX - box.left, e.clientY - box.top, "plain", 0, true);
+  open(at.x, at.y, "plain", 0, true);
   thud();
   shake = 4;
   showBar();
