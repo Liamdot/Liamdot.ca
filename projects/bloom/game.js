@@ -61,15 +61,15 @@ const lvl = (id) => save.levels[id] || 0;
 // its shop is bought, so they're a stretch without being out of reach.
 const PLACES = [
   { name: "the meadow", stone: 0.35, armour: 0, armourHits: 1, worth: 1,
-    soil: 11, regrow: 1, target: 1.1e9, blurb: "soft ground, nothing in the way" },
+    soil: 6, regrow: 1, target: 1.1e9, blurb: "soft ground, nothing in the way" },
   { name: "the orchard", stone: 0.3, armour: 0.18, armourHits: 2, worth: 2.2,
-    soil: 12, regrow: 1, target: 5.5e9, blurb: "some of it takes two knocks", unlocks: ["pierce", "heavy"] },
+    soil: 6.5, regrow: 1, target: 5.5e9, blurb: "some of it takes two knocks", unlocks: ["pierce", "heavy"] },
   { name: "the thicket", stone: 0.26, armour: 0.34, armourHits: 2, worth: 5,
-    soil: 13, regrow: 1.05, target: 22e9, blurb: "thick with the stubborn sort", unlocks: ["pods", "echo"] },
+    soil: 7, regrow: 1.05, target: 22e9, blurb: "thick with the stubborn sort", unlocks: ["pods", "echo"] },
   { name: "the cavern", stone: 0.22, armour: 0.5, armourHits: 3, worth: 12,
-    soil: 14, regrow: 1.05, target: 70e9, blurb: "half of it fights back", unlocks: ["resonance", "magnet"] },
+    soil: 7.5, regrow: 1.05, target: 70e9, blurb: "half of it fights back", unlocks: ["resonance", "magnet"] },
   { name: "the canopy", stone: 0.18, armour: 0.62, armourHits: 3, worth: 30,
-    soil: 15, regrow: 1.1, target: 360e9, blurb: "the last place, and it knows it", unlocks: ["momentum", "spark"] },
+    soil: 8, regrow: 1.1, target: 360e9, blurb: "the last place, and it knows it", unlocks: ["momentum", "spark"] },
 ];
 
 const place = () => PLACES[Math.min(save.area, PLACES.length - 1)];
@@ -86,6 +86,8 @@ const targetNow = () => {
 const seedBonus = () => 1 + save.seeds * 0.6;
 
 const unlocked = (id) => {
+  const item = ALL.find((one) => one.id === id);
+  if (item && item.needs && !lvl(item.needs)) return false;
   const needed = PLACES.findIndex((one) => (one.unlocks || []).includes(id));
   return needed === -1 || save.area >= needed;
 };
@@ -98,9 +100,9 @@ const SHOP = [
   {
     group: "The field",
     items: [
-      { id: "seed", name: "More dots", note: "four more standing on the plot at once", cost: 12, growth: 1.46, most: 18,
+      { id: "seed", name: "More dots", note: "four more standing on the plot at once", cost: 12, growth: 1.62, most: 18,
         shows: () => `${fieldSize()} dots` },
-      { id: "soil", name: "Richer ground", note: "more under the plot, and it comes up faster", cost: 140, growth: 1.92, most: 10,
+      { id: "soil", name: "Richer ground", note: "more under the plot, and it comes up faster", cost: 140, growth: 2.2, most: 10,
         shows: () => `${soilFor()} in the ground` },
       { id: "chisel", name: "Fewer stones", note: "stones never open - clear them out", cost: 22, growth: 1.5, most: 10,
         shows: () => `${Math.round(stoneShare() * 100)}% stone` },
@@ -120,9 +122,9 @@ const SHOP = [
       // carries or it doesn't - so once it does, another fifty levels of reach
       // would buy you nothing at all. What makes the numbers grow after that is
       // the ground, the dots and the multiplier, and those are priced to match.
-      { id: "wide", name: "Wider bloom", note: "every bloom reaches further, so the chain gets going at all", cost: 20, growth: 1.85, most: 8,
+      { id: "wide", name: "Wider bloom", note: "every bloom reaches further, so the chain gets going at all", cost: 20, growth: 2.2, most: 8,
         shows: () => `${Math.round(reach("plain", 0, false))} across` },
-      { id: "hold", name: "Slower to close", note: "hangs about over bare ground, catching what comes up under it", cost: 45, growth: 1.44, most: 8,
+      { id: "hold", name: "Slower to close", note: "hangs about over bare ground, catching what comes up under it", cost: 45, growth: 1.8, most: 8,
         shows: () => `${holdTime().toFixed(2)}s open` },
       { id: "lucky", name: "Bigger first bloom", note: "the one you actually click", cost: 160, growth: 1.6, most: 6,
         shows: () => `+${lvl("lucky") * 15}% on the first` },
@@ -135,13 +137,18 @@ const SHOP = [
   {
     group: "The chain",
     items: [
-      { id: "step", name: "Steeper multiplier", note: "each link past the start pays more", cost: 60, growth: 1.6, most: 26,
+      // Until this is bought every dot pays the same whether it was the first
+      // of the chain or the four hundredth. It's the one purchase that changes
+      // what the game is, so the rest of the group waits behind it.
+      { id: "rhythm", name: "Rhythm", note: "a long chain starts paying more than a short one - everything else here follows", cost: 900, growth: 1, most: 1,
+        shows: () => (lvl("rhythm") ? "found it" : "nothing yet") },
+      { id: "step", name: "Steeper multiplier", note: "each link past the start pays more", cost: 60, growth: 1.6, most: 26, needs: "rhythm",
         shows: () => `+${multStep().toFixed(2)} a link` },
-      { id: "early", name: "Earlier multiplier", note: "it starts climbing sooner", cost: 300, growth: 2.1, most: 4,
+      { id: "early", name: "Earlier multiplier", note: "it starts climbing sooner", cost: 300, growth: 2.1, most: 4, needs: "rhythm",
         shows: () => `from link ${multFrom()}` },
-      { id: "curve", name: "Runaway multiplier", note: "the longer it runs, the faster it climbs", cost: 500, growth: 2.15, most: 18,
+      { id: "curve", name: "Runaway multiplier", note: "the longer it runs, the faster it climbs", cost: 500, growth: 2.15, most: 18, needs: "rhythm",
         shows: () => `×${multiplier(30).toFixed(1)} at 30 links` },
-      { id: "slow", name: "Longer slow motion", note: "every tenth link drops into slow motion - this holds it there", cost: 120, growth: 1.5, most: 8,
+      { id: "slow", name: "Longer slow motion", note: "every tenth link drops into slow motion - this holds it there", cost: 120, growth: 1.5, most: 8, needs: "rhythm",
         shows: () => `${(0.4 + lvl("slow") * 0.12).toFixed(2)}s a time` },
     ],
   },
@@ -510,6 +517,7 @@ const multCurve = () => lvl("curve") * 0.004;
 const CURVE_TOP = 200;
 
 function multiplier(links) {
+  if (!lvl("rhythm")) return 1;           // no rhythm, no reward for a long one
   const over = Math.max(0, links - multFrom());
   return 1 + over * multStep() + over * Math.min(over, CURVE_TOP) * multCurve();
 }
@@ -1216,6 +1224,13 @@ function load() {
     // nothing saved yet
   }
   save.levels = save.levels || {};
+  // Anyone who was already playing bought the multiplier upgrades before there
+  // was anything to unlock. Give them the rhythm rather than hiding what they
+  // already own behind a gate that didn't exist at the time.
+  if (!save.levels.rhythm
+      && ["step", "early", "curve", "slow"].some((id) => save.levels[id])) {
+    save.levels.rhythm = 1;
+  }
 }
 
 window.addEventListener("resize", () => { fit(); draw(); });
