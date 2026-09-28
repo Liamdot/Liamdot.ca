@@ -21,12 +21,14 @@
       <button id="sound-btn" aria-pressed="true" aria-label="Sound" title="Sound">
         <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
           <path d="M4 7.5h3L11 4v12L7 12.5H4z" fill="currentColor"/>
-          <g class="waves" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <g id="sound-waves" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
             <path d="M13.6 7.2a4 4 0 0 1 0 5.6"/>
             <path d="M15.8 5a7 7 0 0 1 0 10"/>
           </g>
-          <line class="slash" x1="13.5" y1="6.5" x2="18" y2="13.5"
-                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <g id="sound-cross" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M13.8 7.2 18.2 12.8"/>
+            <path d="M18.2 7.2 13.8 12.8"/>
+          </g>
         </svg>
       </button>
       <button id="info-btn" aria-expanded="false" aria-controls="info-panel" aria-label="Info" title="Info">

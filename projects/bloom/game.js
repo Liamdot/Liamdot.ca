@@ -1104,13 +1104,29 @@ document.getElementById("shop-btn").addEventListener("click", () => {
   else hide("shop");
 });
 
+// The icon is swapped here rather than in the stylesheet. Doing it in CSS meant
+// a browser holding an old copy of style.css showed the waves and the cross at
+// the same time and never changed either, which looks exactly like a button
+// that doesn't work.
 const soundBtn = document.getElementById("sound-btn");
+const soundWaves = document.getElementById("sound-waves");
+const soundCross = document.getElementById("sound-cross");
+
+function showSound() {
+  soundWaves.style.display = sound ? "" : "none";
+  soundCross.style.display = sound ? "none" : "";
+  soundBtn.style.color = sound ? "" : "#999";
+  soundBtn.setAttribute("aria-pressed", sound);
+  soundBtn.title = sound ? "Sound" : "Sound off";
+  soundBtn.setAttribute("aria-label", sound ? "Sound" : "Sound off");
+}
 
 soundBtn.addEventListener("click", () => {
   sound = !sound;
-  soundBtn.setAttribute("aria-pressed", sound);
-  soundBtn.title = sound ? "Sound" : "Sound off";
+  showSound();
 });
+
+showSound();
 
 // Starting over, behind a second click so it can't happen by accident.
 const wipeBtn = document.getElementById("wipe-btn");

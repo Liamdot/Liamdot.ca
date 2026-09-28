@@ -343,17 +343,6 @@
   background: #3f7a4a;
 }
 
-/* ---- the sound toggle, up with the info button ---- */
-
-#sound-btn .slash { display: none; }
-
-#sound-btn[aria-pressed="false"] .waves { display: none; }
-#sound-btn[aria-pressed="false"] .slash { display: block; }
-
-#sound-btn[aria-pressed="false"] {
-  color: #999;
-}
-
 /* ---- starting over, tucked under the info panel ---- */
 
 /* The panel lives inside .topbar, whose buttons are all 32px circles - so this
