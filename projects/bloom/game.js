@@ -465,6 +465,7 @@ function stepBlooms(dt) {
       dot.knocks -= 1 + lvl("pierce");
       if (dot.knocks > 0) {
         burst(dot.x, dot.y, "#9a96a5", 5);               // armour, still holding
+        knock();
         shake = Math.min(shake + 1, 14);
       } else {
         catchDot(bloom, i);
@@ -540,7 +541,7 @@ function catchDot(bloom, index) {
 
   burst(dot.x, dot.y, KINDS[dot.kind].colour, dot.kind === "gold" ? 26 : 14);
   float(dot.x, dot.y, `+${commas(paid)}`, mult > 1.05 ? "#f2c94c" : KINDS[dot.kind].colour);
-  note(combo);
+  note(combo, dot.kind);
   barDirty = true;
   shake = Math.min(shake + (dot.kind === "gold" ? 5 : 2.2), 14);
   // Slow motion is punctuation, not a setting. It lands when the chain doubles
@@ -560,21 +561,29 @@ let audio = null;
 let master = null;
 let sound = true;
 let lastNote = 0;          // when the last note actually sounded
-let arp = 0;               // how far up the run we are
+let lastKnock = 0;
+let arp = 0;               // how far along the run we are
 
-// Two octaves of pentatonic, walked up a step at a time and then back to the
-// bottom - an arpeggio, and one that starts again with every go.
-//
-// The step is counted per note that actually sounds, not per dot opened. Taking
-// it from the chain instead meant the run jumped five or six steps between one
-// note and the next, which is why it came out sounding like nothing in
-// particular however neatly the scale was laid out.
-const STEPS = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+// Four chords, each given a run of eight notes up two octaves before the next
+// one takes over. One scale going round and round was still the same riff
+// arriving again every ten notes; a progression goes somewhere and comes back,
+// so a long chain wanders through thirty-two notes before it repeats, turning
+// over onto a new chord about once a second on the way.
+const CHORDS = [
+  [0, 4, 7, 11],     // I
+  [9, 12, 16, 19],   // vi
+  [5, 9, 12, 16],    // IV
+  [7, 11, 14, 17],   // V
+];
+
+const RUN = 8;             // notes before the chord turns over
+const ROOT = 130.8;        // C3, the bottom of the whole thing
 
 // A chain can open forty dots a second. Nobody can hear forty notes a second -
 // it just arrives as noise - so notes are spaced out and the ones in between
 // pass quietly. What's left is an arpeggio rolling along under the chain.
 const NOTE_GAP = 0.07;
+const KNOCK_GAP = 0.12;
 
 function wake() {
   if (!sound) return null;
@@ -601,59 +610,105 @@ function wake() {
   }
 }
 
-function tone(setup, through) {
-  const ctx = wake();
-  if (!ctx) return;
-  try {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(through || master);
-    setup(osc, gain, ctx.currentTime);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.6);
-  } catch (e) {
-    sound = false;
-  }
+// One oscillator, struck and left to die away.
+function voice(ctx, type, freq, level, at, length, out) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  osc.connect(gain).connect(out);
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, level), at + 0.006);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+  osc.start(at);
+  osc.stop(at + length + 0.05);
 }
 
-function note(n) {
+// A struck note: the fundamental, an octave over it, and a filter that shuts
+// as it decays. That closing filter is the whole difference between something
+// plucked and a tone being held at you.
+function pluck(ctx, freq, level, at, bright = 0) {
+  const soften = ctx.createBiquadFilter();
+  soften.type = "lowpass";
+  soften.frequency.setValueAtTime(Math.min(8000, freq * (5 + bright * 5)), at);
+  soften.frequency.exponentialRampToValueAtTime(Math.max(300, freq * 1.5), at + 0.34);
+  soften.connect(master);
+
+  voice(ctx, "sine", freq, level, at, 0.4, soften);
+  voice(ctx, "sine", freq * 2, level * (0.2 + bright * 0.3), at, 0.24, soften);
+  if (bright) voice(ctx, "sine", freq * 3, level * 0.18 * bright, at, 0.18, soften);
+}
+
+function note(n, kind) {
   const ctx = wake();
   if (!ctx) return;
   const at = ctx.currentTime;
   if (at - lastNote < NOTE_GAP) return;
   lastNote = at;
 
-  // Softer the longer the chain runs, so a good go swells rather than shouts,
-  // and up an octave once it's going properly.
-  const level = 0.12 * (0.4 + 0.6 / (1 + n * 0.012));
-  const step = STEPS[arp % STEPS.length] + (n > 60 ? 12 : 0);
+  const chord = CHORDS[Math.floor(arp / RUN) % CHORDS.length];
+  const along = arp % RUN;
+  const step = chord[along % chord.length] + 12 * Math.floor(along / chord.length);
   arp++;
 
+  // Softer the longer the chain runs, so a good go swells rather than shouts,
+  // and the note the chord turns on gets leant on a little.
+  const level = 0.1 * (0.45 + 0.55 / (1 + n * 0.012)) * (along === 0 ? 1.5 : 1);
+  pluck(ctx, ROOT * 2 ** ((step + 12) / 12), level, at, kind === "gold" ? 1 : 0);
+
+  // the root underneath, each time the chord turns over
+  if (along === 0) {
+    voice(ctx, "triangle", ROOT * 2 ** ((chord[0] - 12) / 12), level * 0.45, at, 1, master);
+  }
+}
+
+// Armour holding: a dull knock, not a note. It isn't a link in the chain and
+// shouldn't sound like one.
+function knock() {
+  const ctx = wake();
+  if (!ctx) return;
+  const at = ctx.currentTime;
+  if (at - lastKnock < KNOCK_GAP) return;
+  lastKnock = at;
   try {
     const soften = ctx.createBiquadFilter();
     soften.type = "lowpass";
-    soften.frequency.value = 2200;
+    soften.frequency.value = 520;
     soften.connect(master);
-    tone((osc, gain) => {
-      osc.type = "triangle";
-      osc.frequency.value = 261.6 * 2 ** (step / 12);
-      gain.gain.setValueAtTime(0.0001, at);
-      gain.gain.exponentialRampToValueAtTime(level, at + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.36);
-    }, soften);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(155, at);
+    osc.frequency.exponentialRampToValueAtTime(88, at + 0.09);
+    osc.connect(gain).connect(soften);
+    gain.gain.setValueAtTime(0.045, at);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.13);
+    osc.start(at);
+    osc.stop(at + 0.18);
   } catch (e) {
     sound = false;
   }
 }
 
-const thud = () => tone((osc, gain, at) => {
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(180, at);
-  osc.frequency.exponentialRampToValueAtTime(60, at + 0.25);
-  gain.gain.setValueAtTime(0.18, at);
-  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.3);
-});
+function thud() {
+  const ctx = wake();
+  if (!ctx) return;
+  try {
+    const at = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(180, at);
+    osc.frequency.exponentialRampToValueAtTime(60, at + 0.25);
+    osc.connect(gain).connect(master);
+    gain.gain.setValueAtTime(0.18, at);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.3);
+    osc.start(at);
+    osc.stop(at + 0.35);
+  } catch (e) {
+    sound = false;
+  }
+}
 
 // ===========================================================================
 // 9. Feel
