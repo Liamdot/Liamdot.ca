@@ -317,7 +317,6 @@ function newGo() {
   opened = 0;
   earned = 0;
   combo = 0;
-  arp = 0;
   nextSlow = Math.max(10, multFrom() + 4);
   bestChain = 0;
   phase = "ready";
@@ -385,11 +384,17 @@ function reach(kind, depth, first) {
 // oldest one, so the chain still carries; it just can't blanket the place.
 const airCap = () => 4 + lvl("air");
 
+// Crowded out means sent away to close, not taken away. Deleting the oldest
+// outright meant that in a busy chain no bloom ever reached its closing half -
+// they all vanished at full size, and the shrinking back went missing.
+const closing = (bloom) => bloom.age >= bloom.life - CLOSE;
+
 function open(x, y, kind = "plain", depth = 0, first = false, big = 1) {
-  if (blooms.length >= airCap()) {
-    let oldest = 0;
-    for (let i = 1; i < blooms.length; i++) if (blooms[i].age > blooms[oldest].age) oldest = i;
-    blooms.splice(oldest, 1);
+  const held = blooms.filter((one) => !closing(one));
+  if (held.length >= airCap()) {
+    let oldest = held[0];
+    for (const one of held) if (one.age > oldest.age) oldest = one;
+    oldest.age = oldest.life - CLOSE;
   }
   blooms.push({
     x, y, kind, depth,
@@ -453,7 +458,7 @@ function stepBlooms(dt) {
   blooms = blooms.filter((bloom) => bloom.age < bloom.life);
 
   for (const bloom of blooms) {
-    if (bloom.age > bloom.life - CLOSE * 0.5) continue;   // closing blooms don't catch
+    if (closing(bloom)) continue;                        // on the way out, it only fades
     for (let i = dots.length - 1; i >= 0; i--) {
       const dot = dots[i];
       if (KINDS[dot.kind].dead) continue;                 // a stone just sits there
@@ -465,7 +470,7 @@ function stepBlooms(dt) {
       dot.knocks -= 1 + lvl("pierce");
       if (dot.knocks > 0) {
         burst(dot.x, dot.y, "#9a96a5", 5);               // armour, still holding
-        knock();
+        knock(dot.x);
         shake = Math.min(shake + 1, 14);
       } else {
         catchDot(bloom, i);
@@ -524,7 +529,10 @@ function catchDot(bloom, index) {
   earned += paid;
 
   open(dot.x, dot.y, dot.kind, bloom.depth + 1);
-  if (KINDS[dot.kind].pod) throwSeeds(dot.x, dot.y, bloom.depth + 1);
+  if (KINDS[dot.kind].pod) {
+    throwSeeds(dot.x, dot.y, bloom.depth + 1);
+    spritz(dot.x);
+  }
   if (lvl("echo") && Math.random() < Math.min(lvl("echo") * 0.12, 0.8)) {
     open(dot.x, dot.y, "plain", bloom.depth + 1);
   }
@@ -541,7 +549,7 @@ function catchDot(bloom, index) {
 
   burst(dot.x, dot.y, KINDS[dot.kind].colour, dot.kind === "gold" ? 26 : 14);
   float(dot.x, dot.y, `+${commas(paid)}`, mult > 1.05 ? "#f2c94c" : KINDS[dot.kind].colour);
-  note(combo, dot.kind);
+  plop(combo, dot.kind, dot.x);
   barDirty = true;
   shake = Math.min(shake + (dot.kind === "gold" ? 5 : 2.2), 14);
   // Slow motion is punctuation, not a setting. It lands when the chain doubles
@@ -559,47 +567,35 @@ function catchDot(bloom, index) {
 
 let audio = null;
 let master = null;
+let grain = null;          // half a second of white noise, made once and reused
 let sound = true;
-let lastNote = 0;          // when the last note actually sounded
+let lastPop = 0;
 let lastKnock = 0;
-let arp = 0;               // how far along the run we are
+let lastSpritz = 0;
 
-// Four chords, each given a run of eight notes up two octaves before the next
-// one takes over. One scale going round and round was still the same riff
-// arriving again every ten notes; a progression goes somewhere and comes back,
-// so a long chain wanders through thirty-two notes before it repeats, turning
-// over onto a new chord about once a second on the way.
-const CHORDS = [
-  [0, 4, 7, 11],     // I
-  [9, 12, 16, 19],   // vi
-  [5, 9, 12, 16],    // IV
-  [7, 11, 14, 17],   // V
-];
-
-const RUN = 8;             // notes before the chord turns over
-const ROOT = 130.8;        // C3, the bottom of the whole thing
-
-// A chain can open forty dots a second. Nobody can hear forty notes a second -
-// it just arrives as noise - so notes are spaced out and the ones in between
-// pass quietly. What's left is an arpeggio rolling along under the chain.
-const NOTE_GAP = 0.07;
-const KNOCK_GAP = 0.12;
+// Nothing here is a note. A dot opening is a bubble surfacing, armour holding
+// is a knuckle on wood, a pod going off is a handful of spray. All of it is
+// noise pushed through a filter and a very short envelope - no melody to get
+// sick of, because there isn't a scale anywhere in it.
+const POP_GAP = 0.05;
+const KNOCK_GAP = 0.11;
+const SPRITZ_GAP = 0.09;
 
 function wake() {
   if (!sound) return null;
   try {
     if (!audio) {
       audio = new (window.AudioContext || window.webkitAudioContext)();
-      // Everything goes through a compressor, so a hundred overlapping notes
+      // Everything goes through a compressor, so a hundred overlapping sounds
       // lean on each other instead of piling up into a wall.
       const squash = audio.createDynamicsCompressor();
-      squash.threshold.value = -24;
-      squash.knee.value = 12;
-      squash.ratio.value = 12;
-      squash.attack.value = 0.004;
-      squash.release.value = 0.25;
+      squash.threshold.value = -16;
+      squash.knee.value = 14;
+      squash.ratio.value = 6;
+      squash.attack.value = 0.003;
+      squash.release.value = 0.2;
       master = audio.createGain();
-      master.gain.value = 0.85;
+      master.gain.value = 1.7;
       master.connect(squash).connect(audio.destination);
     }
     if (audio.state === "suspended") audio.resume();
@@ -610,101 +606,143 @@ function wake() {
   }
 }
 
-// One oscillator, struck and left to die away.
-function voice(ctx, type, freq, level, at, length, out) {
+// Sounds come from where they happened. Half the reason a small noise is nice
+// to listen to is knowing which ear it arrived in.
+function placeAt(ctx, x) {
+  const out = ctx.createStereoPanner
+    ? ctx.createStereoPanner()
+    : ctx.createGain();                       // older Safari; centre is fine
+  if (out.pan) out.pan.value = Math.max(-0.75, Math.min(0.75, (x / PLOT.w - 0.5) * 1.5));
+  out.connect(master);
+  return out;
+}
+
+function noise(ctx) {
+  if (!grain) {
+    grain = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.5), ctx.sampleRate);
+    const data = grain.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  }
+  return grain;
+}
+
+// A puff of noise through a filter: the raw material for everything textural.
+function hiss(ctx, at, out, { level, length, freq, q = 1, sweep = 1, type = "bandpass" }) {
+  const src = ctx.createBufferSource();
+  src.buffer = noise(ctx);
+  src.loop = true;
+  const band = ctx.createBiquadFilter();
+  band.type = type;
+  band.frequency.setValueAtTime(freq, at);
+  if (sweep !== 1) {
+    band.frequency.exponentialRampToValueAtTime(Math.max(80, freq * sweep), at + length);
+  }
+  band.Q.value = q;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(Math.max(0.0002, level), at);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+  src.connect(band).connect(gain).connect(out);
+  src.start(at, Math.random() * 0.4);         // a different piece of it every time
+  src.stop(at + length + 0.02);
+}
+
+// A bubble reaching the surface: pitch sweeping up as it opens, gone in a
+// twentieth of a second, with a scrap of noise on the front for the lip of it.
+function bubble(ctx, at, out, freq, level, length = 0.075) {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.type = type;
-  osc.frequency.value = freq;
-  osc.connect(gain).connect(out);
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(freq * 0.45, at);
+  osc.frequency.exponentialRampToValueAtTime(freq * 2, at + length * 0.8);
   gain.gain.setValueAtTime(0.0001, at);
-  gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, level), at + 0.006);
+  gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, level), at + 0.004);
   gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+  osc.connect(gain).connect(out);
   osc.start(at);
-  osc.stop(at + length + 0.05);
+  osc.stop(at + length + 0.04);
+  hiss(ctx, at, out, { level: level * 0.4, length: 0.014, freq: freq * 3, q: 0.9 });
 }
 
-// A struck note: the fundamental, an octave over it, and a filter that shuts
-// as it decays. That closing filter is the whole difference between something
-// plucked and a tone being held at you.
-function pluck(ctx, freq, level, at, bright = 0) {
-  const soften = ctx.createBiquadFilter();
-  soften.type = "lowpass";
-  soften.frequency.setValueAtTime(Math.min(8000, freq * (5 + bright * 5)), at);
-  soften.frequency.exponentialRampToValueAtTime(Math.max(300, freq * 1.5), at + 0.34);
-  soften.connect(master);
-
-  voice(ctx, "sine", freq, level, at, 0.4, soften);
-  voice(ctx, "sine", freq * 2, level * (0.2 + bright * 0.3), at, 0.24, soften);
-  if (bright) voice(ctx, "sine", freq * 3, level * 0.18 * bright, at, 0.18, soften);
-}
-
-function note(n, kind) {
+function plop(n, kind, x) {
   const ctx = wake();
   if (!ctx) return;
   const at = ctx.currentTime;
-  if (at - lastNote < NOTE_GAP) return;
-  lastNote = at;
+  if (at - lastPop < POP_GAP) return;
+  lastPop = at;
 
-  const chord = CHORDS[Math.floor(arp / RUN) % CHORDS.length];
-  const along = arp % RUN;
-  const step = chord[along % chord.length] + 12 * Math.floor(along / chord.length);
-  arp++;
+  try {
+    const out = placeAt(ctx, x);
+    // Rises a little as the chain runs, and never twice the same, so a long
+    // one turns into something more like rain than a run of notes.
+    const climb = 2 ** (Math.min(n, 150) / 220);
+    const wobble = 0.86 + Math.random() * 0.28;
+    const level = 0.24 * (0.5 + 0.5 / (1 + n * 0.01));
 
-  // Softer the longer the chain runs, so a good go swells rather than shouts,
-  // and the note the chord turns on gets leant on a little.
-  const level = 0.1 * (0.45 + 0.55 / (1 + n * 0.012)) * (along === 0 ? 1.5 : 1);
-  pluck(ctx, ROOT * 2 ** ((step + 12) / 12), level, at, kind === "gold" ? 1 : 0);
-
-  // the root underneath, each time the chord turns over
-  if (along === 0) {
-    voice(ctx, "triangle", ROOT * 2 ** ((chord[0] - 12) / 12), level * 0.45, at, 1, master);
+    if (kind === "heavy") {
+      bubble(ctx, at, out, 190 * climb * wobble, level * 1.2, 0.16);
+    } else if (kind === "gold") {
+      bubble(ctx, at, out, 620 * climb * wobble, level, 0.06);
+      hiss(ctx, at, out, { level: level * 0.5, length: 0.2, freq: 5200, q: 2.5, sweep: 1.7 });
+    } else if (kind === "armour") {
+      bubble(ctx, at, out, 300 * climb * wobble, level, 0.1);
+      hiss(ctx, at, out, { level: level * 0.7, length: 0.07, freq: 900, q: 3 });
+    } else {
+      bubble(ctx, at, out, 420 * climb * wobble, level);
+    }
+  } catch (e) {
+    sound = false;
   }
 }
 
-// Armour holding: a dull knock, not a note. It isn't a link in the chain and
-// shouldn't sound like one.
-function knock() {
+// Armour holding: a knuckle on wood. Not a link in the chain, so not a pop.
+function knock(x) {
   const ctx = wake();
   if (!ctx) return;
   const at = ctx.currentTime;
   if (at - lastKnock < KNOCK_GAP) return;
   lastKnock = at;
   try {
-    const soften = ctx.createBiquadFilter();
-    soften.type = "lowpass";
-    soften.frequency.value = 520;
-    soften.connect(master);
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(155, at);
-    osc.frequency.exponentialRampToValueAtTime(88, at + 0.09);
-    osc.connect(gain).connect(soften);
-    gain.gain.setValueAtTime(0.045, at);
-    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.13);
-    osc.start(at);
-    osc.stop(at + 0.18);
+    const out = placeAt(ctx, x);
+    hiss(ctx, at, out, { level: 0.22, length: 0.055, freq: 260 * (0.9 + Math.random() * 0.2), q: 7 });
+    hiss(ctx, at, out, { level: 0.07, length: 0.02, freq: 1900, q: 1 });
   } catch (e) {
     sound = false;
   }
 }
 
-function thud() {
+// A pod bursting: a handful of something thrown.
+function spritz(x) {
+  const ctx = wake();
+  if (!ctx) return;
+  const at = ctx.currentTime;
+  if (at - lastSpritz < SPRITZ_GAP) return;   // a row of pods is one handful
+  lastSpritz = at;
+  try {
+    const out = placeAt(ctx, x);
+    hiss(ctx, at, out, { level: 0.16, length: 0.22, freq: 2600, q: 0.7, sweep: 0.25 });
+  } catch (e) {
+    sound = false;
+  }
+}
+
+// The click that starts it all: a soft low knock with a breath of air on it.
+function thud(x) {
   const ctx = wake();
   if (!ctx) return;
   try {
     const at = ctx.currentTime;
+    const out = placeAt(ctx, x === undefined ? PLOT.w / 2 : x);
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
-    osc.frequency.setValueAtTime(180, at);
-    osc.frequency.exponentialRampToValueAtTime(60, at + 0.25);
-    osc.connect(gain).connect(master);
-    gain.gain.setValueAtTime(0.18, at);
-    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.3);
+    osc.frequency.setValueAtTime(150, at);
+    osc.frequency.exponentialRampToValueAtTime(52, at + 0.18);
+    gain.gain.setValueAtTime(0.3, at);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
+    osc.connect(gain).connect(out);
     osc.start(at);
-    osc.stop(at + 0.35);
+    osc.stop(at + 0.26);
+    hiss(ctx, at, out, { level: 0.12, length: 0.11, freq: 1400, q: 0.8, sweep: 0.4 });
   } catch (e) {
     sound = false;
   }
@@ -1089,7 +1127,7 @@ canvas.addEventListener("pointerdown", (e) => {
   phase = "going";
   combo = 0;
   open(at.x, at.y, "plain", 0, true);
-  thud();
+  thud(at.x);
   shake = 4;
   showBar();
 });
