@@ -49,6 +49,7 @@ let action = null;
 let levelSelectOpen = false;
 let lastTest = null;
 let truth = null;           // the last truth table worked out, if any
+let kmap = null;            // and the same thing again, drawn as a Karnaugh map
 
 let sim = null;
 let ticks = 0;
@@ -252,6 +253,7 @@ const propsEl = document.getElementById("props");
 const levelBar = document.getElementById("level-bar");
 const resultsEl = document.getElementById("results");
 const truthEl = document.getElementById("truth");
+const kmapEl = document.getElementById("kmap");
 const levelSelectEl = document.getElementById("level-select");
 const introEl = document.getElementById("intro");
 const chipBar = document.getElementById("chip-bar");
@@ -557,6 +559,7 @@ function render() {
   renderLevelBar();
   renderResults();
   renderTruth();
+  renderKmap();
   renderLevelSelect();
   updateTimeBar();
   introEl.hidden = Boolean(progress.seenIntro);
@@ -565,6 +568,7 @@ function render() {
 // Rebuild the circuit, redraw, save. Call after anything changes.
 function changed() {
   truth = null;   // whatever it said is about the old board
+  kmap = null;
   rebuildSim();
   render();
   save();
@@ -887,7 +891,9 @@ exprBox.addEventListener("keydown", (e) => {
 
 const MOST_INPUTS = 10;   // 1024 rows is already more than anyone wants
 
-function workOutTable() {
+// Works out the table once; the truth table and the Karnaugh map are both
+// read off the same thing.
+function buildTable() {
   const switches = parts
     .filter((part) => part.type === "IN")
     .sort((a, b) => a.y - b.y || a.x - b.x);
@@ -896,12 +902,12 @@ function workOutTable() {
     .sort((a, b) => a.y - b.y || a.x - b.x);
 
   if (!switches.length || !lamps.length) {
-    flashMessage("A truth table needs at least one IN switch and one OUT lamp.");
-    return;
+    flashMessage("That needs at least one IN switch and one OUT lamp.");
+    return null;
   }
   if (switches.length > MOST_INPUTS) {
     flashMessage(`That's ${switches.length} switches - ${MOST_INPUTS} is as many as I'll go through.`);
-    return;
+    return null;
   }
 
   // Short labels make good column headings; a lamp labelled with a whole
@@ -928,12 +934,29 @@ function workOutTable() {
   switches.forEach((part, i) => { part.on = before[i]; });
   rebuildSim();
 
-  truth = {
+  return {
     names,
     outNames,
     rows,
     remembers: Boolean(sim && sim.hasMemory),
   };
+}
+
+function workOutTable() {
+  const table = buildTable();
+  if (!table) return;
+  truth = table;
+  render();
+}
+
+function workOutKmap() {
+  const table = buildTable();
+  if (!table) return;
+  if (table.names.length > KMAP_MOST) {
+    flashMessage(`A Karnaugh map tops out at ${KMAP_MOST} inputs - that one has ${table.names.length}.`);
+    return;
+  }
+  kmap = table;
   render();
 }
 
@@ -1010,7 +1033,97 @@ function renderTruth() {
   });
 }
 
+// ---- Karnaugh maps ----
+//
+// The squares are laid out so neighbours differ in exactly one input, which is
+// the whole trick: anything that forms a rectangle on the map is a term with
+// those changing inputs cancelled out. The grouping is worked out properly
+// rather than left as an exercise - the groups are drawn on, and the tidied
+// expression underneath is what they add up to.
+
+const KMAP_COLOURS = ["#c24b4b", "#2f7dc4", "#2f9e5e", "#9b59b6", "#d08b1f", "#1aa39a"];
+
+function kmapGrid(map, plan, outs, shapes, which) {
+  const rows = plan.rowCodes.length;
+  const cols = plan.colCodes.length;
+  const bits = (code, n) => code.toString(2).padStart(n, "0");
+
+  let cells = `<div class="kmap-corner">${escapeText(plan.rowNames.join(""))}\\${
+    escapeText(plan.colNames.join(""))}</div>`;
+  for (const code of plan.colCodes) {
+    cells += `<div class="kmap-head">${bits(code, plan.colBits)}</div>`;
+  }
+  plan.rowCodes.forEach((rowCode, r) => {
+    cells += `<div class="kmap-head kmap-side">${bits(rowCode, plan.rowBits)}</div>`;
+    plan.colCodes.forEach((colCode, c) => {
+      const m = (map << plan.inner) | (rowCode << plan.colBits) | colCode;
+      const on = outs[m] ? 1 : 0;
+      cells += `<div class="kmap-cell${on ? " on" : ""}" style="grid-row:${r + 2};grid-column:${c + 2}">
+        <span class="kmap-at">${m}</span>${on}</div>`;
+    });
+  });
+
+  // the groups, laid over the squares they cover
+  const over = shapes.flatMap((shape) => shape.blocks
+    .filter((block) => block.map === map)
+    .map((block) => {
+      const inset = 3 + (shape.index % 3) * 3;
+      return `<div class="kmap-ring" style="
+        grid-row:${block.r[0] + 2} / ${block.r[1] + 3};
+        grid-column:${block.c[0] + 2} / ${block.c[1] + 3};
+        border-color:${KMAP_COLOURS[shape.index % KMAP_COLOURS.length]};
+        margin:${inset}px"></div>`;
+    })).join("");
+
+  const label = plan.extra
+    ? `<p class="kmap-label">${plan.overNames.map((n, i) =>
+        `${escapeText(n)} = ${(map >> (plan.extra - 1 - i)) & 1}`).join(", ")}</p>`
+    : "";
+
+  return `${label}<div class="kmap-grid" style="grid-template-columns:auto repeat(${cols}, 1fr);
+    grid-template-rows:auto repeat(${rows}, 1fr)">${cells}${over}</div>`;
+}
+
+function renderKmap() {
+  kmapEl.hidden = !kmap || levelSelectOpen;
+  if (kmapEl.hidden) return;
+
+  const body = kmap.outNames.map((name, which) => {
+    const outs = kmap.rows.map((row) => row.out[which]);
+    const built = kmapFor(kmap.names, outs);
+    const { plan, shapes, simplified } = built;
+
+    const maps = Array.from({ length: plan.maps }, (_, map) =>
+      kmapGrid(map, plan, outs, shapes, which)).join("");
+
+    const key = shapes.length
+      ? `<p class="kmap-key">${shapes.map((shape) =>
+          `<span class="kmap-term" style="color:${KMAP_COLOURS[shape.index % KMAP_COLOURS.length]}">
+            ${escapeText(shape.text)}</span>`).join("")}</p>`
+      : "";
+
+    return `<section class="kmap-one">
+      <p class="kmap-name"><strong>${escapeText(name)}</strong>
+        <span class="kmap-count">${built.minterms.length} of ${kmap.rows.length} on</span></p>
+      <div class="kmap-maps">${maps}</div>
+      ${key}
+      <p class="term-line">${escapeText(name)} = ${escapeText(simplified)}</p>
+    </section>`;
+  }).join("");
+
+  kmapEl.innerHTML = `
+    <div class="results-head">
+      <span>Karnaugh map</span>
+      <button class="close-btn" id="kmap-close" aria-label="Close">&times;</button>
+    </div>
+    ${kmap.remembers ? `<p class="results-note">This circuit remembers things, so the map only shows where it settles from a fresh start.</p>` : ""}
+    ${body}`;
+
+  document.getElementById("kmap-close").addEventListener("click", () => { kmap = null; renderKmap(); });
+}
+
 document.getElementById("table-btn").addEventListener("click", workOutTable);
+document.getElementById("kmap-btn").addEventListener("click", workOutKmap);
 
 // ---- time controls ----
 

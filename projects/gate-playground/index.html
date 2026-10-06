@@ -55,6 +55,14 @@
         <li>On a puzzle it uses the switches and lamp already there, so you can build an answer and test it</li>
       </ul>
 
+      <h3>Tables and maps</h3>
+      <ul>
+        <li><strong>table</strong> works out the truth table for whatever is on the board, with the minterms and maxterms</li>
+        <li><strong>K-map</strong> draws a Karnaugh map of it, groups it for you, and gives the tidied expression those groups add up to</li>
+        <li>Squares next to each other on the map differ in one input, so a rectangle of ones is a term with the changing inputs cancelled out &mdash; groups that run off one edge come back in the other side</li>
+        <li>Up to four inputs is one map; five and six come out as a row of maps with the leading inputs held still</li>
+      </ul>
+
       <h3>Truth table</h3>
       <p>Press <strong>table</strong> to try every combination of the switches and write down what the lamps do, along with the minterms and maxterms.</p>
 
@@ -66,6 +74,7 @@
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v0.5</strong> &ndash; Karnaugh maps, grouped for you</li>
         <li><strong>v0.4</strong> &ndash; build a circuit from an expression, and read off its truth table</li>
         <li><strong>v0.3</strong> &ndash; bytes, memory, chips, and levels up to a tiny CPU</li>
         <li><strong>v0.2</strong> &ndash; puzzles</li>
@@ -101,6 +110,7 @@
                size="14" autocomplete="off" spellcheck="false">
         <button class="tool-btn" id="build-btn">build</button>
         <button class="tool-btn" id="table-btn" title="Work out the truth table for what's on the board">table</button>
+        <button class="tool-btn" id="kmap-btn" title="Draw a Karnaugh map and group it">K-map</button>
       </div>
 
       <button class="tool-btn" id="save-chip-btn">save as chip</button>
@@ -145,6 +155,7 @@
       <div class="flash" id="flash" hidden></div>
       <div class="results" id="results" hidden></div>
       <div class="truth" id="truth" hidden></div>
+      <div class="kmap" id="kmap" hidden></div>
       <div class="level-select" id="level-select" hidden></div>
     </div>
 
@@ -172,6 +183,7 @@
   <script src="../../nav.js"></script>
   <script src="parts.js"></script>
   <script src="expression.js"></script>
+  <script src="kmap.js"></script>
   <script src="levels.js"></script>
   <script src="game.js"></script>
 </body>
