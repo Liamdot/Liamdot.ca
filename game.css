@@ -165,7 +165,13 @@ body.game-page {
   touch-action: none;
 }
 
-@media (max-width: 480px) {
+/* ---- on a phone ---- */
+/*
+ * Fingers are blunter than a mouse pointer. Anything you're meant to press
+ * gets at least 38px of height here, hit targets grow past the edges of what
+ * they draw, and taps stop waiting 300ms to see if you meant to double-tap.
+ */
+@media (max-width: 560px) {
   .topbar {
     gap: 8px;
     padding: 0 10px;
@@ -173,5 +179,46 @@ body.game-page {
 
   .topbar .home-long {
     display: none;
+  }
+
+  .topbar button,
+  .topbar .home {
+    width: 40px;
+    height: 40px;
+  }
+
+  .topbar .logo {
+    width: 24px;
+    height: 24px;
+  }
+
+  .info-panel {
+    right: 8px;
+    width: calc(100vw - 16px);
+    font-size: 0.95rem;
+  }
+
+  .info-panel ul {
+    font-size: 0.95rem;
+  }
+}
+
+/* Covers phones in landscape too, where the width test above doesn't fire. */
+@media (pointer: coarse) {
+  button,
+  .pill,
+  .tool-btn,
+  select,
+  input[type="text"],
+  input[type="number"] {
+    min-height: 38px;
+  }
+
+  /* a tap shouldn't sit around waiting to see if a second one is coming */
+  button,
+  a,
+  .pill,
+  .tool-btn {
+    touch-action: manipulation;
   }
 }

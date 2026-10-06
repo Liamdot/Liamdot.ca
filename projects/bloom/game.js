@@ -193,19 +193,36 @@ function buy(id) {
 // 4. The plot
 // ===========================================================================
 //
-// The plot is the same size for everyone, always. The canvas is only a window
-// onto it: whatever shape the window is, the plot is scaled to fit and centred
-// inside it. A big monitor gets a bigger picture of exactly the same ground,
-// and dragging the window narrow no longer herds the dots into a huddle -
-// which used to be the cheapest trick in the game.
+// The plot is always the same amount of ground - 840 by 540 of it - but it
+// takes the shape of whatever you're playing on. A wide monitor gets a wide
+// plot, a phone held upright gets a tall one, and both get the same area, so
+// the dots are spread just as thinly either way and a bloom covers the same
+// share of the field. That's what stops the old trick working: drag the window
+// narrow and the plot gets taller to match rather than herding the dots
+// together. A fixed shape instead would leave a phone playing on a letterbox
+// strip with half the screen wasted.
 
+const PLOT_AREA = 840 * 540;
 const PLOT = { w: 840, h: 540 };
 const view = { scale: 1, ox: 0, oy: 0 };
 
 function fitView() {
-  view.scale = Math.min(canvas.clientWidth / PLOT.w, canvas.clientHeight / PLOT.h) || 1;
-  view.ox = (canvas.clientWidth - PLOT.w * view.scale) / 2;
-  view.oy = (canvas.clientHeight - PLOT.h * view.scale) / 2;
+  const wide = canvas.clientWidth || 840;
+  const tall = canvas.clientHeight || 540;
+  // same area, the screen's shape, and never sillier than 2.2:1 either way
+  const shape = Math.min(2.2, Math.max(1 / 2.2, wide / tall));
+  PLOT.h = Math.round(Math.sqrt(PLOT_AREA / shape));
+  PLOT.w = Math.round(PLOT_AREA / PLOT.h);
+
+  view.scale = Math.min(wide / PLOT.w, tall / PLOT.h) || 1;
+  view.ox = (wide - PLOT.w * view.scale) / 2;
+  view.oy = (tall - PLOT.h * view.scale) / 2;
+
+  // whatever is already out there gets tucked back inside the new shape
+  for (const dot of dots) {
+    dot.x = Math.min(dot.x, PLOT.w - dot.r);
+    dot.y = Math.min(dot.y, PLOT.h - dot.r);
+  }
 }
 
 // screen -> plot

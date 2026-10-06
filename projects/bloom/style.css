@@ -495,3 +495,45 @@
 .tally-pollen.landed {
   animation: land 0.42s 0.06s cubic-bezier(0.16, 1.1, 0.3, 1.2) both;
 }
+
+/* ---- on a phone ---- */
+
+@media (max-width: 560px) {
+  /* The bar was wrapping onto three rows and eating a third of the screen.
+     It scrolls sideways instead, so the plot keeps its height. */
+  .bar {
+    flex-wrap: nowrap;
+    gap: 0 12px;
+    overflow-x: auto;
+    padding: 7px 12px;
+    scrollbar-width: none;
+  }
+
+  .bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stat {
+    flex: none;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .shop {
+    padding: 14px 12px 24px;
+  }
+
+  .items {
+    grid-template-columns: 1fr;
+  }
+
+  .shop-head h2 {
+    font-size: 1.35rem;
+  }
+
+  .tally-buttons .pill,
+  .shop .pill,
+  .bar .pill {
+    min-height: 38px;
+  }
+}

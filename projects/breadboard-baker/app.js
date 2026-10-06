@@ -147,6 +147,10 @@ function boardSVG(state) {
       else if (level === "short") live = " short";
     }
     const highlight = pending && state && state.find(clipOf(pending)) === group ? " same" : "";
+    // The hole you can see is 8 across; the one you can hit is 16, which is the
+    // difference between this working with a mouse and working with a thumb.
+    // It goes in first so that parts, drawn later, still take a click over it.
+    svg += `<rect class="hole-hit" data-hole="${holeKey(hole)}" x="${x - 8}" y="${y - 8}" width="16" height="16"/>`;
     svg += `<rect class="hole${live}${highlight}" data-hole="${holeKey(hole)}" x="${x - 4}" y="${y - 4}" width="8" height="8" rx="1.5"/>`;
   }
 

@@ -999,3 +999,93 @@
   font-size: 0.78rem;
   font-weight: 700;
 }
+
+/* ---- on a phone ---- */
+
+@media (max-width: 560px) {
+  /* The toolbar was taking nearly half the screen before you could see the
+     board. Each row scrolls sideways instead of wrapping, so it stays three
+     rows tall however many parts there are. */
+  .toolbar {
+    gap: 6px;
+    padding: 6px 10px;
+  }
+
+  .palette {
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .palette::-webkit-scrollbar {
+    display: none;
+  }
+
+  .group {
+    flex-wrap: nowrap;
+  }
+
+  .part-btn,
+  .tool-btn,
+  .mode-btn {
+    flex: none;
+    min-height: 38px;
+    padding: 6px 12px;
+  }
+
+  /* the time and expression rows scroll the same way */
+  .time,
+  .expr-box {
+    flex: none;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .time::-webkit-scrollbar,
+  .expr-box::-webkit-scrollbar {
+    display: none;
+  }
+
+  .time input[type="range"] {
+    width: 70px;
+  }
+
+  .expr-box input {
+    width: 8.5rem;
+    min-height: 38px;
+  }
+
+  .spacer {
+    display: none;
+  }
+
+  /* the panels get the width they need to be readable */
+  .truth,
+  .kmap,
+  .results {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-height: calc(100% - 16px);
+  }
+
+  .results {
+    top: auto;
+    bottom: 8px;
+  }
+
+  .kmap-cell {
+    min-width: 30px;
+    min-height: 30px;
+  }
+
+  .props {
+    width: calc(100vw - 20px);
+  }
+}

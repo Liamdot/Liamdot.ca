@@ -574,7 +574,45 @@ function backspace() {
   render();
 }
 
+// ---- typing without a keyboard ----
+//
+// A phone only shows a keyboard when a field asks for one. On a touch device
+// the screen gets an invisible field over it that does the asking; the game
+// still reads keystrokes off the window, so nothing else changes.
+
+const tapField = document.getElementById("tap-to-type");
+const tapHint = document.getElementById("tap-hint");
+
+if (window.matchMedia("(pointer: coarse)").matches) {
+  tapField.hidden = false;
+  tapHint.hidden = false;
+
+  document.getElementById("screen").addEventListener("pointerdown", () => tapField.focus());
+  // whatever lands in the field is thrown away - it's only there for the keyboard
+  tapField.addEventListener("input", () => { tapField.value = ""; });
+  tapField.addEventListener("focus", () => tapHint.classList.add("typing"));
+  tapField.addEventListener("blur", () => tapHint.classList.remove("typing"));
+
+  // Android soft keyboards often send a bare input event with no keydown, so
+  // anything that arrives that way is played through by hand.
+  tapField.addEventListener("beforeinput", (e) => {
+    if (e.inputType === "deleteContentBackward") {
+      backspace();
+      return;
+    }
+    if (!e.data) return;
+    for (const letter of e.data) {
+      if (letter === " ") submitWord();
+      else typeLetter(letter);
+    }
+  });
+}
+
 window.addEventListener("keydown", (e) => {
+  // While the phone's field has the focus, what you type arrives as an input
+  // event instead - taking it here as well would type everything twice.
+  if (e.key !== "Escape" && document.activeElement === tapField) return;
+
   // Escape closes the achievements page.
   if (e.key === "Escape") {
     setAchievementsOpen(false);

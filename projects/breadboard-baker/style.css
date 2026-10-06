@@ -402,3 +402,45 @@
     width: auto;
   }
 }
+
+/* The part of a hole you can actually hit, which is bigger than the part you
+   can see. Invisible, and never in the way of a part sitting on top of it. */
+.hole-hit {
+  fill: transparent;
+}
+
+/* ---- on a phone ---- */
+
+@media (max-width: 700px) {
+  /* Thirty columns across a phone leaves each hole about eleven pixels wide,
+     which no thumb can hit. The board keeps a usable size and the area it sits
+     in scrolls sideways instead. */
+  .board-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .board {
+    width: 700px;
+    max-width: none;
+  }
+
+  .toolbar {
+    gap: 6px;
+    padding: 6px 10px;
+  }
+
+  .palette {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .palette::-webkit-scrollbar {
+    display: none;
+  }
+
+  .palette button {
+    flex: none;
+  }
+}

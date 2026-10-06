@@ -542,3 +542,31 @@
     margin-left: 0;
   }
 }
+
+/* ---- on a phone ---- */
+
+@media (max-width: 560px) {
+  /* Everything you tap gets a bit taller, and the checkboxes stop being
+     thirteen pixels square. */
+  .day,
+  .pill,
+  .icon-btn,
+  select,
+  input[type="text"],
+  input[type="number"],
+  input[type="time"] {
+    min-height: 38px;
+  }
+
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+
+  .icon-btn,
+  .link-btn,
+  .add-btn {
+    min-width: 38px;
+    min-height: 38px;
+  }
+}

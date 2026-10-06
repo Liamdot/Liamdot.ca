@@ -41,6 +41,7 @@
 /* The screen, left to right: the word you're typing, then the words coming
    up. Anything too long for the screen fades out on the right. */
 .screen {
+  position: relative;
   width: 100%;
   max-width: 520px;
   margin-top: 40px;
@@ -441,4 +442,41 @@
   .screen {
     font-size: 1.1rem;
   }
+}
+
+/* ---- typing on a phone ---- */
+
+/* There's no keyboard on a phone until a field asks for one, so this sits
+   invisibly over the screen and asks. What you type never shows here - the
+   game reads the keystrokes off the window as it always did - so the value is
+   thrown away on every input. 16px because anything smaller makes iOS zoom
+   the page in the moment you focus it. */
+.tap-to-type {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  background: none;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px;
+  opacity: 0;
+}
+
+.tap-to-type[hidden] {
+  display: none;
+}
+
+.tap-hint {
+  margin: 8px 0 0;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.tap-hint[hidden] {
+  display: none;
+}
+
+.tap-hint.typing {
+  visibility: hidden;
 }

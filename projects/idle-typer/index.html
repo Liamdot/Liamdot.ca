@@ -70,7 +70,15 @@
         </p>
 
         <!-- keep these spans on one line: the screen shows spaces exactly as written -->
-        <div class="screen" id="screen"><div class="line"><span class="typed" id="typed"></span><span class="cursor"></span><span class="todo" id="todo"></span><span class="upcoming" id="upcoming"></span></div></div>
+        <div class="screen" id="screen"><div class="line"><span class="typed" id="typed"></span><span class="cursor"></span><span class="todo" id="todo"></span><span class="upcoming" id="upcoming"></span></div>
+          <!-- A phone has no keyboard until something asks for one. This is that
+               something: invisible, sat over the screen, and only in the way on
+               a touch device. Keystrokes still reach the window handler. -->
+          <input class="tap-to-type" id="tap-to-type" type="text" hidden
+                 inputmode="text" autocomplete="off" autocorrect="off"
+                 autocapitalize="off" spellcheck="false" aria-label="Tap to type">
+        </div>
+        <p class="tap-hint" id="tap-hint" hidden>tap the screen to bring up the keyboard</p>
         <p class="hint" id="hint"></p>
       </section>
 
