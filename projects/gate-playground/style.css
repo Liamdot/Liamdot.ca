@@ -645,6 +645,31 @@
   margin-right: auto;
 }
 
+/* The heading of a floating panel is also its handle. */
+.truth .results-head,
+.kmap .results-head {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.truth .results-head:active,
+.kmap .results-head:active {
+  cursor: grabbing;
+}
+
+/* the buttons in there are still buttons, not handle */
+.truth .results-head button,
+.kmap .results-head button {
+  cursor: pointer;
+}
+
+/* whichever you grabbed comes to the front */
+.truth:active,
+.kmap:active {
+  z-index: 9;
+}
+
 .close-btn {
   width: 26px;
   height: 26px;

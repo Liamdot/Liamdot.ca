@@ -946,6 +946,7 @@ function workOutTable() {
   const table = buildTable();
   if (!table) return;
   truth = table;
+  if (narrowScreen()) kmap = null;   // no room for both, and nowhere to move them
   render();
 }
 
@@ -957,6 +958,7 @@ function workOutKmap() {
     return;
   }
   kmap = table;
+  if (narrowScreen()) truth = null;
   render();
 }
 
@@ -987,6 +989,94 @@ function tableAsText(table) {
       + `${name} = ${t.sop}\n${name} = ${t.pos}`;
   }).join("\n\n");
   return `${head}\n${body}\n\n${terms}\n`;
+}
+
+// ---- the floating panels ----
+//
+// The truth table and the Karnaugh map are both pinned to the top right by the
+// stylesheet, so opened together they land on top of each other. Once one is
+// placed it keeps its spot in here, and a second one goes beside it or under
+// it. Dragging the heading moves them, because whichever one you want to read
+// is always the one underneath.
+
+const panelAt = { truth: null, kmap: null };
+
+const narrowScreen = () => window.matchMedia("(max-width: 560px)").matches;
+
+function putPanel(el, key) {
+  const wrap = el.parentElement.getBoundingClientRect();
+  const spot = panelAt[key];
+  const box = el.getBoundingClientRect();
+  // a panel left somewhere that no longer exists comes back into view
+  const left = Math.max(0, Math.min(wrap.width - box.width, spot.left));
+  const top = Math.max(0, Math.min(Math.max(0, wrap.height - 44), spot.top));
+  el.style.left = `${left}px`;
+  el.style.top = `${top}px`;
+  el.style.right = "auto";
+}
+
+function firstSpot(el, otherEl) {
+  const wrap = el.parentElement.getBoundingClientRect();
+  const box = el.getBoundingClientRect();
+  let left = wrap.width - box.width - 12;
+  let top = 12;
+
+  if (otherEl && !otherEl.hidden) {
+    const other = otherEl.getBoundingClientRect();
+    const beside = other.left - wrap.left - box.width - 12;
+    if (beside >= 12) left = beside;                              // room alongside
+    else top = other.top - wrap.top + other.height + 12;          // otherwise below
+  }
+  return { left: Math.max(12, left), top: Math.max(12, top) };
+}
+
+function dragPanel(el, key) {
+  const handle = el.querySelector(".results-head");
+  if (!handle) return;
+  handle.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button")) return;        // close and copy still work
+    const wrap = el.parentElement.getBoundingClientRect();
+    const box = el.getBoundingClientRect();
+    const holdX = e.clientX - box.left;
+    const holdY = e.clientY - box.top;
+
+    const move = (ev) => {
+      panelAt[key] = {
+        left: ev.clientX - wrap.left - holdX,
+        top: ev.clientY - wrap.top - holdY,
+      };
+      putPanel(el, key);
+    };
+    const drop = () => {
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", drop);
+      handle.removeEventListener("pointercancel", drop);
+    };
+
+    try {
+      handle.setPointerCapture(e.pointerId);     // keeps the drag if you outrun it
+    } catch (err) {
+      // not every pointer can be captured; the move listeners still do the job
+    }
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", drop);
+    handle.addEventListener("pointercancel", drop);
+    e.preventDefault();
+    e.stopPropagation();
+  });
+}
+
+// Called once a panel has been drawn, with whichever other panel might be
+// in the way.
+function settlePanel(el, key, otherEl) {
+  if (narrowScreen()) {
+    // no room to arrange anything on a phone - the stylesheet lays them out
+    el.style.left = el.style.top = el.style.right = "";
+    return;
+  }
+  if (!panelAt[key]) panelAt[key] = firstSpot(el, otherEl);
+  putPanel(el, key);
+  dragPanel(el, key);
 }
 
 // The modern clipboard call is refused in a surprising number of places - an
@@ -1051,6 +1141,8 @@ function renderTruth() {
     ${terms}`;
 
   document.getElementById("truth-close").addEventListener("click", () => { truth = null; renderTruth(); });
+  settlePanel(truthEl, "truth", kmap ? kmapEl : null);
+
   const copyBtn = document.getElementById("truth-copy");
   copyBtn.addEventListener("click", async () => {
     if (!(await copyText(tableAsText(truth)))) {
@@ -1154,6 +1246,7 @@ function renderKmap() {
     ${kmap.remembers ? `<p class="results-note">This circuit remembers things, so the map only shows where it settles from a fresh start.</p>` : ""}
     ${body}`;
 
+  settlePanel(kmapEl, "kmap", truth ? truthEl : null);
   document.getElementById("kmap-close").addEventListener("click", () => { kmap = null; renderKmap(); });
 }
 
