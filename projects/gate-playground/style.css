@@ -615,6 +615,36 @@
   font-weight: 700;
 }
 
+/* The close button is a circle around a single glyph. A word doesn't fit in
+   one - "copy" in here came out 37px wide in a 26px circle, spilling over the
+   edges with nothing to show it was a button at all. */
+.copy-btn {
+  padding: 4px 11px;
+  border: 1.5px solid #d8d2c4;
+  border-radius: 20px;
+  background: none;
+  color: #666;
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.copy-btn:hover {
+  border-color: #222;
+  color: #222;
+}
+
+.copy-btn.done {
+  border-color: #3f7a4a;
+  color: #3f7a4a;
+}
+
+/* the heading keeps the title left and the buttons together on the right */
+.results-head > span:first-child {
+  margin-right: auto;
+}
+
 .close-btn {
   width: 26px;
   height: 26px;

@@ -1,13 +1,28 @@
 # Cloudflare Pages reads this file.
 #
-# By default it tells browsers to keep everything for four hours, which means
-# a change can be live and still not show up. Instead: always ask whether the
-# page has changed (a quick "no" is cheap), and only cache the things whose
-# names would change anyway if their contents did.
+# Pages caches assets for four hours by default, and a bare /* rule here was
+# not overriding it: the HTML came back max-age=0 while game.js and style.css
+# came back max-age=14400. That combination is worse than either on its own -
+# the browser takes the new page and pairs it with yesterday's script, so a
+# button appears with nothing wired to it. Hence the explicit rules per type.
+#
+# Belt and braces: the script and stylesheet tags carry a ?v= as well, so a
+# release changes their URLs and nothing stale can be reused whatever a cache
+# decides to do.
 
 /*
   Cache-Control: public, max-age=0, must-revalidate
 
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.css
+  Cache-Control: public, max-age=0, must-revalidate
+
+# These only change when their names do.
 /thumbs/*
   Cache-Control: public, max-age=86400
 

@@ -989,6 +989,34 @@ function tableAsText(table) {
   return `${head}\n${body}\n\n${terms}\n`;
 }
 
+// The modern clipboard call is refused in a surprising number of places - an
+// http page that isn't localhost, an embedded view, a browser that wants a
+// permission first. The old selection trick still works in most of them, so
+// it's worth keeping around as a second go.
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) {
+    // refused - try the old way
+  }
+  try {
+    const box = document.createElement("textarea");
+    box.value = text;
+    box.setAttribute("readonly", "");
+    box.style.cssText = "position:fixed;top:-1000px;opacity:0";
+    document.body.append(box);
+    box.select();
+    const done = document.execCommand("copy");
+    box.remove();
+    return done;
+  } catch (e) {
+    return false;
+  }
+}
+
 function renderTruth() {
   truthEl.hidden = !truth || levelSelectOpen;
   if (truthEl.hidden) return;
@@ -1015,7 +1043,7 @@ function renderTruth() {
   truthEl.innerHTML = `
     <div class="results-head">
       <span>Truth table</span>
-      <button class="close-btn" id="truth-copy" title="Copy as text" aria-label="Copy">copy</button>
+      <button class="copy-btn" id="truth-copy" title="Copy the table as text">copy</button>
       <button class="close-btn" id="truth-close" aria-label="Close">&times;</button>
     </div>
     ${truth.remembers ? `<p class="results-note">This circuit remembers things, so a table can only show where it settles from a fresh start.</p>` : ""}
@@ -1023,13 +1051,20 @@ function renderTruth() {
     ${terms}`;
 
   document.getElementById("truth-close").addEventListener("click", () => { truth = null; renderTruth(); });
-  document.getElementById("truth-copy").addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(tableAsText(truth));
-      flashMessage("Copied.");
-    } catch (e) {
+  const copyBtn = document.getElementById("truth-copy");
+  copyBtn.addEventListener("click", async () => {
+    if (!(await copyText(tableAsText(truth)))) {
       flashMessage("Couldn't copy - your browser said no.");
+      return;
     }
+    // Say so on the button itself. The flash sits over the board, which is the
+    // one place you aren't looking just after pressing this.
+    copyBtn.textContent = "copied";
+    copyBtn.classList.add("done");
+    setTimeout(() => {
+      copyBtn.textContent = "copy";
+      copyBtn.classList.remove("done");
+    }, 1400);
   });
 }
 
