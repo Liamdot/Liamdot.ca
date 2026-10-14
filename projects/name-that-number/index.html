@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Name that Number - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=4">
-  <link rel="stylesheet" href="../../game.css?v=4">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="../../style.css?v=6">
+  <link rel="stylesheet" href="../../game.css?v=6">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -42,12 +42,13 @@
         <li>Your drawing is shrunk to 28&times;28 pixels, like the digits the network learned from</li>
         <li>Each pixel feeds into 32 neurons, then 16, then 10 &mdash; one for each digit</li>
         <li>Brighter neurons are more active. Green lines push the next neuron up, red lines push it down</li>
-        <li>Hover a neuron in the first hidden layer to see the pattern it looks for</li>
+        <li>Hover a neuron &mdash; or tap it, on a phone &mdash; to see what it's doing. In the first hidden layer that's a picture of the pattern it looks for</li>
       </ul>
       <p>It learned from 60,000 handwritten digits (the MNIST dataset) and gets about 96% of new ones right.</p>
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v0.2</strong> &ndash; tap a neuron on a phone to see what it looks for</li>
         <li><strong>v0.1</strong> &ndash; first version</li>
       </ul>
 
@@ -88,8 +89,8 @@
     </div>
   </main>
 
-  <script src="../../nav.js?v=4"></script>
-  <script src="model.js?v=4"></script>
-  <script src="app.js?v=4"></script>
+  <script src="../../nav.js?v=6"></script>
+  <script src="model.js?v=6"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

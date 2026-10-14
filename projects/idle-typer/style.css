@@ -413,26 +413,6 @@
   }
 }
 
-/* reset button inside the info panel (overrides the round icon-button style) */
-
-.info-panel .reset {
-  display: inline-block;
-  width: auto;
-  height: auto;
-  margin-top: 16px;
-  padding: 4px 12px;
-  border: 2px solid #c0392b;
-  border-radius: 20px;
-  color: #c0392b;
-  font-size: 0.85rem;
-}
-
-.info-panel .reset:hover {
-  border-color: #c0392b;
-  background: #c0392b;
-  color: #fff;
-}
-
 @media (max-width: 700px) {
   .typer {
     grid-template-columns: 1fr;

@@ -12,8 +12,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Game Title - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=4">
-  <link rel="stylesheet" href="../../game.css?v=4">
+  <link rel="stylesheet" href="../../style.css?v=6">
+  <link rel="stylesheet" href="../../game.css?v=6">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -43,14 +43,31 @@
       <p class="meta">made September 2026</p>
       <p>One or two sentences about what this is.</p>
 
-      <h3>Notes</h3>
-      <p>Why you made it, what you learned, anything weird about it.</p>
+      <!-- Every project's info panel runs in the same order: a line about what
+           it is, then one section on how to drive it, any further sections it
+           genuinely needs, then Updates. Name the first section after what the
+           thing is - "How to play" for a game, "How to use" for a tool, "How
+           it works" for something you mostly watch. Write it as a list. -->
+      <h3>How to play</h3>
+      <ul>
+        <li>The one thing you do first</li>
+        <li>What happens because of it</li>
+      </ul>
 
+      <!-- Newest first. A line each, saying what changed for the person
+           playing, not what changed in the code. -->
       <h3>Updates</h3>
       <ul>
-        <li><strong>v1.1</strong> &ndash; something got fixed</li>
-        <li><strong>v1.0</strong> &ndash; first version</li>
+        <li><strong>v0.1</strong> &ndash; first version</li>
       </ul>
+
+      <!-- Only for something that keeps progress. game.css styles it and the
+           wiring is in Bloom or Idle Typer: it asks twice on the button
+           itself, never with a browser dialog.
+      <p class="wipe-line">
+        <button type="button" class="wipe" id="reset-btn">clear my save</button>
+      </p>
+      -->
 
       <a class="more" href="../../">more stuff &rarr;</a>
     </div>
@@ -60,7 +77,7 @@
     <canvas id="game"></canvas>
   </main>
 
-  <script src="../../nav.js?v=4"></script>
-  <script src="game.js?v=4"></script>
+  <script src="../../nav.js?v=6"></script>
+  <script src="game.js?v=6"></script>
 </body>
 </html>

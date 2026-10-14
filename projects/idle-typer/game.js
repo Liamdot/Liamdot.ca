@@ -724,8 +724,30 @@ function load() {
   }
 }
 
-document.getElementById("reset-btn").addEventListener("click", () => {
-  if (!confirm("Erase all your progress?")) return;
+// Clearing the save asks twice on the button itself, the same as every other
+// game here, rather than throwing up a browser dialog. Clicking anywhere else
+// forgets that you were half way through asking.
+const resetBtn = document.getElementById("reset-btn");
+let resetArmed = false;
+
+function disarmReset() {
+  resetArmed = false;
+  resetBtn.classList.remove("sure");
+  resetBtn.textContent = "clear my save";
+}
+
+document.addEventListener("click", (e) => {
+  if (resetArmed && e.target !== resetBtn) disarmReset();
+});
+
+resetBtn.addEventListener("click", () => {
+  if (!resetArmed) {
+    resetArmed = true;
+    resetBtn.classList.add("sure");
+    resetBtn.textContent = "really? this clears everything";
+    return;
+  }
+  disarmReset();
   bits = 0;
   totalBits = 0;
   wordsTyped = 0;
@@ -738,6 +760,8 @@ document.getElementById("reset-btn").addEventListener("click", () => {
   hintEl.textContent = "";
   save();
   render();
+  resetBtn.textContent = "cleared - starting over";
+  setTimeout(() => { if (!resetArmed) resetBtn.textContent = "clear my save"; }, 2500);
 });
 
 setInterval(save, 5000);                   // save every 5 seconds

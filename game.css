@@ -214,6 +214,21 @@ body.game-page {
     min-height: 38px;
   }
 
+  /* A round button given only a minimum height turns into an oval, so these
+     grow both ways. The width rule above covers phones; this covers tablets,
+     which are touch but too wide for it. */
+  .topbar button {
+    width: 40px;
+    height: 40px;
+    min-height: 0;
+  }
+
+  /* The home link isn't round: wider than a phone it still carries the word
+     "Liamdot" beside the logo, so it only gets taller, never narrower. */
+  .topbar .home {
+    min-height: 40px;
+  }
+
   /* a tap shouldn't sit around waiting to see if a second one is coming */
   button,
   a,
@@ -221,4 +236,39 @@ body.game-page {
   .tool-btn {
     touch-action: manipulation;
   }
+}
+
+/* ---- clearing a save, in the info panel ---- */
+/*
+ * Games that keep progress offer to throw it away from the bottom of their info
+ * panel, and they all do it the same way: quiet until you go near it, red once
+ * you do, and a second press before anything is lost. The panel lives inside
+ * .topbar, where every button is a 32px circle, so this has to say otherwise.
+ */
+.info-panel .wipe-line {
+  margin: 16px 0 0;
+}
+
+.info-panel .wipe {
+  width: auto;
+  height: auto;
+  padding: 5px 12px;
+  border: 2px solid #ddd;
+  border-radius: 20px;
+  background: none;
+  color: #999;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.info-panel .wipe:hover {
+  border-color: #d94f4f;
+  color: #d94f4f;
+}
+
+.info-panel .wipe.sure {
+  border-color: #d94f4f;
+  background: #d94f4f;
+  color: #fbf8f1;
 }

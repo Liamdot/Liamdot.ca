@@ -383,8 +383,47 @@ function startGesture() {
   }
 }
 
+// Right-click picks a point on the Mandelbrot set and shows its Julia set, and
+// a phone can't right-click - so holding a finger still on it does the same.
+// It gives up the moment the finger moves or a second one lands, since then
+// you're dragging or pinching instead.
+const HOLD_MS = 550;
+let hold = null;            // { timer, x, y } while a finger is being held still
+let heldAt = 0;             // when a hold last fired, so the browser's own menu can be refused
+
+function showJuliaAt(x, y) {
+  if (view.fractal !== "mandelbrot") return false;
+  const point = toPlane(x, y);
+  if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return false;
+  view.julia = [+point.x.toFixed(6), +point.y.toFixed(6)];
+  setFractal("julia");
+  return true;
+}
+
+function letGoOfHold() {
+  if (hold) clearTimeout(hold.timer);
+  hold = null;
+}
+
 canvas.addEventListener("pointerdown", (e) => {
   if (e.button !== 0) return;
+  letGoOfHold();
+  if (e.pointerType === "touch" && pointers.size === 0) {
+    const [x, y] = mousePos(e);
+    hold = {
+      x,
+      y,
+      timer: setTimeout(() => {
+        hold = null;
+        if (showJuliaAt(x, y)) {
+          heldAt = performance.now();
+          pointers.clear();          // lifting the finger now mustn't drag anything
+          gesture = null;
+          canvas.classList.remove("dragging");
+        }
+      }, HOLD_MS),
+    };
+  }
   try {
     canvas.setPointerCapture(e.pointerId); // keep getting moves even if the finger leaves the canvas
   } catch (error) {
@@ -404,6 +443,11 @@ canvas.addEventListener("pointermove", (e) => {
   pointers.set(e.pointerId, mousePos(e));
   const points = [...pointers.values()];
 
+  if (hold) {
+    const [x, y] = points[0];
+    if (points.length > 1 || Math.hypot(x - hold.x, y - hold.y) > 10) letGoOfHold();
+  }
+
   if (gesture && gesture.kind === "drag") {
     placeAt(gesture.anchor, ...points[0]);
     rerender();
@@ -419,6 +463,7 @@ canvas.addEventListener("pointermove", (e) => {
 });
 
 function endPointer(e) {
+  letGoOfHold();
   pointers.delete(e.pointerId);
   if (pointers.size === 0) canvas.classList.remove("dragging");
   startGesture(); // e.g. lifting one finger of a pinch carries on as a drag
@@ -433,11 +478,13 @@ canvas.addEventListener("dblclick", (e) => {
 
 // Right-click a point on the Mandelbrot set to see its Julia set.
 canvas.addEventListener("contextmenu", (e) => {
-  if (view.fractal !== "mandelbrot") return;
-  e.preventDefault();
-  const point = toPlane(...mousePos(e));
-  view.julia = [+point.x.toFixed(6), +point.y.toFixed(6)];
-  setFractal("julia");
+  // Some phones send their own menu event at the end of a long press. The hold
+  // has already done the job by then, so the browser's menu stays shut.
+  if (performance.now() - heldAt < 800) {
+    e.preventDefault();
+    return;
+  }
+  if (showJuliaAt(...mousePos(e))) e.preventDefault();
 });
 
 // Keyboard shortcuts (ignored while typing in the panel).
@@ -650,4 +697,9 @@ readAddressBar();
 buildColorTable();
 syncPanel();
 if (window.innerWidth < 600) $("panel-toggle").click(); // start with the panel folded up on phones
+// Sized once straight away, not just when the observer gets round to it. Until
+// then the canvas is 0 wide, every point on it maps to infinity, and anything
+// that reads a position - a right-click, a held finger - writes that into the
+// link you'd share.
+resize();
 new ResizeObserver(resize).observe(canvas);

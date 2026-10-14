@@ -304,12 +304,32 @@ function pinoutSVG(name, state, part) {
   return `${svg}</svg>`;
 }
 
+const PART_NAMES = { wire: "Wire", resistor: "Resistor", led: "LED", button: "Button" };
+
+// What can be done to the selected part, as buttons. Right-click and the
+// Delete and r keys do the same things, but a phone has none of them - and
+// written out here they're also things you can see you're able to do.
+function partActions(part) {
+  const values = part.type === "resistor"
+    ? `<p class="part-label">value</p>
+       <div class="part-values">${RESISTORS.map((value) => `<button class="tool-btn${
+         value === part.value ? " on" : ""}" data-act="value" data-value="${value}">${ohms(value)}&Omega;</button>`).join("")}</div>`
+    : "";
+  return `${values}<button class="tool-btn remove" data-act="remove">remove</button>`;
+}
+
 function renderInspector(state) {
   const part = parts.find((p) => p.id === selected);
   const name = part && part.type === "chip" ? part.name : (tool === "chip" ? chipToPlace : null);
 
+  if (part && part.type !== "chip") {
+    inspector.innerHTML = `<h2>${PART_NAMES[part.type] || part.type}</h2>${partActions(part)}`;
+    return;
+  }
+
   if (!name) {
-    inspector.innerHTML = `<p class="hint">Pick a chip to see its pinout, or drop one on the board to watch its pins.</p>`;
+    inspector.innerHTML = `<p class="hint">Pick a chip to see its pinout, or drop one on the board to watch its pins.
+      Use <strong>select</strong> and pick a part to change or remove it.</p>`;
     return;
   }
 
@@ -319,8 +339,23 @@ function renderInspector(state) {
     ${pinoutSVG(name, state, part && part.type === "chip" ? part : null)}
     <p class="note">${esc(spec.note)}</p>
     <p class="legend"><span class="key out"></span> output <span class="key in"></span> input
-      <span class="key power"></span> power</p>`;
+      <span class="key power"></span> power</p>
+    ${part ? partActions(part) : ""}`;
 }
+
+inspector.addEventListener("click", (e) => {
+  const button = e.target.closest("[data-act]");
+  if (!button) return;
+  const part = parts.find((p) => p.id === selected);
+  if (!part) return;
+  if (button.dataset.act === "remove") {
+    parts = parts.filter((p) => p.id !== part.id);
+    selected = null;
+  } else if (button.dataset.act === "value") {
+    part.value = Number(button.dataset.value);
+  }
+  render();
+});
 
 function renderChecks(state) {
   const notes = Circuit.check(parts, state);

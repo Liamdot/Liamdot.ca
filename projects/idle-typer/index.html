@@ -12,9 +12,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Idle Typer - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=4">
-  <link rel="stylesheet" href="../../game.css?v=4">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="../../style.css?v=6">
+  <link rel="stylesheet" href="../../game.css?v=6">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -47,15 +47,28 @@
     <div class="info-panel" id="info-panel" hidden>
       <h2>Idle Typer</h2>
       <p class="meta">made September 2026</p>
-      <p>Type the words on the screen to earn bits. Spend them on things that type for you. Needs a keyboard.</p>
+      <p>Type the words on the screen to earn bits. Spend them on things that type for you.</p>
+
+      <h3>How to play</h3>
+      <ul>
+        <li>Type the word in white and press space &mdash; a word only counts if it's spelled right, so backspace out of a mistake</li>
+        <li>Every letter of a finished word pays bits, so long words pay more</li>
+        <li><strong>Keycaps</strong> make every letter worth more; <strong>Auto-Typers</strong> earn while you sit there</li>
+        <li>Upgrades turn up as you hit milestones &mdash; so many words typed, so many of something owned &mdash; and each one is bought once</li>
+        <li>The trophy at the top lists the achievements, including one you won't see coming</li>
+        <li>On a phone, tap the dark screen to bring up the keyboard</li>
+      </ul>
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v0.2</strong> &ndash; works on a phone</li>
         <li><strong>v0.1</strong> &ndash; first version</li>
       </ul>
 
-      <button class="reset" id="reset-btn">reset progress</button>
-      <br>
+      <p class="wipe-line">
+        <button type="button" class="wipe" id="reset-btn">clear my save</button>
+      </p>
+
       <a class="more" href="../../">more stuff &rarr;</a>
     </div>
   </nav>
@@ -109,7 +122,7 @@
     <div class="popups" id="popups"></div>
   </main>
 
-  <script src="../../nav.js?v=4"></script>
-  <script src="game.js?v=4"></script>
+  <script src="../../nav.js?v=6"></script>
+  <script src="game.js?v=6"></script>
 </body>
 </html>

@@ -431,12 +431,17 @@ function showTooltip(layer, neuron, x, y) {
   tooltip.style.top = `${Math.max(8, Math.min(y - 20, card.clientHeight - tooltip.offsetHeight - 8))}px`;
 }
 
-net.addEventListener("pointermove", (e) => {
+// Whatever neuron is under the pointer gets explained. A mouse does that just by
+// passing over; a finger has to tap, because a finger only moves while it's
+// down, and a tap that doesn't move fires no pointermove at all.
+function inspectAt(e) {
   const rect = net.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
+  // a fingertip is wider than a cursor, so give it more room to land
+  const slack = e.pointerType === "touch" ? 12 : 4;
   for (let layer = 1; layer <= 3; layer++) {
-    const neuron = positions[layer].findIndex((p) => Math.hypot(p.x - x, p.y - y) <= p.r + 4);
+    const neuron = positions[layer].findIndex((p) => Math.hypot(p.x - x, p.y - y) <= p.r + slack);
     if (neuron !== -1) {
       showTooltip(layer, neuron, x, y);
       net.style.cursor = "help";
@@ -445,9 +450,16 @@ net.addEventListener("pointermove", (e) => {
   }
   tooltip.hidden = true;
   net.style.cursor = "";
-});
+}
 
-net.addEventListener("pointerleave", () => { tooltip.hidden = true; });
+net.addEventListener("pointermove", inspectAt);
+net.addEventListener("pointerdown", inspectAt);
+
+// Lifting a finger counts as leaving, which would hide the explanation the
+// moment it appeared. On a phone it stays until you tap somewhere else.
+net.addEventListener("pointerleave", (e) => {
+  if (e.pointerType !== "touch") tooltip.hidden = true;
+});
 
 new ResizeObserver(drawNetwork).observe(net);
 

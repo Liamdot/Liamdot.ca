@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gate Playground - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=4">
-  <link rel="stylesheet" href="../../game.css?v=4">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="../../style.css?v=6">
+  <link rel="stylesheet" href="../../game.css?v=6">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -57,14 +57,12 @@
 
       <h3>Tables and maps</h3>
       <ul>
-        <li><strong>table</strong> works out the truth table for whatever is on the board, with the minterms and maxterms</li>
+        <li><strong>table</strong> tries every combination of the switches and writes down what the lamps do, with the minterms and maxterms; <strong>copy</strong> takes it as text</li>
         <li><strong>K-map</strong> draws a Karnaugh map of it, groups it for you, and gives the tidied expression those groups add up to</li>
         <li>Squares next to each other on the map differ in one input, so a rectangle of ones is a term with the changing inputs cancelled out &mdash; groups that run off one edge come back in the other side</li>
         <li>Up to four inputs is one map; five and six come out as a row of maps with the leading inputs held still</li>
+        <li>Drag either one by its heading to get it out of the way</li>
       </ul>
-
-      <h3>Truth table</h3>
-      <p>Press <strong>table</strong> to try every combination of the switches and write down what the lamps do, along with the minterms and maxterms.</p>
 
       <h3>Time</h3>
       <p>Memory parts only change when time moves. <strong>pause</strong>, <strong>step</strong> (one tick) and the speed slider control it; <strong>reset time</strong> forgets everything remembered.</p>
@@ -74,6 +72,7 @@
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v0.6</strong> &ndash; the table and the map can be moved, and keep out of each other's way</li>
         <li><strong>v0.5</strong> &ndash; Karnaugh maps, grouped for you</li>
         <li><strong>v0.4</strong> &ndash; build a circuit from an expression, and read off its truth table</li>
         <li><strong>v0.3</strong> &ndash; bytes, memory, chips, and levels up to a tiny CPU</li>
@@ -180,11 +179,11 @@
     </div>
   </main>
 
-  <script src="../../nav.js?v=4"></script>
-  <script src="parts.js?v=4"></script>
-  <script src="expression.js?v=4"></script>
-  <script src="kmap.js?v=4"></script>
-  <script src="levels.js?v=4"></script>
-  <script src="game.js?v=4"></script>
+  <script src="../../nav.js?v=6"></script>
+  <script src="parts.js?v=6"></script>
+  <script src="expression.js?v=6"></script>
+  <script src="kmap.js?v=6"></script>
+  <script src="levels.js?v=6"></script>
+  <script src="game.js?v=6"></script>
 </body>
 </html>

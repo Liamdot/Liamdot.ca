@@ -1144,3 +1144,13 @@
     width: calc(100vw - 20px);
   }
 }
+
+/* the close buttons on the panels are circles - they grow both ways or they
+   become ovals */
+@media (pointer: coarse) {
+  .close-btn {
+    width: 38px;
+    height: 38px;
+    min-height: 0;
+  }
+}
