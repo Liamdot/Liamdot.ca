@@ -68,13 +68,13 @@ function keyOf(map) {
 // doesn't have - or that fails to load - comes from the developer set instead.
 // That's what lets you replace the art one picture at a time.
 
-const PICTURES = ["floor", "wall", "goal", "goalFilled", "hole", "holeFilled", "grate", "ball", "player", "finish", "finishOpen",
+const PICTURES = ["floor", "wall", "goal", "goalFilled", "hole", "holeFilled", "grate", "grateOpen", "ball", "player", "finish", "finishOpen",
   "door", "doorDone", "ballLocked", "playerUp", "playerDown", "playerLeft", "playerRight"];
 
 // what to draw until a picture has loaded, or if there's no picture at all
 const STAND_INS = {
   floor: "#e9e2d3", wall: "#5b5049", goal: "#c8553d", goalFilled: "#79b36f",
-  hole: "#3a322d", holeFilled: "#b98a5a", grate: "#6b6158", ball: "#c98a43", player: "#2f6f9f",
+  hole: "#3a322d", holeFilled: "#b98a5a", grate: "#6b6158", grateOpen: "#1a1613", ball: "#c98a43", player: "#2f6f9f",
   finish: "#bdb4a7", finishOpen: "#3fa85e",
   door: "#cfc5b4", doorDone: "#a9d39b", ballLocked: "#a39a8f",
 };
@@ -132,6 +132,7 @@ let hover = -1;          // the square under the pointer, in the editor
 
 const ANIM_MS = 110;     // one square
 const ROLL_MS = 38;      // and this much more for each extra square a ball rolls
+const SHUT_MS = 200;     // a grate closing again after something falls through
 
 function resize() {
   const ratio = window.devicePixelRatio || 1;
@@ -224,6 +225,19 @@ function drawGame() {
   const falling = anim ? anim.chain.filter((e) => e.ball && e.fell && progress(e) < 1) : [];
   // and players on their way through a grate, who aren't in the game any more
   const dying = anim ? anim.chain.filter((e) => e.died && progress(e) < 1) : [];
+  // Grates opening under whatever's falling through, and shutting again after.
+  // They start to open as it arrives, are wide open as it drops, and close
+  // once it's gone. How open each is, 0 to 1, by square.
+  const trapdoors = new Map();
+  if (anim) {
+    for (const e of anim.chain) {
+      if (!e.through) continue;
+      const since = now - anim.t0 - e.start;
+      const opening = Math.min(1, Math.max(0, (since - e.ms * 0.4) / (e.ms * 0.3)));
+      const shutting = Math.min(1, Math.max(0, (since - e.ms) / SHUT_MS));
+      trapdoors.set(e.to, Math.max(trapdoors.get(e.to) || 0, opening * (1 - shutting)));
+    }
+  }
   const landing = new Set(falling.map((e) => e.to));
 
   // the finishes stay shut until every goal is filled
@@ -240,7 +254,10 @@ function drawGame() {
         const gaping = game.holes[i] || landing.has(i);
         picture(level.goal[i] ? (gaping ? "goal" : "goalFilled") : (gaping ? "hole" : "holeFilled"), x, y, tile);
       }
-      if (level.grate[i]) picture("grate", x, y, tile);
+      if (level.grate[i]) {
+        if (trapdoors.has(i)) drawTrapdoor(trapdoors.get(i), x, y, tile);
+        else picture("grate", x, y, tile);
+      }
       if (level.doors) {
         if (level.doors.has(i)) drawDoor(level.doors.get(i), x, y, tile);
       } else if (level.finish[i]) picture(open ? "finishOpen" : "finish", x, y, tile);
@@ -278,6 +295,25 @@ function drawGame() {
     const sunk = game.holes[p] ? 0.22 * Math.max(0, (t - 0.55) / 0.45) : 0;
     const size = tile * (1 - sunk);
     picture("player", x + (tile - size) / 2, y + (tile - size) / 2, size, face);
+  }
+}
+
+// A grate opening like a pair of trapdoors: it splits down the middle and each
+// half slides away under the floor, showing the drop below.
+function drawTrapdoor(open, x, y, tile) {
+  picture("grateOpen", x, y, tile);
+  // each half moves with its own half of the picture, and is cut off where it
+  // passes the edge of the square
+  const slide = (open * tile) / 2;
+  const left = tile / 2 - slide;               // how much of each half still shows
+  if (left <= 0) return;
+  for (const side of [-1, 1]) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(side < 0 ? x : x + tile / 2 + slide, y, left, tile);
+    ctx.clip();
+    picture("grate", x + side * slide, y, tile);
+    ctx.restore();
   }
 }
 
@@ -388,11 +424,14 @@ function animate(change) {
     const inWave = change.chain.filter((e) => e.wave === k);
     starts.push(starts[k] + (inWave.length ? Math.max(...inWave.map(length)) : 0));
   }
-  const fell = new Set(change.balls.filter((b) => b[2]).map(([from, to]) => `${from}>${to}`));
-  const chain = change.chain.map((e) => ({
-    ...e, start: starts[e.wave], ms: length(e), fell: e.ball && fell.has(`${e.from}>${e.to}`),
-  }));
-  anim = { chain, t0: performance.now(), ms: Math.max(...chain.map((e) => e.start + e.ms)) };
+  const gone = new Map(change.balls.filter((b) => b[2]).map(([from, to, how]) => [`${from}>${to}`, how]));
+  const chain = change.chain.map((e) => {
+    const how = e.ball ? gone.get(`${e.from}>${e.to}`) : undefined;
+    // `through`: fell through a grate, which then has to shut again
+    return { ...e, start: starts[e.wave], ms: length(e), fell: Boolean(how), through: how === "grate" || e.died };
+  });
+  const end = (e) => e.start + e.ms + (e.through ? SHUT_MS : 0);
+  anim = { chain, t0: performance.now(), ms: Math.max(...chain.map(end)) };
   requestAnimationFrame(tick);
 }
 
