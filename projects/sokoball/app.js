@@ -311,7 +311,44 @@ function drawGame() {
 // The darkening is done on a copy of the grate picture first, so it only
 // lands on the grate itself - painting it straight onto the board would shade
 // the floor showing round the edges of the picture too, as a grey box.
+//
+// The hinges are on the grate's own left and right edges, not the square's:
+// a picture usually leaves a little floor showing round the grate, and folding
+// towards the square's edges would drag the grate out over that floor.
 const flap = document.createElement("canvas");
+
+// Where the grate actually is in its picture, left to right, as fractions of
+// the picture's width - found from where the picture stops being see-through.
+// Worked out once per picture.
+let grateSides = null;
+function sidesOf(img) {
+  if (grateSides && grateSides.src === img.src) return grateSides;
+  let left = 0;
+  let right = 1;
+  try {
+    const n = 64;
+    const probe = document.createElement("canvas");
+    probe.width = n;
+    probe.height = n;
+    const p = probe.getContext("2d");
+    p.drawImage(img, 0, 0, n, n);
+    const { data } = p.getImageData(0, 0, n, n);
+    const solid = (cx) => {
+      for (let cy = 0; cy < n; cy++) if (data[(cy * n + cx) * 4 + 3] > 24) return true;
+      return false;
+    };
+    let a = 0;
+    while (a < n - 1 && !solid(a)) a++;
+    let b = n - 1;
+    while (b > a && !solid(b)) b--;
+    left = a / n;
+    right = (b + 1) / n;
+  } catch (e) {
+    // a picture the browser won't let us look inside: hinge on the square
+  }
+  grateSides = { src: img.src, left, right };
+  return grateSides;
+}
 
 function drawTrapdoor(open, x, y, tile) {
   picture("grateOpen", x, y, tile);
@@ -333,17 +370,19 @@ function drawTrapdoor(open, x, y, tile) {
   f.fillStyle = `rgba(0, 0, 0, ${0.65 * Math.sin(angle)})`;
   f.fillRect(0, 0, size, size);
 
+  const sides = ready(art.grate) ? sidesOf(art.grate) : { left: 0, right: 1 };
+  const half = ((sides.right - sides.left) * tile) / 2;
   for (const side of [-1, 1]) {
     ctx.save();
-    // the hinge: the left edge of the square for the left half, the right
-    // edge for the right one, so each squashes towards its own side
-    ctx.translate(side < 0 ? x : x + tile, y);
+    // the hinge: the grate's left edge for the left half, its right edge for
+    // the right one, so each squashes towards its own side
+    const hinge = x + (side < 0 ? sides.left : sides.right) * tile;
+    ctx.translate(hinge, y);
     ctx.scale(across, 1);
-    const from = side < 0 ? 0 : -tile / 2;    // this half, measured from its hinge
     ctx.beginPath();
-    ctx.rect(from, 0, tile / 2, tile);
+    ctx.rect(side < 0 ? 0 : -half, 0, half, tile);   // this half, from its hinge
     ctx.clip();
-    ctx.drawImage(flap, side < 0 ? 0 : -tile, 0, tile, tile);
+    ctx.drawImage(flap, x - hinge, 0, tile, tile);
     ctx.restore();
   }
 }
