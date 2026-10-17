@@ -2,13 +2,18 @@
 
 Sokoball is a pushing puzzle in the Sokoban mould: fill every goal with a ball,
 and never pull. Goals are holes in the floor. A ball pushed into one drops in
-and is gone, and the filled hole is floor you can walk on; until then you
-can't step in. Plain holes work the same way but don't need filling — they're
-only in the way. Push a ball into another ball and it works like a Newton's
-cradle — the one you pushed stays put and the far one rolls away until
-something stops it, or until it drops into a hole. Filling every goal opens
-the finishes, and the level is won when every player is standing on one. A level can have any number of players,
-and every press moves all of them the same way at once. There can be spare
+and is gone, and the filled hole is floor you can walk on. Plain holes work
+the same way but don't need filling — they're only in the way. Push a ball
+into another ball and it works like a Newton's cradle — the one you pushed
+stays put and the far one rolls away until something stops it, or until it
+drops into a hole. Filling every goal opens the finishes, and the level is
+won when every player is standing on one.
+
+A level can have any number of players, and every press moves all of them the
+same way at once. A player who walks into an open hole is stuck in it. Another
+player walking into them bumps them out, cradle-style: the bumper stays put
+and the stuck one flies until something stops them, or until they drop into
+another hole. If every player is stuck, it's over until you undo or restart. There can be spare
 balls, but never more goals than balls. A ball can be pushed anywhere a player
 can walk, finishes and doors included. The edge of a level is as solid as a
 wall.
@@ -291,7 +296,8 @@ pulled, players that only move on alternate turns? It's there.
 The Newton's cradle is the function just under it, `cradle`: which ball in a
 row rolls, how far, and what stops it. Rolling balls stop at anything solid,
 at a player, and by dropping into the first open hole. What happens when a
-ball reaches a hole is `fall`, next to it. How long a roll takes on screen is
+ball reaches a hole is `fall`, next to it, and a stuck player being bumped
+out is `bump`. How long a roll takes on screen is
 `ROLL_MS` in `app.js`.
 
 How fast holding a direction walks is set near the top of section 8 of
@@ -304,6 +310,7 @@ Around it:
 
 - **`won`** — what counts as finished: every goal filled (`goalsFilled`),
   then every player on a finish. The game and the solver both ask it.
+- **`stuck`** — every player in a hole, which brings up the "Stuck" card.
 - **`check`** — what makes a level unplayable in the editor.
 - **`undo`** — puts the last move back.
 

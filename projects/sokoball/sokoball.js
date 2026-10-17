@@ -234,11 +234,18 @@ const SOKOBALL = (() => {
 
   // Every player tries to step the same way at once. They go furthest-along
   // first, so a line of them moves like a train: each one steps into the space
-  // the one ahead has just left. Anyone who can't move - a wall, the edge, an
-  // open hole, a ball with nowhere to go, a stuck player in front - stays put,
-  // and the rest carry on without them. Anywhere a player can walk, a ball can
-  // be pushed: finishes, and doors on the map, are floor as far as moving goes.
-  // A ball can go into an open hole too, and drops in: see fall().
+  // the one ahead has just left. Anyone who can't move - a wall, the edge, a
+  // ball with nowhere to go, a player in front who didn't move - stays put, and
+  // the rest carry on without them. Anywhere a player can walk, a ball can be
+  // pushed: finishes, and doors on the map, are floor as far as moving goes.
+  //
+  // Holes: a ball that goes into an open hole drops in and fills it (see
+  // fall). A player that walks into one is stuck there - it doesn't fill it,
+  // and it stays put while the others move. Another player walking into a
+  // stuck one bumps it out like the Newton's cradle: the bumper stays where it
+  // is and the stuck player flies on until something stops it, or until it
+  // drops into another hole. A player is stuck exactly when it's standing on
+  // an open hole, so there's nothing extra to keep track of.
   //
   // Changes `players`, `ballAt` and `holes` in place and says what moved, or
   // returns null if nothing did. Each ball that moved is [from, to], with a
@@ -255,10 +262,22 @@ const SOKOBALL = (() => {
     // somewhere a ball can go - an open hole included
     const open = (i) => i >= 0 && !level.wall[i] && !ballAt[i] && !occupied.has(i);
 
+    // somewhere a flying player can go - an open hole included
+    const clear = (i) => i >= 0 && !level.wall[i] && !ballAt[i] && !occupied.has(i);
+
     for (const n of order) {
       const from = players[n];
+      if (holes[from]) continue;               // stuck in a hole
       const to = step(level, from, dir);
-      if (to < 0 || level.wall[to] || holes[to] || occupied.has(to)) continue;
+      if (to < 0 || level.wall[to]) continue;
+      if (occupied.has(to)) {
+        // walking into a stuck player bumps it out; anyone else just blocks
+        if (holes[to]) {
+          const flew = bump(level, players, holes, occupied, clear, to, dir);
+          if (flew) moved.push(flew);
+        }
+        continue;
+      }
       if (ballAt[to]) {
         const beyond = step(level, to, dir);
         if (open(beyond)) {
@@ -278,6 +297,19 @@ const SOKOBALL = (() => {
       moved.push([from, to]);
     }
     return moved.length || pushed.length ? { players: moved, balls: pushed } : null;
+  }
+
+  // The stuck player at `at`, bumped from behind: it flies on until the next
+  // square isn't clear, or until it drops into another open hole. Says where
+  // it went, or null if it had no room to move.
+  function bump(level, players, holes, occupied, clear, at, dir) {
+    let to = step(level, at, dir);
+    if (!clear(to)) return null;
+    while (!holes[to] && clear(step(level, to, dir))) to = step(level, to, dir);
+    players[players.indexOf(at)] = to;
+    occupied.delete(at);
+    occupied.add(to);
+    return [at, to];
   }
 
   // Moves a ball. If it lands on an open hole it drops in: the ball is gone
@@ -367,6 +399,12 @@ const SOKOBALL = (() => {
 
   function solved(game) {
     return won(game.level, game.players, openHoles(game));
+  }
+
+  // Every player is stuck in a hole, so nobody can move again. Only undo or
+  // restart can help.
+  function stuck(game) {
+    return game.players.every((p) => game.holes[p]);
   }
 
   // =========================================================================
@@ -554,7 +592,7 @@ const SOKOBALL = (() => {
 
   return {
     WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE,
-    rowsOf, writeRows, parse, toText, check, start, move, undo, solved, finishOpen, encode, decode, solve,
+    rowsOf, writeRows, parse, toText, check, start, move, undo, solved, stuck, finishOpen, encode, decode, solve,
     parseWorld, worldLevel,
   };
 })();

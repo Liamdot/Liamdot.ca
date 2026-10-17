@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sokoball - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=24">
-  <link rel="stylesheet" href="../../game.css?v=24">
-  <link rel="stylesheet" href="style.css?v=24">
+  <link rel="stylesheet" href="../../style.css?v=25">
+  <link rel="stylesheet" href="../../game.css?v=25">
+  <link rel="stylesheet" href="style.css?v=25">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -43,7 +43,8 @@
         <li>Solving a level frees the grey balls that block the way to the next door. Push them out of the way to get on</li>
         <li>Solving a level takes you back to the map, and <strong>map</strong> (Esc) leaves a level without solving it</li>
         <li>Move with the arrow keys or WASD, and hold a direction to keep moving</li>
-        <li>Goals and holes are holes in the floor. A ball pushed or rolled into one drops in and fills it, and then it's floor you can walk on. Until then you can't step in</li>
+        <li>Goals and holes are holes in the floor. A ball pushed or rolled into one drops in and fills it, and then it's floor you can walk on</li>
+        <li>A player who walks into an open hole is stuck in it. Another player walking into them bumps them out, and they fly until something stops them. If every player is stuck, undo or restart</li>
         <li>Goals, with the red rim, are the ones that have to be filled. Plain holes are just in the way, and filling one costs a ball</li>
         <li>Pushing a ball into another works like a Newton's cradle: the ball you push stays put, and the last ball in the row rolls until it hits something or drops into a hole</li>
         <li>On a phone, swipe the board or use the buttons below it</li>
@@ -69,6 +70,7 @@
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v0.11</strong> &ndash; players can fall into holes and be bumped out, and the player is the size of a ball</li>
         <li><strong>v0.10</strong> &ndash; Soko is called Sokoball now</li>
         <li><strong>v0.9</strong> &ndash; goals are holes that balls drop into, there are plain holes in the way, and three new levels in place of Hallway, Zigzag and Courtyard</li>
         <li><strong>v0.8</strong> &ndash; the boxes are balls now, and pushing one into another sends the far one rolling</li>
@@ -161,10 +163,10 @@
     </div>
   </main>
 
-  <script src="../../nav.js?v=24"></script>
-  <script src="sokoball.js?v=24"></script>
-  <script src="assets.js?v=24"></script>
-  <script src="levels.js?v=24"></script>
-  <script src="app.js?v=24"></script>
+  <script src="../../nav.js?v=25"></script>
+  <script src="sokoball.js?v=25"></script>
+  <script src="assets.js?v=25"></script>
+  <script src="levels.js?v=25"></script>
+  <script src="app.js?v=25"></script>
 </body>
 </html>

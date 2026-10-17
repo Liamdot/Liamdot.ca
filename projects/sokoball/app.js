@@ -163,7 +163,7 @@ function picture(name, x, y, size, img = art[name]) {
     ctx.fill();
   } else if (name === "player" || name.startsWith("ball") || name.startsWith("goal") || name.startsWith("hole")) {
     ctx.beginPath();
-    ctx.arc(x + size / 2, y + size / 2, size * (name === "player" ? 0.34 : 0.38), 0, Math.PI * 2);
+    ctx.arc(x + size / 2, y + size / 2, size * 0.38, 0, Math.PI * 2);
     ctx.fill();
   } else {
     const inset = name.startsWith("door") ? 0.1 : 0;
@@ -239,10 +239,15 @@ function drawGame() {
     picture("ball", x + (tile - size) / 2, y + (tile - size) / 2, size);
   }
 
+  // a player stuck in a hole sits down in it, a little smaller - shrinking
+  // into it over the end of the step that took it there
   const face = playerPicture(game.facing);
   for (const p of game.players) {
-    const [x, y] = playerFrom.has(p) ? between(playerFrom.get(p), p) : at(p);
-    picture("player", x, y, tile, face);
+    const moving = playerFrom.has(p);
+    const [x, y] = moving ? between(playerFrom.get(p), p) : at(p);
+    const sunk = game.holes[p] ? (moving ? 0.22 * Math.max(0, (t - 0.55) / 0.45) : 0.22) : 0;
+    const size = tile * (1 - sunk);
+    picture("player", x + (tile - size) / 2, y + (tile - size) / 2, size, face);
   }
 }
 
@@ -338,12 +343,14 @@ function tick() {
   }
 }
 
-// A step takes ANIM_MS. A ball sent rolling by the cradle takes a little
-// longer the further it goes, so a long roll still reads as a roll.
+// A step takes ANIM_MS. A ball sent rolling by the cradle, or a player bumped
+// out of a hole, takes a little longer the further it goes, so a long roll
+// still reads as a roll.
 function animate(change) {
   if (!change) return;
   const w = game.level.width;
-  const far = Math.max(1, ...change.balls.map(([from, to]) => Math.abs((to % w) - (from % w)) + Math.abs(Math.floor(to / w) - Math.floor(from / w))));
+  const far = Math.max(1, ...[...change.balls, ...change.players].map(([from, to]) =>
+    Math.abs((to % w) - (from % w)) + Math.abs(Math.floor(to / w) - Math.floor(from / w))));
   anim = { ...change, t0: performance.now(), ms: ANIM_MS + ROLL_MS * (far - 1) };
   requestAnimationFrame(tick);
 }
@@ -495,6 +502,10 @@ function act(dir) {
     game.done = true;
     letGoOfEverything();
     finishTimer = setTimeout(finished, anim.ms + 40);
+  } else if (SOKOBALL.stuck(game)) {
+    // nobody left to move: say so once the last one has sunk in
+    letGoOfEverything();
+    finishTimer = setTimeout(() => { if (SOKOBALL.stuck(game)) showStuck(); }, anim.ms + 40);
   }
 }
 
@@ -903,10 +914,24 @@ function showSolved() {
   card.hidden = false;
 }
 
+// Every player is in a hole. Shares the solved card's place on the board.
+function showStuck() {
+  const card = $("solved");
+  card.innerHTML = `
+    <h2>Stuck</h2>
+    <p class="sub">Every player is in a hole.</p>
+    <div class="row">
+      <button class="pill strong" data-go="undo">undo</button>
+      <button class="pill" data-go="again">restart</button>
+    </div>`;
+  card.hidden = false;
+}
+
 $("solved").addEventListener("click", (e) => {
   const go = e.target.closest("[data-go]");
   if (!go) return;
   const what = go.dataset.go;
+  if (what === "undo") takeBack();
   if (what === "again") restart();
   if (what === "editor") setMode("make");
   if (what === "map") fade(() => goToMap());
