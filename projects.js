@@ -19,6 +19,13 @@
 
 const PROJECTS = [
   {
+    title: "Soko",
+    blurb: "Push the boxes home, then build levels of your own",
+    date: "2026-10-16",
+    url: "projects/soko/",
+    thumb: "thumbs/soko.svg",
+  },
+  {
     title: "Bloom",
     blurb: "One click, and then it keeps going",
     date: "2026-09-26",

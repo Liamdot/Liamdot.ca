@@ -1,0 +1,546 @@
+/* Styles just for Soko. Loaded after the site's style.css and game.css. */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  background: #2b2622;
+  color: #f1ede4;
+}
+
+/* Anything here that gets a display of its own still has to disappear when
+   it's hidden. */
+.stage [hidden] {
+  display: none !important;
+}
+
+/* ---- the bar across the top ---- */
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: center;
+  padding: 8px 14px;
+  border-bottom: 1px solid #3d3631;
+}
+
+.modes {
+  display: flex;
+  overflow: hidden;
+  border: 1.5px solid #4a423b;
+  border-radius: 20px;
+}
+
+.mode {
+  padding: 4px 13px;
+  border: 0;
+  background: none;
+  color: #a39a8f;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mode.on {
+  background: #e9e2d3;
+  color: #2b2622;
+}
+
+.level-name {
+  color: #f1ede4;
+  font-weight: 700;
+}
+
+.stat {
+  color: #a39a8f;
+  font-size: 0.8rem;
+}
+
+.stat strong {
+  margin-left: 4px;
+  color: #f1ede4;
+  font-variant-numeric: tabular-nums;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.pill {
+  padding: 4px 12px;
+  border: 1.5px solid #4a423b;
+  border-radius: 20px;
+  background: none;
+  color: #e3dccf;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.pill:hover:not(:disabled) {
+  border-color: #e9a23b;
+  color: #e9a23b;
+}
+
+.pill:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pill.strong {
+  border-color: #e9a23b;
+  background: #e9a23b;
+  color: #2b2622;
+  font-weight: 700;
+}
+
+.pill.strong:hover {
+  background: #f2b85b;
+  color: #2b2622;
+}
+
+/* ---- the board, and the editor beside it ---- */
+
+.work {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.board-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+.board.painting {
+  cursor: crosshair;
+}
+
+/* ---- cards over the board: solved, levels, share ---- */
+
+.card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  width: min(420px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  padding: 18px 20px;
+  border: 1.5px solid #4a423b;
+  border-radius: 14px;
+  background: rgba(36, 32, 29, 0.97);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%);
+}
+
+.card h2 {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+}
+
+.card h3 {
+  margin: 14px 0 6px;
+  color: #a39a8f;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.card .big {
+  margin: 4px 0;
+  color: #e9a23b;
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.card .sub {
+  margin: 4px 0;
+  color: #a39a8f;
+  font-size: 0.9rem;
+}
+
+.card .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.solved {
+  text-align: center;
+}
+
+.solved .row {
+  justify-content: center;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card .close {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #a39a8f;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.card .close:hover {
+  background: #3d3631;
+  color: #f1ede4;
+}
+
+.level-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.level-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  background: #322c28;
+  color: #e3dccf;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.level-row:hover,
+.level-row .name-btn:hover {
+  border-color: #e9a23b;
+}
+
+.level-row.here {
+  border-color: #6b6158;
+}
+
+.level-row .num {
+  width: 1.4em;
+  color: #a39a8f;
+  font-variant-numeric: tabular-nums;
+}
+
+.level-row .name {
+  flex: 1;
+}
+
+.level-row .done {
+  color: #8cc47f;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* your own levels have a few things you can do to them */
+.level-row.mine {
+  padding: 4px;
+  cursor: default;
+}
+
+.level-row .name-btn {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.level-row .tiny {
+  padding: 3px 8px;
+  border: 1px solid #4a423b;
+  border-radius: 12px;
+  background: none;
+  color: #a39a8f;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.level-row .tiny:hover {
+  border-color: #e9a23b;
+  color: #e9a23b;
+}
+
+.level-row .tiny.danger:hover,
+.level-row .tiny.danger[data-sure="yes"] {
+  border-color: #e0705c;
+  color: #e0705c;
+}
+
+.share .link {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1.5px solid #4a423b;
+  border-radius: 8px;
+  background: #1f1b18;
+  color: #e3dccf;
+  font: inherit;
+  font-family: Menlo, Consolas, "Courier New", monospace;
+  font-size: 0.75rem;
+}
+
+.flash {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  z-index: 6;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: #e9e2d3;
+  color: #2b2622;
+  font-size: 0.88rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%);
+}
+
+/* ---- the editor ---- */
+
+.editor {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 12px;
+  width: 260px;
+  overflow-y: auto;
+  padding: 14px;
+  border-left: 1px solid #3d3631;
+  background: #26211e;
+}
+
+.tools {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.tool {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 9px;
+  border: 1.5px solid #4a423b;
+  border-radius: 8px;
+  background: none;
+  color: #e3dccf;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.tool:hover {
+  border-color: #6b6158;
+}
+
+.tool.on {
+  border-color: #e9a23b;
+  background: rgba(233, 162, 59, 0.12);
+}
+
+/* little samples of each, in the developer art's colours */
+.tool span {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+.swatch-wall { background: #5b5049; outline: 1px solid #7a6d64; }
+.swatch-floor { background: #e9e2d3; }
+.swatch-goal { border: 3px solid #c8553d; border-radius: 50% !important; }
+.swatch-box { background: #c98a43; border: 2px solid #9b6530; }
+.swatch-player { background: #2f6f9f; border-radius: 50% !important; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #a39a8f;
+  font-size: 0.75rem;
+}
+
+.field input {
+  padding: 6px 8px;
+  border: 1.5px solid #4a423b;
+  border-radius: 8px;
+  background: #1f1b18;
+  color: #f1ede4;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.field input:focus {
+  border-color: #e9a23b;
+  outline: none;
+}
+
+.size {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.problems {
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: #322c28;
+  color: #c9c1b5;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.problems.bad {
+  background: rgba(224, 112, 92, 0.14);
+  color: #f0a594;
+}
+
+.problems.good {
+  background: rgba(140, 196, 127, 0.14);
+  color: #b4dca8;
+}
+
+.problems ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.editor-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.paste-box {
+  width: 100%;
+  padding: 8px;
+  border: 1.5px solid #4a423b;
+  border-radius: 8px;
+  background: #1f1b18;
+  color: #f1ede4;
+  font-family: Menlo, Consolas, "Courier New", monospace;
+  font-size: 0.8rem;
+  resize: vertical;
+}
+
+/* ---- the d-pad, for phones ---- */
+
+.dpad {
+  display: none;
+}
+
+body.touch .dpad {
+  display: grid;
+  gap: 8px;
+  grid-template-areas: ". up ." "left down right";
+  grid-template-columns: repeat(3, 58px);
+  justify-content: center;
+  padding: 10px 0 14px;
+}
+
+.dpad button {
+  height: 50px;
+  border: 1.5px solid #4a423b;
+  border-radius: 12px;
+  background: #322c28;
+  color: #e3dccf;
+  font-size: 1.1rem;
+  touch-action: manipulation;
+}
+
+.dpad button:active {
+  background: #e9a23b;
+  color: #2b2622;
+}
+
+.dpad [data-dir="up"] { grid-area: up; }
+.dpad [data-dir="left"] { grid-area: left; }
+.dpad [data-dir="down"] { grid-area: down; }
+.dpad [data-dir="right"] { grid-area: right; }
+
+/* ---- on a phone ---- */
+
+@media (max-width: 700px) {
+  /* the editor goes underneath the board rather than beside it */
+  .work {
+    flex-direction: column;
+  }
+
+  .editor {
+    width: auto;
+    max-height: 46%;
+    border-top: 1px solid #3d3631;
+    border-left: 0;
+  }
+
+  .tools {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .tool {
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 2px;
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 560px) {
+  /* the bar keeps to one line and scrolls, so the board keeps its height */
+  .bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bar > * {
+    flex: none;
+  }
+
+  .level-name {
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

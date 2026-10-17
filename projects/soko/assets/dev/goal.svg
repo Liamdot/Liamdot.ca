@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- developer art: a goal. Drawn on top of the floor, so keep it see-through. -->
+  <circle cx="32" cy="32" r="17" fill="none" stroke="#c8553d" stroke-width="4"/>
+  <circle cx="32" cy="32" r="6" fill="#c8553d"/>
+</svg>

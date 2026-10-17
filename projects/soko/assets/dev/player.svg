@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- developer art: the player, facing you -->
+  <circle cx="32" cy="34" r="21" fill="#2f6f9f"/>
+  <circle cx="32" cy="34" r="21" fill="none" stroke="#24577d" stroke-width="3"/>
+  <circle cx="25" cy="31" r="4" fill="#fbf8f1"/>
+  <circle cx="39" cy="31" r="4" fill="#fbf8f1"/>
+  <circle cx="25" cy="32" r="2" fill="#16161a"/>
+  <circle cx="39" cy="32" r="2" fill="#16161a"/>
+</svg>
