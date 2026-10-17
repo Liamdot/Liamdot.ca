@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- developer art: a goal with a ball dropped in it - filled, and floor now.
+       Green, so a finished level reads at a glance. -->
+  <circle cx="32" cy="32" r="23" fill="#79b36f" stroke="#4f8a47" stroke-width="4"/>
+  <ellipse cx="26" cy="26" rx="7" ry="4.5" fill="#a6d39a" transform="rotate(-35 26 26)"/>
+</svg>

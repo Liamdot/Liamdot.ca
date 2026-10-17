@@ -29,8 +29,10 @@ const ART = {
       floor: "assets/dev/floor.svg",
       wall: "assets/dev/wall.svg",
       goal: "assets/dev/goal.svg",
+      goalFilled: "assets/dev/goal-filled.svg",
+      hole: "assets/dev/hole.svg",
+      holeFilled: "assets/dev/hole-filled.svg",
       ball: "assets/dev/ball.svg",
-      ballOnGoal: "assets/dev/ball-on-goal.svg",
       player: "assets/dev/player.svg",
       finish: "assets/dev/finish.svg",
       finishOpen: "assets/dev/finish-open.svg",
@@ -44,9 +46,11 @@ const ART = {
     mine: {
       // floor: "assets/mine/floor.png",
       // wall: "assets/mine/wall.png",
-      // goal: "assets/mine/goal.png",
+      // goal: "assets/mine/goal.png",                (a hole that has to be filled)
+      // goalFilled: "assets/mine/goal-filled.png",   (one a ball has dropped into)
+      // hole: "assets/mine/hole.png",                (a plain hole, only in the way)
+      // holeFilled: "assets/mine/hole-filled.png",   (one a ball has dropped into)
       // ball: "assets/mine/ball.png",
-      // ballOnGoal: "assets/mine/ball-on-goal.png",
       // player: "assets/mine/player.png",
       // finish: "assets/mine/finish.png",            (shut: a goal still needs a ball)
       // finishOpen: "assets/mine/finish-open.png",   (open: stand on it to win)

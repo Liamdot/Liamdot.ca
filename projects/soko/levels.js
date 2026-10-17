@@ -1,8 +1,9 @@
 // Soko's campaign: the map you walk round, and the levels behind its doors.
 //
-// Each one is the usual Sokoban text, plus "!" for a finish, written between
-// backticks - see the top of soko.js for what each character means. Indent it however you like; the
-// shared indentation is ignored. The quickest way to make one is the editor in
+// Each one is the usual Sokoban text, plus "!" for a finish and "^" for a
+// plain hole, written between backticks - see the top of soko.js for what each
+// character means. Indent it however you like; the shared indentation is
+// ignored. The quickest way to make one is the editor in
 // the game itself: build it there, press "copy as text", and paste the result
 // in here as a new entry.
 //
@@ -29,6 +30,16 @@ const LEVELS = [
     `,
   },
   {
+    name: "Stepping stone",
+    map: `
+      #########
+      #   ^   #
+      #@$$^ .!#
+      #   ^   #
+      #########
+    `,
+  },
+  {
     name: "Corner shop",
     map: `
       #######
@@ -50,6 +61,19 @@ const LEVELS = [
     `,
   },
   {
+    name: "Island",
+    map: `
+      #########
+      #  ^^^  #
+      # ^^.^^ #
+      #  ^^^  #
+      #       #
+      # $ $ $ #
+      #@     !#
+      #########
+    `,
+  },
+  {
     name: "Store room",
     map: `
         ######
@@ -62,41 +86,14 @@ const LEVELS = [
     `,
   },
   {
-    name: "Hallway",
+    name: "Bowling",
     map: `
-        #######
-        #     #
-      ###$##$ #
-      #!  ..  #
-      #  #$## #
-      ## @.   #
-       ########
-    `,
-  },
-  {
-    name: "Zigzag",
-    map: `
-       ########
-       #! #   #
-       #  $ $ #
-      ### ##@ #
-      #  . #$ #
-      # .  .  #
-      #   #####
-      #####
-    `,
-  },
-  {
-    name: "Courtyard",
-    map: `
-      #########
-      #   #  !#
-      #  $@$  #
-      # $#.#  #
-      ## ...  #
-      # $# #  #
-      #       #
-      #########
+      ###########
+      #.^^      #
+      ####### # #
+      #!   $$ $@#
+      #       $ #
+      ###########
     `,
   },
 ];

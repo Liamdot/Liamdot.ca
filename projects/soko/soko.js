@@ -14,6 +14,14 @@
 //
 //   #  wall          @  player          $  ball          .  goal
 //   -  floor         +  player on goal  *  ball on goal   !  finish
+//   ^  hole
+//
+// Goals and holes are both holes in the floor. A ball pushed or rolled into
+// one drops in and is gone, and the hole becomes floor anyone can walk on.
+// Until then a player can't step into it. Goals are the holes that have to be
+// filled; plain holes (^, Soko's own) are only in the way. A ball or a player
+// "on a goal" (* and +) means that goal starts filled - which keeps levels from
+// other Sokoban programs working, since each of their boxes fills a goal.
 //
 // A space is floor too. The edge of the level is as solid as a wall, so a
 // level doesn't need walling in - but floor right at the start or end of a
@@ -22,10 +30,10 @@
 //
 // There can be any number of players, and they all move together.
 //
-// A level is won by getting a ball onto every goal and then every player onto
-// a finish - one finish each, so a level needs at least as many finishes as
+// A level is won by filling every goal and then getting every player onto a
+// finish - one finish each, so a level needs at least as many finishes as
 // players. There can be spare balls, but never more goals than balls.
-// Finishes stay shut until every goal has a ball. A ball can be pushed onto
+// Finishes stay shut until every goal is filled. A ball can be pushed onto
 // anything a player can walk on, finishes included - so a ball left on a
 // finish blocks it until it's moved.
 
@@ -42,8 +50,9 @@ const SOKO = (() => {
   const PLAYER = "@";
   const PLAYER_ON_GOAL = "+";
   const FINISH = "!";
+  const HOLE = "^";
 
-  const KNOWN = new Set([WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH]);
+  const KNOWN = new Set([WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE]);
 
   // Turns the text of a level into rows of single characters, all the same
   // length, with floor as a space. Blank lines either side go, and so does
@@ -77,7 +86,11 @@ const SOKO = (() => {
   // A level, ready to play. Everything is a flat array indexed y * width + x.
   //
   //   wall[i], goal[i],
-  //   finish[i]         - the fixed parts of the map
+  //   finish[i]         - the fixed parts of the map. goal[i] marks a goal
+  //                       whether it starts open or filled
+  //   hole[i]           - the holes open at the start, goals and plain holes
+  //                       alike. Which are still open is part of the game,
+  //                       not the level: see start()
   //   inside[i]         - floor some player can reach; anything else is the
   //                       dark outside, and isn't drawn as floor
   //   balls, players    - where each starts
@@ -93,6 +106,7 @@ const SOKO = (() => {
     const size = width * height;
     const wall = new Uint8Array(size);
     const goal = new Uint8Array(size);
+    const hole = new Uint8Array(size);
     const finish = new Uint8Array(size);
     const balls = [];
     const players = [];
@@ -105,18 +119,18 @@ const SOKO = (() => {
         if (ch === WALL) wall[i] = 1;
         if (ch === FINISH) finish[i] = 1;
         if (ch === GOAL || ch === BALL_ON_GOAL || ch === PLAYER_ON_GOAL) goal[i] = 1;
-        if (ch === BALL || ch === BALL_ON_GOAL) balls.push(i);
+        if (ch === GOAL || ch === HOLE) hole[i] = 1;
+        if (ch === BALL) balls.push(i);
         if (ch === PLAYER || ch === PLAYER_ON_GOAL) players.push(i);
       }
     }
 
-    const goals = goal.reduce((n, g) => n + g, 0);
-    const level = { width, height, wall, goal, goals, finish, balls, players };
+    const level = { width, height, wall, goal, hole, finish, balls, players };
     level.inside = reach(level, players);
     return level;
   }
 
-  function toText(level, balls = level.balls, players = level.players) {
+  function toText(level, balls = level.balls, players = level.players, holes = level.hole) {
     const onBall = new Uint8Array(level.width * level.height);
     const onPlayer = new Uint8Array(level.width * level.height);
     for (const b of balls) onBall[b] = 1;
@@ -128,9 +142,10 @@ const SOKO = (() => {
         const i = y * level.width + x;
         if (level.wall[i]) row += WALL;
         else if (onPlayer[i]) row += level.goal[i] ? PLAYER_ON_GOAL : PLAYER;
-        else if (onBall[i]) row += level.goal[i] ? BALL_ON_GOAL : BALL;
+        else if (holes[i]) row += level.goal[i] ? GOAL : HOLE;
+        else if (onBall[i]) row += BALL;
         else if (level.finish[i]) row += FINISH;
-        else row += level.goal[i] ? GOAL : FLOOR;
+        else row += level.goal[i] ? BALL_ON_GOAL : FLOOR;
       }
       rows.push(row);
     }
@@ -175,7 +190,9 @@ const SOKO = (() => {
   // show under the editor. Empty means it's fine.
   function check(level) {
     const problems = [];
-    const goals = level.goal.reduce((n, g) => n + g, 0);
+    // only the goals still to fill - one that starts filled needs nothing
+    let goals = 0;
+    for (let i = 0; i < level.goal.length; i++) if (level.goal[i] && level.hole[i]) goals++;
     const balls = level.balls.length;
 
     if (!level.players.length) problems.push("The level needs at least one player.");
@@ -190,7 +207,7 @@ const SOKO = (() => {
       const stray = level.balls.filter((b) => !level.inside[b]).length;
       if (stray) problems.push(`${stray} ball${stray === 1 ? " can't" : "s can't"} be reached by any player.`);
       let lost = 0;
-      for (let i = 0; i < level.goal.length; i++) if (level.goal[i] && !level.inside[i]) lost++;
+      for (let i = 0; i < level.goal.length; i++) if (level.goal[i] && level.hole[i] && !level.inside[i]) lost++;
       if (lost) problems.push(`${lost} goal${lost === 1 ? " can't" : "s can't"} be reached by any player.`);
       const finishes = level.finish.reduce((n, f) => n + f, 0);
       const players = level.players.length;
@@ -217,15 +234,17 @@ const SOKO = (() => {
 
   // Every player tries to step the same way at once. They go furthest-along
   // first, so a line of them moves like a train: each one steps into the space
-  // the one ahead has just left. Anyone who can't move - a wall, the edge, a
-  // ball with nowhere to go, a stuck player in front - stays put, and the rest
-  // carry on without them. Anywhere a player can walk, a ball can be pushed:
-  // finishes, and doors on the map, are floor as far as moving goes.
+  // the one ahead has just left. Anyone who can't move - a wall, the edge, an
+  // open hole, a ball with nowhere to go, a stuck player in front - stays put,
+  // and the rest carry on without them. Anywhere a player can walk, a ball can
+  // be pushed: finishes, and doors on the map, are floor as far as moving goes.
+  // A ball can go into an open hole too, and drops in: see fall().
   //
-  // Changes `players` and `ballAt` in place and says what moved, or returns null
-  // if nothing did. Both the game and the solver go through this, so they can
-  // never disagree about what a move does.
-  function moveAll(level, players, ballAt, dir) {
+  // Changes `players`, `ballAt` and `holes` in place and says what moved, or
+  // returns null if nothing did. Each ball that moved is [from, to], with a
+  // third `true` if it fell into the hole at `to`. Both the game and the
+  // solver go through this, so they can never disagree about what a move does.
+  function moveAll(level, players, ballAt, holes, dir) {
     const [dx, dy] = DIRS[dir];
     const along = (i) => (i % level.width) * dx + Math.floor(i / level.width) * dy;
     const order = players.map((_, n) => n).sort((a, b) => along(players[b]) - along(players[a]));
@@ -233,23 +252,22 @@ const SOKO = (() => {
     const moved = [];
     const pushed = [];
 
+    // somewhere a ball can go - an open hole included
     const open = (i) => i >= 0 && !level.wall[i] && !ballAt[i] && !occupied.has(i);
 
     for (const n of order) {
       const from = players[n];
       const to = step(level, from, dir);
-      if (to < 0 || level.wall[to] || occupied.has(to)) continue;
+      if (to < 0 || level.wall[to] || holes[to] || occupied.has(to)) continue;
       if (ballAt[to]) {
         const beyond = step(level, to, dir);
         if (open(beyond)) {
           // an ordinary push: one square
-          ballAt[to] = 0;
-          ballAt[beyond] = 1;
-          pushed.push([to, beyond]);
+          pushed.push(fall(ballAt, holes, to, beyond));
         } else {
           // Newton's cradle: pushed into another ball, the one you pushed
           // stays where it is and the last ball in the row rolls away
-          const roll = cradle(level, ballAt, open, to, dir);
+          const roll = cradle(level, ballAt, holes, open, to, dir);
           if (roll) pushed.push(roll);
           continue;                          // either way, you stay put
         }
@@ -262,11 +280,22 @@ const SOKO = (() => {
     return moved.length || pushed.length ? { players: moved, balls: pushed } : null;
   }
 
+  // Moves a ball. If it lands on an open hole it drops in: the ball is gone
+  // and the hole is filled, floor from now on.
+  function fall(ballAt, holes, from, to) {
+    ballAt[from] = 0;
+    if (holes[to]) {
+      holes[to] = 0;
+      return [from, to, true];
+    }
+    ballAt[to] = 1;
+    return [from, to];
+  }
+
   // The row of balls starting at `first`, struck from behind: the last one in
   // the row rolls on until the next square isn't free, or until it drops into
-  // an empty goal, which catches it. Says where it went, or null if it had
-  // no room to move at all.
-  function cradle(level, ballAt, open, first, dir) {
+  // an open hole. Says where it went, or null if it had no room to move at all.
+  function cradle(level, ballAt, holes, open, first, dir) {
     let last = first;
     let next = step(level, last, dir);
     while (next >= 0 && ballAt[next]) {
@@ -275,16 +304,16 @@ const SOKO = (() => {
     }
     if (last === first || !open(next)) return null;
     let at = next;
-    while (!level.goal[at] && open(step(level, at, dir))) at = step(level, at, dir);
-    ballAt[last] = 0;
-    ballAt[at] = 1;
-    return [last, at];
+    while (!holes[at] && open(step(level, at, dir))) at = step(level, at, dir);
+    return fall(ballAt, holes, last, at);
   }
 
   function start(level) {
     const ballAt = new Uint8Array(level.width * level.height);
     for (const b of level.balls) ballAt[b] = 1;
-    return { level, ballAt, players: level.players.slice(), facing: "down", history: [] };
+    return {
+      level, ballAt, holes: level.hole.slice(), players: level.players.slice(), facing: "down", history: [],
+    };
   }
 
   // Tries a move: what moved, or null if nobody could. Either way everyone turns
@@ -292,16 +321,19 @@ const SOKO = (() => {
   function move(game, dirName) {
     game.facing = dirName;
     const before = game.players.slice();
-    const change = moveAll(game.level, game.players, game.ballAt, DIR[dirName]);
+    const change = moveAll(game.level, game.players, game.ballAt, game.holes, DIR[dirName]);
     if (change) game.history.push({ players: before, balls: change.balls, facing: dirName });
     return change;
   }
 
+  // Puts the last move back - a ball that fell in climbs back out, and its
+  // hole opens again.
   function undo(game) {
     const last = game.history.pop();
     if (!last) return false;
-    for (const [from, to] of last.balls.slice().reverse()) {
-      game.ballAt[to] = 0;
+    for (const [from, to, fell] of last.balls.slice().reverse()) {
+      if (fell) game.holes[to] = 1;
+      else game.ballAt[to] = 0;
       game.ballAt[from] = 1;
     }
     game.players = last.players;
@@ -310,33 +342,31 @@ const SOKO = (() => {
     return true;
   }
 
-  // Every goal has a ball on it, which is what opens the finish. Spare balls
-  // can be anywhere.
-  function ballsHome(level, balls) {
-    let covered = 0;
-    for (const b of balls) covered += level.goal[b];
-    return covered === level.goals;
+  // Every goal is filled, which is what opens the finish. `holes` is a list of
+  // the holes still open; plain holes left open don't matter.
+  function goalsFilled(level, holes) {
+    return holes.every((h) => !level.goal[h]);
   }
 
   // The level is won once the finishes are open and every player is standing
   // on one. The game and the solver both ask this, so they agree on what
   // winning is.
-  function won(level, players, balls) {
-    return ballsHome(level, balls) && players.every((p) => level.finish[p]);
+  function won(level, players, holes) {
+    return goalsFilled(level, holes) && players.every((p) => level.finish[p]);
   }
 
-  const ballsOf = (game) => {
+  const openHoles = (game) => {
     const list = [];
-    for (let i = 0; i < game.ballAt.length; i++) if (game.ballAt[i]) list.push(i);
+    for (let i = 0; i < game.holes.length; i++) if (game.holes[i]) list.push(i);
     return list;
   };
 
   function finishOpen(game) {
-    return ballsHome(game.level, ballsOf(game));
+    return goalsFilled(game.level, openHoles(game));
   }
 
   function solved(game) {
-    return won(game.level, game.players, ballsOf(game));
+    return won(game.level, game.players, openHoles(game));
   }
 
   // =========================================================================
@@ -412,7 +442,7 @@ const SOKO = (() => {
     for (const i of world.doors.keys()) finish[i] = 1;
     return {
       width: world.width, height: world.height, wall, locked, finish, balls,
-      goal: new Uint8Array(size), goals: 0, players: [world.start],
+      goal: new Uint8Array(size), hole: new Uint8Array(size), players: [world.start],
       inside: world.inside, doors: world.doors,
     };
   }
@@ -466,12 +496,17 @@ const SOKO = (() => {
 
     const size = level.width * level.height;
     const ballAt = new Uint8Array(size);              // reused for every try
+    const holeAt = new Uint8Array(size);              // and this
     const sorted = (list) => list.slice().sort((a, b) => a - b);
-    const keyOf = (players, balls) => `${sorted(players).join(",")}|${balls.join(",")}`;
-    const first = { players: level.players.slice(), balls: sorted(level.balls) };
-    if (won(level, first.players, first.balls)) return { result: "solved", moves: 0, searched: 0 };
+    // which holes are still open is part of where you are: the same balls in
+    // the same places with a different hole filled is a different position
+    const keyOf = (players, balls, holes) => `${sorted(players).join(",")}|${balls.join(",")}|${holes.join(",")}`;
+    const startHoles = [];
+    for (let i = 0; i < size; i++) if (level.hole[i]) startHoles.push(i);
+    const first = { players: level.players.slice(), balls: sorted(level.balls), holes: startHoles };
+    if (won(level, first.players, first.holes)) return { result: "solved", moves: 0, searched: 0 };
 
-    const seen = new Set([keyOf(first.players, first.balls)]);
+    const seen = new Set([keyOf(first.players, first.balls, first.holes)]);
     let frontier = [first];
     let moves = 0;
     let searched = 0;
@@ -482,25 +517,34 @@ const SOKO = (() => {
       for (const state of frontier) {
         for (let d = 0; d < 4; d++) {
           for (const b of state.balls) ballAt[b] = 1;
+          for (const h of state.holes) holeAt[h] = 1;
           const players = state.players.slice();
-          const change = moveAll(level, players, ballAt, d);
+          const change = moveAll(level, players, ballAt, holeAt, d);
           for (const b of state.balls) ballAt[b] = 0;
+          for (const h of state.holes) holeAt[h] = 0;
           if (change) for (const [, to] of change.balls) ballAt[to] = 0;
           if (!change) continue;
 
           let balls = state.balls;
+          let holes = state.holes;
           if (change.balls.length) {
             balls = state.balls.slice();
-            for (const [from, to] of change.balls) balls[balls.indexOf(from)] = to;
+            for (const [from, to, fell] of change.balls) {
+              const at = balls.indexOf(from);
+              if (fell) {
+                balls.splice(at, 1);
+                holes = holes.filter((h) => h !== to);
+              } else balls[at] = to;
+            }
             balls.sort((a, b) => a - b);
           }
-          const key = keyOf(players, balls);
+          const key = keyOf(players, balls, holes);
           if (seen.has(key)) continue;
           seen.add(key);
 
-          if (won(level, players, balls)) return { result: "solved", moves, searched };
+          if (won(level, players, holes)) return { result: "solved", moves, searched };
           if (++searched >= budget) return { result: "unknown", searched };
-          next.push({ players, balls });
+          next.push({ players, balls, holes });
         }
       }
       frontier = next;
@@ -509,7 +553,7 @@ const SOKO = (() => {
   }
 
   return {
-    WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH,
+    WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE,
     rowsOf, writeRows, parse, toText, check, start, move, undo, solved, finishOpen, encode, decode, solve,
     parseWorld, worldLevel,
   };

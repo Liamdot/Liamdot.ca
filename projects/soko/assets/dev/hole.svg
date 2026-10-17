@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- developer art: a plain hole - in the way until a ball fills it, and not
+       needed to finish. Drawn on top of the floor. -->
+  <circle cx="32" cy="32" r="23" fill="#2a2420" stroke="#9a8f84" stroke-width="4"/>
+  <ellipse cx="32" cy="36" rx="17" ry="14" fill="#1a1613"/>
+</svg>

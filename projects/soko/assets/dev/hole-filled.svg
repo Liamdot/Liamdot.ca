@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- developer art: a plain hole with a ball dropped in it - floor now. -->
+  <circle cx="32" cy="32" r="23" fill="#b98a5a" stroke="#9a8f84" stroke-width="4"/>
+  <ellipse cx="26" cy="26" rx="7" ry="4.5" fill="#d7ad7c" transform="rotate(-35 26 26)"/>
+</svg>

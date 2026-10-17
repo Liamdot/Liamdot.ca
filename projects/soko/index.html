@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Soko - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=20">
-  <link rel="stylesheet" href="../../game.css?v=20">
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="../../style.css?v=23">
+  <link rel="stylesheet" href="../../game.css?v=23">
+  <link rel="stylesheet" href="style.css?v=23">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -35,7 +35,7 @@
     <div class="info-panel" id="info-panel" hidden>
       <h2>Soko</h2>
       <p class="meta">made October 2026</p>
-      <p>Push a ball onto every goal, then get every player to a finish. Balls can be pushed but not pulled. Push a ball into another ball and the far one rolls away until something stops it.</p>
+      <p>Fill every goal with a ball, then get every player to a finish. Balls can be pushed but not pulled. Push a ball into another ball and the far one rolls away until something stops it.</p>
 
       <h3>How to play</h3>
       <ul>
@@ -43,10 +43,12 @@
         <li>Solving a level frees the grey balls that block the way to the next door. Push them out of the way to get on</li>
         <li>Solving a level takes you back to the map, and <strong>map</strong> (Esc) leaves a level without solving it</li>
         <li>Move with the arrow keys or WASD, and hold a direction to keep moving</li>
-        <li>Pushing a ball into another works like a Newton's cradle: the ball you push stays put, and the last ball in the row rolls until it hits something. An empty goal catches a rolling ball</li>
+        <li>Goals and holes are holes in the floor. A ball pushed or rolled into one drops in and fills it, and then it's floor you can walk on. Until then you can't step in</li>
+        <li>Goals, with the red rim, are the ones that have to be filled. Plain holes are just in the way, and filling one costs a ball</li>
+        <li>Pushing a ball into another works like a Newton's cradle: the ball you push stays put, and the last ball in the row rolls until it hits something or drops into a hole</li>
         <li>On a phone, swipe the board or use the buttons below it</li>
         <li>When a level has several players, they all move together. A player that's blocked stays where it is</li>
-        <li>The finishes are lowered grey flags until every goal has a ball on it, then they go up and turn green. The level is won when every player is standing on a green flag</li>
+        <li>The finishes are lowered grey flags until every goal is filled, then they go up and turn green. The level is won when every player is standing on a green flag</li>
         <li>Some levels have more balls than goals, so not every ball has to be used</li>
         <li>A ball can go anywhere a player can, finishes and doors included. A ball on a finish or a door has to be moved off before it can be used</li>
         <li>The edge of a level is solid, like a wall</li>
@@ -67,6 +69,7 @@
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v0.9</strong> &ndash; goals are holes that balls drop into, there are plain holes in the way, and three new levels in place of Hallway, Zigzag and Courtyard</li>
         <li><strong>v0.8</strong> &ndash; the boxes are balls now, and pushing one into another sends the far one rolling</li>
         <li><strong>v0.7</strong> &ndash; balls can be pushed onto finishes and doors, and levels don't need balls or goals</li>
         <li><strong>v0.6</strong> &ndash; a map to walk round instead of a level list, with balls each level frees to open the way to the next</li>
@@ -115,10 +118,11 @@
         <div class="tools" id="tools">
           <button class="tool on" data-tool="#" title="Wall (1)"><span class="swatch-wall"></span>wall</button>
           <button class="tool" data-tool=" " title="Floor (2)"><span class="swatch-floor"></span>floor</button>
-          <button class="tool" data-tool="." title="Goal (3)"><span class="swatch-goal"></span>goal</button>
-          <button class="tool" data-tool="$" title="Ball (4)"><span class="swatch-ball"></span>ball</button>
-          <button class="tool" data-tool="@" title="Player (5)"><span class="swatch-player"></span>player</button>
-          <button class="tool" data-tool="!" title="Finish (6)"><span class="swatch-finish"></span>finish</button>
+          <button class="tool" data-tool="." title="Goal: a hole that has to be filled (3)"><span class="swatch-goal"></span>goal</button>
+          <button class="tool" data-tool="^" title="Hole: only in the way (4)"><span class="swatch-hole"></span>hole</button>
+          <button class="tool" data-tool="$" title="Ball (5)"><span class="swatch-ball"></span>ball</button>
+          <button class="tool" data-tool="@" title="Player (6)"><span class="swatch-player"></span>player</button>
+          <button class="tool" data-tool="!" title="Finish (7)"><span class="swatch-finish"></span>finish</button>
         </div>
 
         <label class="field">name
@@ -156,10 +160,10 @@
     </div>
   </main>
 
-  <script src="../../nav.js?v=20"></script>
-  <script src="soko.js?v=20"></script>
-  <script src="assets.js?v=20"></script>
-  <script src="levels.js?v=20"></script>
-  <script src="app.js?v=20"></script>
+  <script src="../../nav.js?v=23"></script>
+  <script src="soko.js?v=23"></script>
+  <script src="assets.js?v=23"></script>
+  <script src="levels.js?v=23"></script>
+  <script src="app.js?v=23"></script>
 </body>
 </html>
