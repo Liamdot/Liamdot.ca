@@ -179,11 +179,12 @@ const SOKO = (() => {
     const boxes = level.boxes.length;
 
     if (!level.players.length) problems.push("The level needs at least one player.");
-    if (!boxes) problems.push("The level needs at least one box.");
-    if (!goals) problems.push("The level needs at least one goal.");
     if (!level.finish.some((f) => f)) problems.push("The level needs a finish.");
-    if (boxes && goals > boxes) {
-      problems.push(`The level has ${goals} goals but ${boxes === 1 ? "only 1 box" : `only ${boxes} boxes`}. Every goal needs a box.`);
+    // Boxes and goals are optional - with no goals the finish is open from the
+    // start - but every goal there is needs a box to fill it.
+    if (goals > boxes) {
+      const have = boxes === 0 ? "no boxes" : boxes === 1 ? "only 1 box" : `only ${boxes} boxes`;
+      problems.push(`The level has ${goals} goal${goals === 1 ? "" : "s"} but ${have}. Every goal needs a box.`);
     }
     if (level.players.length) {
       const stray = level.boxes.filter((b) => !level.inside[b]).length;

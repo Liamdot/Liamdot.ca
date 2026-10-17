@@ -130,7 +130,8 @@ Press **make**. You get a grid and six tools:
 - Keys **1–6** pick the tools.
 - A level needs at least one finish per player, all of them reachable, and at
   least as many boxes as goals. Spare boxes are fine — they make a good red
-  herring.
+  herring. Boxes and goals are optional: with no goals, the finishes are open
+  from the start and the level is just about getting there.
 - **wide** and **tall** resize the grid (3 to 30 each way). What's there
   stays put; new squares are floor.
 - **The edge is solid.** There's no need to build a wall round the outside —
