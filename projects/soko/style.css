@@ -470,6 +470,8 @@ button.level-row:hover,
 
 .dpad button {
   height: 50px;
+  -webkit-touch-callout: none;
+  user-select: none;
   border: 1.5px solid #4a423b;
   border-radius: 12px;
   background: #322c28;

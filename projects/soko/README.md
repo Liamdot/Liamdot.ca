@@ -221,6 +221,12 @@ takes every player and one direction, and decides who moves, who gets stuck
 and which boxes get pushed. Want ice that keeps you sliding, boxes that can be
 pulled, players that only move on alternate turns? It's there.
 
+How fast holding a direction walks is set near the top of section 8 of
+`app.js`: `HOLD_PAUSE` is how long a press waits before it starts repeating
+(so a tap is only ever one step), and `HOLD_EVERY` is the time between steps
+after that. Keep `HOLD_EVERY` a little longer than `ANIM_MS`, so each step
+finishes sliding before the next begins.
+
 Around it:
 
 - **`solved`** — what counts as finished.

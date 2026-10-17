@@ -593,6 +593,7 @@ function startMaking(entry = null) {
 // Just the page: which controls show and what the board is for. Choosing what
 // to play is someone else's job - see setMode, just below.
 function showMode(next) {
+  letGoOfEverything();
   mode = next;
   hideCards();
   $("editor").hidden = mode !== "make";
@@ -871,11 +872,66 @@ $("share").addEventListener("click", (e) => {
 // 8. Input
 // ===========================================================================
 
+// By where the key is rather than what it types, so holding Shift halfway
+// through doesn't turn "d" into "D" and leave it held for ever - and WASD
+// stays in the same place on keyboards that put other letters there.
 const KEYS = {
   ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
-  w: "up", s: "down", a: "left", d: "right",
-  W: "up", S: "down", A: "left", D: "right",
+  KeyW: "up", KeyS: "down", KeyA: "left", KeyD: "right",
 };
+
+// ---- holding a direction ----
+//
+// One step the moment it's pressed, a short pause so a tap is only ever one
+// step, then steadily for as long as it's held. The browser's own key repeat
+// is ignored: its speed is whatever the computer happens to be set to, and
+// this way it matches the moves on screen. With two directions held, the
+// newest one wins, and letting it go carries on with the other.
+const HOLD_PAUSE = 220;    // ms before it starts repeating
+const HOLD_EVERY = 135;    // ms between steps after that - just behind each move finishing
+
+const held = [];           // whatever's holding a direction down, newest last
+let holdTimer = 0;
+
+function heldDir() {
+  const what = held[held.length - 1];
+  return what ? what.split(":")[1] : null;
+}
+
+function press(what) {
+  const at = held.indexOf(what);
+  if (at >= 0) held.splice(at, 1);
+  held.push(what);
+  act(heldDir());
+  clearTimeout(holdTimer);
+  holdTimer = setTimeout(keepGoing, HOLD_PAUSE);
+}
+
+function keepGoing() {
+  const dir = heldDir();
+  if (!dir) return;
+  act(dir);
+  holdTimer = setTimeout(keepGoing, HOLD_EVERY);
+}
+
+function letGo(what) {
+  const at = held.indexOf(what);
+  if (at >= 0) held.splice(at, 1);
+  if (!held.length) clearTimeout(holdTimer);
+}
+
+function letGoOfEverything() {
+  held.length = 0;
+  clearTimeout(holdTimer);
+}
+
+// a key let go of while the window wasn't looking would otherwise never come up
+window.addEventListener("blur", letGoOfEverything);
+document.addEventListener("visibilitychange", () => { if (document.hidden) letGoOfEverything(); });
+
+window.addEventListener("keyup", (e) => {
+  if (KEYS[e.code]) letGo(`key-${e.code}:${KEYS[e.code]}`);
+});
 
 window.addEventListener("keydown", (e) => {
   const focused = document.activeElement;
@@ -888,9 +944,9 @@ window.addEventListener("keydown", (e) => {
   }
 
   if (mode === "play") {
-    if (KEYS[e.key]) {
+    if (KEYS[e.code]) {
       e.preventDefault();
-      act(KEYS[e.key]);
+      if (!e.repeat) press(`key-${e.code}:${KEYS[e.code]}`);
     } else if (e.key === "z" || e.key === "u" || e.key === "Backspace") {
       e.preventDefault();
       takeBack();
@@ -991,9 +1047,33 @@ for (const btn of document.querySelectorAll(".mode")) {
   });
 }
 
+// The d-pad holds the same way the keys do: press for one step, keep a finger
+// on it to keep going.
+$("dpad").addEventListener("pointerdown", (e) => {
+  const btn = e.target.closest("[data-dir]");
+  if (!btn) return;
+  e.preventDefault();
+  try {
+    btn.setPointerCapture(e.pointerId);    // keeps it held if the finger slides off
+  } catch (err) {
+    // fine without it
+  }
+  press(`pad-${e.pointerId}:${btn.dataset.dir}`);
+});
+
+for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+  $("dpad").addEventListener(type, (e) => {
+    for (const what of held.filter((h) => h.startsWith(`pad-${e.pointerId}:`))) letGo(what);
+  });
+}
+
+// a long press would otherwise bring up the phone's own menu
+$("dpad").addEventListener("contextmenu", (e) => e.preventDefault());
+
+// Pressing a d-pad button from the keyboard (Tab to it, then Enter) still works.
 $("dpad").addEventListener("click", (e) => {
   const btn = e.target.closest("[data-dir]");
-  if (btn) act(btn.dataset.dir);
+  if (btn && e.detail === 0) act(btn.dataset.dir);
 });
 
 $("undo-btn").addEventListener("click", takeBack);
