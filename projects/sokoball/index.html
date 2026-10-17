@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sokoball - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=31">
-  <link rel="stylesheet" href="../../game.css?v=31">
-  <link rel="stylesheet" href="style.css?v=31">
+  <link rel="stylesheet" href="../../style.css?v=32">
+  <link rel="stylesheet" href="../../game.css?v=32">
+  <link rel="stylesheet" href="style.css?v=32">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -35,7 +35,7 @@
     <div class="info-panel" id="info-panel" hidden>
       <h2>Sokoball</h2>
       <p class="meta">made October 2026</p>
-      <p>Fill every goal with a ball, then get every player to a finish. Balls can be pushed but not pulled. Push a ball into another ball and the far one rolls away until something stops it.</p>
+      <p>Fill every goal, then get a player to a finish. Balls can be pushed but not pulled. Push a ball into another ball and the far one rolls away until something stops it.</p>
 
       <h3>How to play</h3>
       <ul>
@@ -49,7 +49,8 @@
         <li>Pushing a ball into another works like a Newton's cradle: the ball you push stays put, and the last ball in the row rolls until it hits something or drops into a hole. If the last in the row is a player stuck in a hole, they get knocked out instead</li>
         <li>On a phone, swipe the board or use the buttons below it</li>
         <li>When a level has several players, they all move together. A player that's blocked stays where it is</li>
-        <li>The finishes are lowered grey flags until every goal is filled, then they go up and turn green. The level is won when every player is standing on a green flag</li>
+        <li>The finishes are lowered grey flags until every goal is filled, then they go up and turn green. The level is won as soon as one player is standing on a green flag</li>
+        <li>A player stuck in a goal counts as filling it, for as long as they stay there</li>
         <li>Some levels have more balls than goals, so not every ball has to be used</li>
         <li>A ball can go anywhere a player can, finishes and doors included. A ball on a finish or a door has to be moved off before it can be used</li>
         <li>The edge of a level is solid, like a wall</li>
@@ -60,7 +61,7 @@
       <h3>Making levels</h3>
       <ul>
         <li><strong>make</strong> opens the editor. Paint walls, floor, goals, balls, players and finishes; right-click paints floor</li>
-        <li>A level needs at least one finish for each player. Balls and goals are optional: with no goals, the finishes are open from the start</li>
+        <li>A level needs a finish a player can reach. Balls and goals are optional: with no goals, the finishes are open from the start</li>
         <li><strong>check</strong> works out whether the puzzle can be solved</li>
         <li><strong>test</strong> plays it, and <strong>save to my levels</strong> keeps it in this browser</li>
         <li><strong>share</strong> makes a link that anyone can use to play it</li>
@@ -70,6 +71,7 @@
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v0.13</strong> &ndash; only one player has to reach a finish, and a player stuck in a goal fills it</li>
         <li><strong>v0.12</strong> &ndash; pushing a ball that's touching a stuck player knocks them out</li>
         <li><strong>v0.11</strong> &ndash; players can fall into holes and be bumped out, and the player is the size of a ball</li>
         <li><strong>v0.10</strong> &ndash; Soko is called Sokoball now</li>
@@ -168,10 +170,10 @@
     </div>
   </main>
 
-  <script src="../../nav.js?v=31"></script>
-  <script src="sokoball.js?v=31"></script>
-  <script src="assets.js?v=31"></script>
-  <script src="levels.js?v=31"></script>
-  <script src="app.js?v=31"></script>
+  <script src="../../nav.js?v=32"></script>
+  <script src="sokoball.js?v=32"></script>
+  <script src="assets.js?v=32"></script>
+  <script src="levels.js?v=32"></script>
+  <script src="app.js?v=32"></script>
 </body>
 </html>

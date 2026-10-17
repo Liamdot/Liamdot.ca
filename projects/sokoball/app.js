@@ -660,8 +660,7 @@ function storeDraft() {
 
 // What painting one square with the current tool turns it into. Everything
 // replaces what was there - a goal and a hole are holes, so nothing can start
-// in one. Each player painted is another player, and each one needs a finish
-// of its own.
+// in one. Each player painted is another player.
 function paint(i, with_) {
   const next = with_;
   if (next === draft.cells[i]) return false;

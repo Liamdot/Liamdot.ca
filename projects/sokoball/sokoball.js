@@ -30,9 +30,10 @@
 //
 // There can be any number of players, and they all move together.
 //
-// A level is won by filling every goal and then getting every player onto a
-// finish - one finish each, so a level needs at least as many finishes as
-// players. There can be spare balls, but never more goals than balls.
+// A level is won by filling every goal and then getting any one player onto a
+// finish. A goal is filled by a ball dropped into it, or by a player stuck in
+// it - for as long as they stay there. There can be spare balls, but never
+// more goals than the balls and players can fill with one player left over.
 // Finishes stay shut until every goal is filled. A ball can be pushed onto
 // anything a player can walk on, finishes included - so a ball left on a
 // finish blocks it until it's moved.
@@ -195,13 +196,18 @@ const SOKOBALL = (() => {
     for (let i = 0; i < level.goal.length; i++) if (level.goal[i] && level.hole[i]) goals++;
     const balls = level.balls.length;
 
-    if (!level.players.length) problems.push("The level needs at least one player.");
+    const players = level.players.length;
+
+    if (!players) problems.push("The level needs at least one player.");
     if (!level.finish.some((f) => f)) problems.push("The level needs a finish.");
     // Balls and goals are optional - with no goals the finish is open from the
-    // start - but every goal there is needs a ball to fill it.
-    if (goals > balls) {
+    // start - but every goal there is needs a ball or a player in it, and one
+    // player has to be left over to reach the finish.
+    if (players && goals > balls + players - 1) {
       const have = balls === 0 ? "no balls" : balls === 1 ? "only 1 ball" : `only ${balls} balls`;
-      problems.push(`The level has ${goals} goal${goals === 1 ? "" : "s"} but ${have}. Every goal needs a ball.`);
+      problems.push(players === 1
+        ? `The level has ${goals} goal${goals === 1 ? "" : "s"} but ${have}. Every goal needs a ball.`
+        : `The level has ${goals} goals but ${have} and ${players} players. Every goal needs a ball or a player in it, and one player has to be left to reach a finish.`);
     }
     if (level.players.length) {
       const stray = level.balls.filter((b) => !level.inside[b]).length;
@@ -210,16 +216,10 @@ const SOKOBALL = (() => {
       for (let i = 0; i < level.goal.length; i++) if (level.goal[i] && level.hole[i] && !level.inside[i]) lost++;
       if (lost) problems.push(`${lost} goal${lost === 1 ? " can't" : "s can't"} be reached by any player.`);
       const finishes = level.finish.reduce((n, f) => n + f, 0);
-      const players = level.players.length;
       let reachable = 0;
       for (let i = 0; i < level.finish.length; i++) if (level.finish[i] && level.inside[i]) reachable++;
-      if (finishes && finishes < players) {
-        problems.push(`The level has ${players} players but ${finishes} finish${
-          finishes === 1 ? "" : "es"}. Every player needs one to stand on.`);
-      } else if (finishes && reachable < players) {
-        problems.push(players === 1
-          ? "The finish can't be reached by the player."
-          : `Only ${reachable} finish${reachable === 1 ? "" : "es"} can be reached by the players, and every player needs one.`);
+      if (finishes && !reachable) {
+        problems.push(finishes === 1 ? "The finish can't be reached by any player." : "None of the finishes can be reached by any player.");
       }
     }
     return problems;
@@ -389,17 +389,18 @@ const SOKOBALL = (() => {
     return true;
   }
 
-  // Every goal is filled, which is what opens the finish. `holes` is a list of
-  // the holes still open; plain holes left open don't matter.
-  function goalsFilled(level, holes) {
-    return holes.every((h) => !level.goal[h]);
+  // Every goal is filled - a ball dropped in it, or a player stuck in it -
+  // which is what opens the finish. `holes` is a list of the holes still open;
+  // plain holes left open don't matter.
+  function goalsFilled(level, holes, players) {
+    return holes.every((h) => !level.goal[h] || players.includes(h));
   }
 
-  // The level is won once the finishes are open and every player is standing
+  // The level is won once the finishes are open and any one player is standing
   // on one. The game and the solver both ask this, so they agree on what
   // winning is.
   function won(level, players, holes) {
-    return goalsFilled(level, holes) && players.every((p) => level.finish[p]);
+    return goalsFilled(level, holes, players) && players.some((p) => level.finish[p]);
   }
 
   const openHoles = (game) => {
@@ -409,7 +410,7 @@ const SOKOBALL = (() => {
   };
 
   function finishOpen(game) {
-    return goalsFilled(game.level, openHoles(game));
+    return goalsFilled(game.level, openHoles(game), game.players);
   }
 
   function solved(game) {

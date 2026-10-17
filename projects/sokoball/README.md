@@ -7,7 +7,9 @@ the same way but don't need filling — they're only in the way. Push a ball
 into another ball and it works like a Newton's cradle — the one you pushed
 stays put and the far one rolls away until it hits something, which it stops
 against, or drops into a hole. Filling every goal opens the finishes, and the level is
-won when every player is standing on one.
+won as soon as any one player is standing on one. A player stuck in a goal
+counts as filling it, for as long as they stay there — so with several
+players, one can be left behind in a goal while another walks to the finish.
 
 A level can have any number of players, and every press moves all of them the
 same way at once. A player who walks into an open hole is stuck in it. Walking
@@ -142,8 +144,8 @@ Press **make**. You get a grid and seven tools:
   click to paint, drag to paint a run. Players go down one click at a time, as
   many as you like. Right-click paints floor, which is how you rub things out.
 - Keys **1–7** pick the tools.
-- A level needs at least one finish per player, all of them reachable, and at
-  least as many balls as goals. Spare balls are fine — they make a good red
+- A level needs at least one finish a player can reach, and enough balls and
+  players to fill every goal with one player left over to reach the finish. Spare balls are fine — they make a good red
   herring. Balls and goals are optional: with no goals, the finishes are open
   from the start and the level is just about getting there.
 - **wide** and **tall** resize the grid (3 to 30 each way). What's there
@@ -313,7 +315,7 @@ finishes sliding before the next begins.
 Around it:
 
 - **`won`** — what counts as finished: every goal filled (`goalsFilled`),
-  then every player on a finish. The game and the solver both ask it.
+  then any one player on a finish. The game and the solver both ask it.
 - **`stuck`** — every player in a hole, which brings up undo and restart at the bottom of the board.
 - **`check`** — what makes a level unplayable in the editor.
 - **`undo`** — puts the last move back.
