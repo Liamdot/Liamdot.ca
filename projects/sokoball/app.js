@@ -185,24 +185,43 @@ function drawGame() {
   const { tile, ox, oy } = layout(level.width, level.height);
   const at = (i) => [ox + (i % level.width) * tile, oy + Math.floor(i / level.width) * tile];
 
-  // how far through the current move we are, eased so it settles
-  let t = 1;
-  if (anim) {
-    t = Math.min(1, (performance.now() - anim.t0) / anim.ms);
-    t = 1 - (1 - t) * (1 - t);
-  }
-  const between = (from, to) => {
-    const [ax, ay] = at(from);
-    const [bx, by] = at(to);
-    return [ax + (bx - ax) * t, ay + (by - ay) * t];
+  // How far through its own movement each piece is, eased so it settles. In a
+  // chain reaction each knock starts when the one before it lands.
+  const now = performance.now();
+  const progress = (e) => {
+    const t = Math.min(1, Math.max(0, (now - anim.t0 - e.start) / e.ms));
+    return 1 - (1 - t) * (1 - t);
   };
-  // where each thing that moved came from, looked up by where it is now
-  const cameFrom = (list) => new Map(anim && t < 1 ? list.map(([from, to]) => [to, from]) : []);
-  const ballFrom = cameFrom(anim ? anim.balls.filter((b) => !b[2]) : []);
-  const playerFrom = cameFrom(anim ? anim.players : []);
+  // Where a ball or player that ended up at `cell` should be drawn right now,
+  // and how far into its last movement it is. A player can move twice in a
+  // turn - a step, then knocked flying - so this follows it back through
+  // every movement that brought it here.
+  const track = (ball, cell) => {
+    const path = [];
+    if (anim) {
+      let c = cell;
+      for (let k = anim.chain.length - 1; k >= 0; k--) {
+        const e = anim.chain[k];
+        if (e.ball === ball && e.to === c) {
+          path.unshift(e);
+          c = e.from;
+        }
+      }
+    }
+    if (!path.length) return { xy: at(cell), t: 1 };
+    for (const e of path) {
+      const t = progress(e);
+      if (t < 1) {
+        const [ax, ay] = at(e.from);
+        const [bx, by] = at(e.to);
+        return { xy: [ax + (bx - ax) * t, ay + (by - ay) * t], t };
+      }
+    }
+    return { xy: at(cell), t: 1 };
+  };
   // balls on their way into a hole: the hole stays open until they get there
-  const falling = anim && t < 1 ? anim.balls.filter((b) => b[2]) : [];
-  const landing = new Set(falling.map(([, to]) => to));
+  const falling = anim ? anim.chain.filter((e) => e.ball && e.fell && progress(e) < 1) : [];
+  const landing = new Set(falling.map((e) => e.to));
 
   // the finishes stay shut until every goal is filled
   const open = SOKOBALL.finishOpen(game);
@@ -228,24 +247,24 @@ function drawGame() {
 
   for (let i = 0; i < ballAt.length; i++) {
     if (!ballAt[i]) continue;
-    const moving = ballFrom.has(i);
-    const [x, y] = moving ? between(ballFrom.get(i), i) : at(i);
+    const [x, y] = track(true, i).xy;
     picture("ball", x, y, tile);
   }
   // shrinking as it drops in, over the last part of the way
-  for (const [from, to] of falling) {
-    const [x, y] = between(from, to);
+  for (const e of falling) {
+    const t = progress(e);
+    const [ax, ay] = at(e.from);
+    const [bx, by] = at(e.to);
     const size = tile * (1 - 0.45 * Math.max(0, (t - 0.55) / 0.45));
-    picture("ball", x + (tile - size) / 2, y + (tile - size) / 2, size);
+    picture("ball", ax + (bx - ax) * t + (tile - size) / 2, ay + (by - ay) * t + (tile - size) / 2, size);
   }
 
   // a player stuck in a hole sits down in it, a little smaller - shrinking
-  // into it over the end of the step that took it there
+  // into it over the end of the movement that took it there
   const face = playerPicture(game.facing);
   for (const p of game.players) {
-    const moving = playerFrom.has(p);
-    const [x, y] = moving ? between(playerFrom.get(p), p) : at(p);
-    const sunk = game.holes[p] ? (moving ? 0.22 * Math.max(0, (t - 0.55) / 0.45) : 0.22) : 0;
+    const { xy: [x, y], t } = track(false, p);
+    const sunk = game.holes[p] ? 0.22 * Math.max(0, (t - 0.55) / 0.45) : 0;
     const size = tile * (1 - sunk);
     picture("player", x + (tile - size) / 2, y + (tile - size) / 2, size, face);
   }
@@ -343,15 +362,25 @@ function tick() {
   }
 }
 
-// A step takes ANIM_MS. A ball sent rolling by the cradle, or a player bumped
-// out of a hole, takes a little longer the further it goes, so a long roll
-// still reads as a roll.
+// A step takes ANIM_MS. Something knocked rolling takes a little longer the
+// further it goes, so a long roll still reads as a roll - and in a chain
+// reaction, each knock waits for the one before it to land.
 function animate(change) {
   if (!change) return;
   const w = game.level.width;
-  const far = Math.max(1, ...[...change.balls, ...change.players].map(([from, to]) =>
-    Math.abs((to % w) - (from % w)) + Math.abs(Math.floor(to / w) - Math.floor(from / w))));
-  anim = { ...change, t0: performance.now(), ms: ANIM_MS + ROLL_MS * (far - 1) };
+  const far = (e) => Math.abs((e.to % w) - (e.from % w)) + Math.abs(Math.floor(e.to / w) - Math.floor(e.from / w));
+  const length = (e) => (e.wave ? ANIM_MS + ROLL_MS * (far(e) - 1) : ANIM_MS);
+  const waves = Math.max(...change.chain.map((e) => e.wave));
+  const starts = [0];
+  for (let k = 0; k < waves; k++) {
+    const inWave = change.chain.filter((e) => e.wave === k);
+    starts.push(starts[k] + (inWave.length ? Math.max(...inWave.map(length)) : 0));
+  }
+  const fell = new Set(change.balls.filter((b) => b[2]).map(([from, to]) => `${from}>${to}`));
+  const chain = change.chain.map((e) => ({
+    ...e, start: starts[e.wave], ms: length(e), fell: e.ball && fell.has(`${e.from}>${e.to}`),
+  }));
+  anim = { chain, t0: performance.now(), ms: Math.max(...chain.map((e) => e.start + e.ms)) };
   requestAnimationFrame(tick);
 }
 

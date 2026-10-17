@@ -235,81 +235,115 @@ const SOKOBALL = (() => {
   // Every player tries to step the same way at once. They go furthest-along
   // first, so a line of them moves like a train: each one steps into the space
   // the one ahead has just left. Anyone who can't move - a wall, the edge, a
-  // ball with nowhere to go, a player in front who didn't move - stays put, and
-  // the rest carry on without them. Anywhere a player can walk, a ball can be
-  // pushed: finishes, and doors on the map, are floor as far as moving goes.
+  // player in front who didn't move - stays put, and the rest carry on without
+  // them. Anywhere a player can walk, a ball can be pushed: finishes, and doors
+  // on the map, are floor as far as moving goes.
+  //
+  // Walking into a ball with room behind it pushes it one square. Walking into
+  // a ball with something behind it - another ball, a player - strikes it
+  // instead, like a Newton's cradle: you and the ball stay put, and whatever's
+  // at the far end of the row goes rolling (see strike). So does walking into
+  // a player stuck in a hole.
   //
   // Holes: a ball that goes into an open hole drops in and fills it (see
-  // fall). A player that walks into one is stuck there - it doesn't fill it,
-  // and it stays put while the others move. Another player walking into a
-  // stuck one bumps it out like the Newton's cradle: the bumper stays where it
-  // is and the stuck player flies on until something stops it, or until it
-  // drops into another hole. A player is stuck exactly when it's standing on
-  // an open hole, so there's nothing extra to keep track of.
+  // fall). A player that goes into one is stuck there - it doesn't fill it, and
+  // it stays put while the others move, until something knocks it out. A
+  // player is stuck exactly when it's standing on an open hole, so there's
+  // nothing extra to keep track of.
   //
   // Changes `players`, `ballAt` and `holes` in place and says what moved, or
-  // returns null if nothing did. Each ball that moved is [from, to], with a
-  // third `true` if it fell into the hole at `to`. Both the game and the
-  // solver go through this, so they can never disagree about what a move does.
+  // returns null if nothing did:
+  //   players  [from, to] for each player that moved
+  //   balls    [from, to] for each ball, with a third `true` if it fell into
+  //            the hole at `to`
+  //   chain    every movement in the order it happened, for drawing: each is
+  //            { ball, from, to, wave }, where wave 0 is the step everyone
+  //            takes and wave 1, 2, ... are the knocks of a chain reaction
+  // Both the game and the solver go through this, so they can never disagree
+  // about what a move does.
   function moveAll(level, players, ballAt, holes, dir) {
     const [dx, dy] = DIRS[dir];
     const along = (i) => (i % level.width) * dx + Math.floor(i / level.width) * dy;
     const order = players.map((_, n) => n).sort((a, b) => along(players[b]) - along(players[a]));
-    const occupied = new Set(players);
+    const playerAt = new Map(players.map((p, n) => [p, n]));
+    const knocked = new Set();               // players already sent flying this turn
     const moved = [];
     const pushed = [];
+    const chain = [];
 
-    // somewhere a ball can go - an open hole included
-    const open = (i) => i >= 0 && !level.wall[i] && !ballAt[i] && !occupied.has(i);
+    const solid = (i) => i < 0 || level.wall[i];
+    const thing = (i) => i >= 0 && (ballAt[i] || playerAt.has(i));
 
-    // somewhere a flying player can go - an open hole included
-    const clear = (i) => i >= 0 && !level.wall[i] && !ballAt[i] && !occupied.has(i);
+    // moves whatever is at `from` - a ball drops into an open hole at `to`;
+    // a player in one is stuck there
+    const shift = (from, to, wave) => {
+      if (ballAt[from]) {
+        const ball = fall(ballAt, holes, from, to);
+        pushed.push(ball);
+        chain.push({ ball: true, from, to, wave });
+      } else {
+        const n = playerAt.get(from);
+        playerAt.delete(from);
+        playerAt.set(to, n);
+        players[n] = to;
+        if (wave) knocked.add(n);
+        moved.push([from, to]);
+        chain.push({ ball: false, from, to, wave });
+      }
+    };
+
+    // The thing at `first` is struck from behind. The knock passes along any
+    // row of things touching it to the last one, which rolls on until the
+    // next square is a wall or the edge, or until it drops into an empty hole.
+    // If what stops it is another ball or player, that one is struck in turn,
+    // and so on down the line.
+    const strike = (first) => {
+      let at = first;
+      for (let wave = 1; ; wave++) {
+        let last = at;
+        while (thing(step(level, last, dir))) last = step(level, last, dir);
+        let to = step(level, last, dir);
+        if (solid(to)) return;               // the row is up against a wall
+        while (!holes[to]) {
+          const next = step(level, to, dir);
+          if (solid(next) || thing(next)) break;
+          to = next;
+        }
+        const dropped = holes[to];
+        shift(last, to, wave);
+        const next = step(level, to, dir);
+        if (dropped || !thing(next)) return;
+        at = next;                           // it hit something: that rolls next
+      }
+    };
 
     for (const n of order) {
+      if (knocked.has(n)) continue;
       const from = players[n];
       if (holes[from]) continue;               // stuck in a hole
       const to = step(level, from, dir);
-      if (to < 0 || level.wall[to]) continue;
-      if (occupied.has(to)) {
-        // walking into a stuck player bumps it out; anyone else just blocks
-        if (holes[to]) {
-          const flew = bump(level, players, holes, occupied, clear, to, dir);
-          if (flew) moved.push(flew);
-        }
+      if (solid(to)) continue;
+      if (playerAt.has(to)) {
+        // a stuck player gets knocked out; one standing on floor just blocks
+        if (holes[to]) strike(to);
         continue;
       }
       if (ballAt[to]) {
         const beyond = step(level, to, dir);
-        if (open(beyond)) {
-          // an ordinary push: one square
-          pushed.push(fall(ballAt, holes, to, beyond));
-        } else {
-          // Newton's cradle: pushed into another ball, the one you pushed
-          // stays where it is and the last ball in the row rolls away
-          const roll = cradle(level, ballAt, holes, open, to, dir);
-          if (roll) pushed.push(roll);
-          continue;                          // either way, you stay put
+        if (solid(beyond)) continue;
+        if (thing(beyond)) {
+          strike(to);                          // the cradle: you stay put
+          continue;
         }
+        shift(to, beyond, 0);                  // an ordinary push: one square
       }
-      occupied.delete(from);
-      occupied.add(to);
+      playerAt.delete(from);
+      playerAt.set(to, n);
       players[n] = to;
       moved.push([from, to]);
+      chain.push({ ball: false, from, to, wave: 0 });
     }
-    return moved.length || pushed.length ? { players: moved, balls: pushed } : null;
-  }
-
-  // The stuck player at `at`, bumped from behind: it flies on until the next
-  // square isn't clear, or until it drops into another open hole. Says where
-  // it went, or null if it had no room to move.
-  function bump(level, players, holes, occupied, clear, at, dir) {
-    let to = step(level, at, dir);
-    if (!clear(to)) return null;
-    while (!holes[to] && clear(step(level, to, dir))) to = step(level, to, dir);
-    players[players.indexOf(at)] = to;
-    occupied.delete(at);
-    occupied.add(to);
-    return [at, to];
+    return chain.length ? { players: moved, balls: pushed, chain } : null;
   }
 
   // Moves a ball. If it lands on an open hole it drops in: the ball is gone
@@ -322,22 +356,6 @@ const SOKOBALL = (() => {
     }
     ballAt[to] = 1;
     return [from, to];
-  }
-
-  // The row of balls starting at `first`, struck from behind: the last one in
-  // the row rolls on until the next square isn't free, or until it drops into
-  // an open hole. Says where it went, or null if it had no room to move at all.
-  function cradle(level, ballAt, holes, open, first, dir) {
-    let last = first;
-    let next = step(level, last, dir);
-    while (next >= 0 && ballAt[next]) {
-      last = next;
-      next = step(level, last, dir);
-    }
-    if (last === first || !open(next)) return null;
-    let at = next;
-    while (!holes[at] && open(step(level, at, dir))) at = step(level, at, dir);
-    return fall(ballAt, holes, last, at);
   }
 
   function start(level) {
