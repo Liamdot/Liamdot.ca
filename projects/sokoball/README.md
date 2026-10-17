@@ -93,7 +93,7 @@ picture in the game as soon as it's done.
 | `hole` | a plain hole, only in the way | same |
 | `holeFilled` | a plain hole a ball has dropped into | it's floor now, so it should look walkable |
 | `grate` | a grate: roll across it, or fall through | drawn on top of the floor |
-| `grateOpen` | the drop under a grate, shown while it's open | when something falls through, the grate splits down the middle and each half slides off this |
+| `grateOpen` | the drop under a grate, shown while it's open | when something falls through, the grate splits down the middle and each half swings down into this on a hinge at its outer edge |
 | `ball` | a ball | |
 | `player` | the player | every player uses it |
 | `finish` | a finish while it's shut | a goal still needs filling. **Transparent background** |

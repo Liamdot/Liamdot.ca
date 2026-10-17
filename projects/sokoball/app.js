@@ -299,20 +299,27 @@ function drawGame() {
 }
 
 // A grate opening like a pair of trapdoors: it splits down the middle and each
-// half slides away under the floor, showing the drop below.
+// half swings down into the hole on a hinge at its outer edge. Seen from above,
+// a flap swinging down gets narrower - squashed towards its hinge - and darker
+// as it tips away from the light, until it hangs straight down out of sight.
 function drawTrapdoor(open, x, y, tile) {
   picture("grateOpen", x, y, tile);
-  // each half moves with its own half of the picture, and is cut off where it
-  // passes the edge of the square
-  const slide = (open * tile) / 2;
-  const left = tile / 2 - slide;               // how much of each half still shows
-  if (left <= 0) return;
+  const angle = (open * Math.PI) / 2;
+  const across = Math.cos(angle);              // how much of its width still shows
+  if (across < 0.02) return;
   for (const side of [-1, 1]) {
     ctx.save();
+    // the hinge: the left edge of the square for the left half, the right
+    // edge for the right one, so each squashes towards its own side
+    ctx.translate(side < 0 ? x : x + tile, y);
+    ctx.scale(across, 1);
+    const from = side < 0 ? 0 : -tile / 2;    // this half, measured from its hinge
     ctx.beginPath();
-    ctx.rect(side < 0 ? x : x + tile / 2 + slide, y, left, tile);
+    ctx.rect(from, 0, tile / 2, tile);
     ctx.clip();
-    picture("grate", x + side * slide, y, tile);
+    picture("grate", side < 0 ? 0 : -tile, 0, tile);
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.65 * Math.sin(angle)})`;
+    ctx.fillRect(from, 0, tile / 2, tile);
     ctx.restore();
   }
 }
