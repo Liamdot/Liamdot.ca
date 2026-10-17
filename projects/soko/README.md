@@ -136,12 +136,13 @@ When it's playable:
   this, four in seven couldn't be solved.
 
   It runs in the background, so a big level can take a few seconds without
-  the page freezing. On a really big or open level it may give up with
-  "Too big to check." — that doesn't mean it's broken, just that you'll have
-  to test it yourself.
+  the page freezing. On a really big or open level it may give up and say the
+  puzzle is too large to check — that doesn't mean it's broken, just that
+  you'll have to test it yourself.
 - **test** plays it. **back to editor** comes back.
-- **keep** saves it to *your levels* (under **levels** in play mode). Editing
-  a kept level and pressing keep again updates it rather than making a copy.
+- **save to my levels** saves it to *My levels* (under **levels** in play
+  mode), in this browser. Editing a saved level and saving again updates it
+  rather than making a copy.
 
 What's in the editor is saved as you go, so closing the tab loses nothing.
 
@@ -202,7 +203,7 @@ https://liamdot.ca/projects/soko/#n=Wall+flower&l=9%23%7C%237-%23%7C...
 
 The whole level is in that link — its name, and the level squashed down with
 run-length encoding (`#####` becomes `5#`). Opening it plays the level
-straight away, and the person can **keep it** to their own levels. Pasting a
+straight away, and the person can **save to my levels** to keep a copy. Pasting a
 share link into **paste a level** opens it in the editor instead.
 
 Nothing goes to a server. That's deliberate: there's no database to look

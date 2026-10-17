@@ -424,9 +424,11 @@ function showBar() {
   const playing = mode === "play";
   const testing = playing && current && current.kind === "test";
 
-  let label = "editor";
+  let label = "Level editor";
   if (playing && current) {
     label = current.kind === "built" ? `${current.index + 1}. ${current.name}` : current.name;
+    if (current.kind === "shared") label += " (shared)";
+    if (testing) label += " (testing)";
   }
   $("level-name").textContent = label;
 
@@ -543,7 +545,7 @@ function showProblems() {
     box.textContent = verdict.text;
   } else {
     box.className = "problems";
-    box.textContent = "Playable.";
+    box.textContent = "The level is playable. Press check to see whether it can be solved.";
   }
 }
 
@@ -567,15 +569,15 @@ function checkDraft() {
   }
   const box = $("problems");
   box.className = "problems";
-  box.textContent = "Checking...";
+  box.textContent = "Checking whether the puzzle can be solved...";
 
   const report = (result) => {
     stopChecking();
     verdict = {
-      solved: { good: true, text: `Solvable in ${result.moves} move${result.moves === 1 ? "" : "s"}.` },
-      impossible: { good: false, text: "Not solvable." },
-      unknown: { good: true, text: "Too big to check." },
-    }[result.result] || { good: false, text: "Couldn't check." };
+      solved: { good: true, text: `The puzzle is solvable. The shortest solution takes ${result.moves} move${result.moves === 1 ? "" : "s"}.` },
+      impossible: { good: false, text: "The puzzle is not solvable." },
+      unknown: { good: true, text: "The puzzle is too large to check. Test it to make sure it can be solved." },
+    }[result.result] || { good: false, text: "The puzzle could not be checked." };
     showProblems();
   };
 
@@ -634,7 +636,7 @@ function testDraft() {
     return;
   }
   showMode("play");
-  play({ kind: "test", name: draft.name || "untitled", map: draftText() });
+  play({ kind: "test", name: draft.name || "Untitled level", map: draftText() });
 }
 
 function keepDraft() {
@@ -654,7 +656,7 @@ function keepDraft() {
   draft.name = name;
   $("draft-name").value = name;
   storeDraft();
-  flash(existing ? "Updated." : "Kept.");
+  flash(existing ? `Updated "${name}" in my levels.` : `Saved "${name}" to my levels.`);
 }
 
 // ===========================================================================
@@ -681,7 +683,7 @@ function levelFromLink(link) {
   if (!code) return null;
   return {
     kind: "shared",
-    name: (params.get("n") || "untitled").slice(0, 40),
+    name: (params.get("n") || "Untitled level").slice(0, 40),
     map: SOKO.decode(code),
   };
 }
@@ -737,7 +739,7 @@ function pasteLevel() {
   $("draft-w").value = draft.width;
   $("draft-h").value = draft.height;
   edited();
-  flash("Pasted.");
+  flash("Level pasted into the editor.");
 }
 
 // ===========================================================================
@@ -765,9 +767,9 @@ function showSolved() {
     <h2>Solved</h2>
     <div class="row">
       ${testing ? `<button class="pill strong" data-go="editor">back to editor</button>` : ""}
-      ${next ? `<button class="pill strong" data-go="next">next</button>` : ""}
-      <button class="pill" data-go="again">again</button>
-      ${current.kind === "shared" ? `<button class="pill" data-go="keep-shared">keep</button>` : ""}
+      ${next ? `<button class="pill strong" data-go="next">next level</button>` : ""}
+      <button class="pill" data-go="again">play again</button>
+      ${current.kind === "shared" ? `<button class="pill" data-go="keep-shared">save to my levels</button>` : ""}
       ${!testing && !next ? `<button class="pill" data-go="levels">levels</button>` : ""}
     </div>`;
   card.hidden = false;
@@ -791,7 +793,7 @@ function keepShared() {
     save.mine.push({ id: `m${Date.now().toString(36)}`, name: current.name, map: current.map });
     store();
   }
-  flash(already ? "Already kept." : "Kept.");
+  flash(already ? "This level is already in my levels." : "Saved to my levels.");
 }
 
 function showLevels() {
@@ -812,13 +814,13 @@ function showLevels() {
         <button class="tiny" data-share="${esc(m.id)}">share</button>
         <button class="tiny danger" data-delete="${esc(m.id)}">delete</button>
       </div>`).join("")
-    : `<p class="sub">None yet.</p>`;
+    : `<p class="sub">No saved levels yet.</p>`;
 
   card.innerHTML = `
     <div class="card-head"><h2>Levels</h2><button class="close" data-close aria-label="Close">&times;</button></div>
     <h3>Built in</h3>
     <div class="level-list">${built}</div>
-    <h3>Yours</h3>
+    <h3>My levels</h3>
     <div class="level-list">${mine}</div>`;
   card.hidden = false;
 }
@@ -842,7 +844,7 @@ $("levels").addEventListener("click", (e) => {
     // asks twice, on the button itself
     if (el.dataset.sure !== "yes") {
       el.dataset.sure = "yes";
-      el.textContent = "sure?";
+      el.textContent = "Are you sure?";
       return;
     }
     save.mine = save.mine.filter((x) => x.id !== el.dataset.delete);
@@ -855,19 +857,20 @@ function showShare(name, map) {
   const link = linkFor(name, map);
   const card = $("share");
   card.innerHTML = `
-    <div class="card-head"><h2>Share</h2><button class="close" data-close aria-label="Close">&times;</button></div>
+    <div class="card-head"><h2>Share "${esc(name || "Untitled level")}"</h2><button class="close" data-close aria-label="Close">&times;</button></div>
+    <p class="sub">Anyone with this link can play the level and save their own copy.</p>
     <input class="link" id="share-link" readonly value="${esc(link)}">
-    <div class="row"><button class="pill strong" id="share-copy">copy</button></div>`;
+    <div class="row"><button class="pill strong" id="share-copy">copy link</button></div>`;
   card.hidden = false;
   const input = $("share-link");
   input.addEventListener("focus", () => input.select());
   $("share-copy").addEventListener("click", async () => {
     if (await copyText(link)) {
       $("share-copy").textContent = "copied";
-      setTimeout(() => { if ($("share-copy")) $("share-copy").textContent = "copy"; }, 1400);
+      setTimeout(() => { if ($("share-copy")) $("share-copy").textContent = "copy link"; }, 1400);
     } else {
       input.focus();
-      flash("Couldn't copy.");
+      flash("Couldn't copy to the clipboard. The link is selected, so you can copy it yourself.");
     }
   });
 }
@@ -1108,7 +1111,7 @@ $("share-btn").addEventListener("click", () => {
   showShare(draft.name, draftText());
 });
 $("copy-text-btn").addEventListener("click", async () => {
-  flash(await copyText(draftText()) ? "Copied." : "Couldn't copy.");
+  flash(await copyText(draftText()) ? "Level copied as text." : "Couldn't copy to the clipboard.");
 });
 $("paste-btn").addEventListener("click", pasteLevel);
 
@@ -1117,7 +1120,7 @@ $("new-btn").addEventListener("click", (e) => {
   // asks twice, so a slip doesn't lose a level
   if (!fresh) {
     fresh = true;
-    e.target.textContent = "sure?";
+    e.target.textContent = "Are you sure?";
     setTimeout(() => { fresh = false; e.target.textContent = "start again"; }, 2500);
     return;
   }
@@ -1147,7 +1150,7 @@ resetBtn.addEventListener("click", () => {
   if (!resetArmed) {
     resetArmed = true;
     resetBtn.classList.add("sure");
-    resetBtn.textContent = "sure?";
+    resetBtn.textContent = "Are you sure?";
     return;
   }
   resetArmed = false;
@@ -1155,7 +1158,7 @@ resetBtn.addEventListener("click", () => {
   save.solved = {};
   save.at = 0;
   store();
-  resetBtn.textContent = "cleared";
+  resetBtn.textContent = "Save cleared";
   setTimeout(() => { if (!resetArmed) resetBtn.textContent = "clear my save"; }, 2500);
   if (mode === "play") play(builtIn(0));
 });

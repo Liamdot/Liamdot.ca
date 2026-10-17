@@ -76,7 +76,7 @@ const SOKO = (() => {
   // it's a fair one is check()'s business, further down.
   function parse(text) {
     const rows = rowsOf(text);
-    if (!rows.length) throw new Error("Empty level.");
+    if (!rows.length) throw new Error("The level is empty.");
 
     const height = rows.length;
     const width = rows[0].length;
@@ -157,25 +157,26 @@ const SOKO = (() => {
     return seen;
   }
 
-  // Is this level fit to play? A list of problems, each short enough to show
-  // under the editor. Empty means it's fine.
+  // Is this level fit to play? A list of problems, each a plain sentence to
+  // show under the editor. Empty means it's fine.
   function check(level) {
     const problems = [];
     const goals = level.goal.reduce((n, g) => n + g, 0);
     const boxes = level.boxes.length;
 
-    if (!level.players.length) problems.push("Needs a player.");
-    if (!boxes) problems.push("Needs a box.");
-    if (!goals) problems.push("Needs a goal.");
+    if (!level.players.length) problems.push("The level needs at least one player.");
+    if (!boxes) problems.push("The level needs at least one box.");
+    if (!goals) problems.push("The level needs at least one goal.");
     if (boxes && goals && boxes !== goals) {
-      problems.push(`Boxes (${boxes}) and goals (${goals}) must match.`);
+      problems.push(`The level has ${boxes} box${boxes === 1 ? "" : "es"} and ${goals} goal${
+        goals === 1 ? "" : "s"}. These must match.`);
     }
     if (level.players.length) {
       const stray = level.boxes.filter((b) => !level.inside[b]).length;
-      if (stray) problems.push(`${stray} box${stray === 1 ? "" : "es"} out of reach.`);
+      if (stray) problems.push(`${stray} box${stray === 1 ? " can't" : "es can't"} be reached by any player.`);
       let lost = 0;
       for (let i = 0; i < level.goal.length; i++) if (level.goal[i] && !level.inside[i]) lost++;
-      if (lost) problems.push(`${lost} goal${lost === 1 ? "" : "s"} out of reach.`);
+      if (lost) problems.push(`${lost} goal${lost === 1 ? " can't" : "s can't"} be reached by any player.`);
     }
     return problems;
   }

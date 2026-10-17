@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Soko - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=10">
-  <link rel="stylesheet" href="../../game.css?v=10">
-  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="../../style.css?v=11">
+  <link rel="stylesheet" href="../../game.css?v=11">
+  <link rel="stylesheet" href="style.css?v=11">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -35,31 +35,34 @@
     <div class="info-panel" id="info-panel" hidden>
       <h2>Soko</h2>
       <p class="meta">made October 2026</p>
-      <p>Push every box onto a goal.</p>
+      <p>Push every box onto a goal. Boxes can be pushed but not pulled, and only one at a time.</p>
 
       <h3>How to play</h3>
       <ul>
-        <li>Arrow keys or WASD. Hold to keep moving</li>
-        <li>On a phone: swipe, or the buttons under the board</li>
-        <li>All players move together; a blocked player stays put</li>
-        <li>The edge is solid</li>
-        <li><strong>undo</strong> (Z), <strong>restart</strong> (R)</li>
+        <li>Move with the arrow keys or WASD, and hold a direction to keep moving</li>
+        <li>On a phone, swipe the board or use the buttons below it</li>
+        <li>When a level has several players, they all move together. A player that's blocked stays where it is</li>
+        <li>The edge of a level is solid, like a wall</li>
+        <li><strong>undo</strong> (Z) takes back a move, and <strong>restart</strong> (R) starts the level again</li>
+        <li><strong>levels</strong> lists the built-in levels and the ones you've saved</li>
       </ul>
 
       <h3>Making levels</h3>
       <ul>
-        <li><strong>make</strong>: paint walls, floor, goals, boxes and players. Right-click paints floor</li>
-        <li><strong>check</strong>: whether it can be solved</li>
-        <li><strong>test</strong>, <strong>keep</strong>, <strong>share</strong></li>
-        <li>Standard Sokoban text format</li>
+        <li><strong>make</strong> opens the editor. Paint walls, floor, goals, boxes and players; right-click paints floor</li>
+        <li><strong>check</strong> works out whether the puzzle can be solved</li>
+        <li><strong>test</strong> plays it, and <strong>save to my levels</strong> keeps it in this browser</li>
+        <li><strong>share</strong> makes a link that anyone can use to play it</li>
+        <li>Levels use the standard Sokoban text format, so levels from elsewhere can be pasted in</li>
+        <li>Clearing your save resets your progress but keeps your saved levels</li>
       </ul>
 
       <h3>Updates</h3>
       <ul>
-        <li><strong>v0.4</strong> &ndash; fixes, plainer text</li>
-        <li><strong>v0.3</strong> &ndash; hold to move</li>
-        <li><strong>v0.2</strong> &ndash; several players, solid edge, no move counter, instant undo</li>
-        <li><strong>v0.1</strong> &ndash; first version</li>
+        <li><strong>v0.4</strong> &ndash; moves stop once a level is solved, and clearer messages</li>
+        <li><strong>v0.3</strong> &ndash; hold a direction to keep moving</li>
+        <li><strong>v0.2</strong> &ndash; several players moving together, a solid edge, no move counter, and instant undo</li>
+        <li><strong>v0.1</strong> &ndash; eight levels, an editor, and levels shared by link</li>
       </ul>
 
       <p class="wipe-line">
@@ -116,7 +119,7 @@
         <div class="editor-buttons">
           <button class="pill strong" id="test-btn">test</button>
           <button class="pill" id="check-btn">check</button>
-          <button class="pill" id="keep-btn">keep</button>
+          <button class="pill" id="keep-btn" title="Saves it to My levels, in this browser">save to my levels</button>
           <button class="pill" id="share-btn">share</button>
         </div>
         <div class="editor-buttons">
@@ -125,7 +128,7 @@
           <button class="pill" id="new-btn">start again</button>
         </div>
         <textarea class="paste-box" id="paste-box" hidden rows="8"
-          placeholder="Level text or share link"></textarea>
+          placeholder="Paste a level as text, or a share link, then press paste a level again."></textarea>
       </aside>
     </div>
 
@@ -138,10 +141,10 @@
     </div>
   </main>
 
-  <script src="../../nav.js?v=10"></script>
-  <script src="soko.js?v=10"></script>
-  <script src="assets.js?v=10"></script>
-  <script src="levels.js?v=10"></script>
-  <script src="app.js?v=10"></script>
+  <script src="../../nav.js?v=11"></script>
+  <script src="soko.js?v=11"></script>
+  <script src="assets.js?v=11"></script>
+  <script src="levels.js?v=11"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>
