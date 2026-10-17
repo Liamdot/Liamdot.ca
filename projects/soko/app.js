@@ -68,13 +68,14 @@ function keyOf(map) {
 // doesn't have - or that fails to load - comes from the developer set instead.
 // That's what lets you replace the art one picture at a time.
 
-const PICTURES = ["floor", "wall", "goal", "box", "boxOnGoal", "player",
+const PICTURES = ["floor", "wall", "goal", "box", "boxOnGoal", "player", "finish", "finishOpen",
   "playerUp", "playerDown", "playerLeft", "playerRight"];
 
 // what to draw until a picture has loaded, or if there's no picture at all
 const STAND_INS = {
   floor: "#e9e2d3", wall: "#5b5049", goal: "#c8553d",
   box: "#c98a43", boxOnGoal: "#79b36f", player: "#2f6f9f",
+  finish: "#bdb4a7", finishOpen: "#3fa85e",
 };
 
 const art = {};
@@ -154,7 +155,7 @@ function picture(name, x, y, size, img = art[name]) {
     return;
   }
   ctx.fillStyle = STAND_INS[name] || "#999";
-  if (name === "goal") {
+  if (name === "goal" || name === "finish" || name === "finishOpen") {
     ctx.beginPath();
     ctx.arc(x + size / 2, y + size / 2, size * 0.18, 0, Math.PI * 2);
     ctx.fill();
@@ -200,12 +201,15 @@ function drawGame() {
   const boxFrom = cameFrom(anim ? anim.boxes : []);
   const playerFrom = cameFrom(anim ? anim.players : []);
 
+  // the finishes stay shut until every box is home
+  const open = SOKO.finishOpen(game);
   for (let i = 0; i < boxAt.length; i++) {
     const [x, y] = at(i);
     if (level.wall[i]) picture("wall", x, y, tile);
     else if (level.inside[i]) {
       picture("floor", x, y, tile);
       if (level.goal[i]) picture("goal", x, y, tile);
+      if (level.finish[i]) picture(open ? "finishOpen" : "finish", x, y, tile);
     }
   }
   drawEdge(level.width, level.height, tile, ox, oy, (i) => level.inside[i] && !level.wall[i]);
@@ -266,6 +270,7 @@ function drawDraft() {
     }
     picture("floor", x, y, tile);
     if (ch === SOKO.GOAL || ch === SOKO.BOX_ON_GOAL || ch === SOKO.PLAYER_ON_GOAL) picture("goal", x, y, tile);
+    if (ch === SOKO.FINISH) picture("finish", x, y, tile);
     if (ch === SOKO.BOX) picture("box", x, y, tile);
     if (ch === SOKO.BOX_ON_GOAL) picture("boxOnGoal", x, y, tile);
     if (ch === SOKO.PLAYER || ch === SOKO.PLAYER_ON_GOAL) picture("player", x, y, tile);
@@ -459,7 +464,7 @@ const STARTER = `
 ---------
 --@--$-.-
 ---------
----------`;
+-------!-`;
 
 function draftFrom(map, name = "", id = null) {
   const rows = SOKO.rowsOf(map);
@@ -478,14 +483,15 @@ function storeDraft() {
 }
 
 // What painting one square with the current tool turns it into. A goal can
-// have a box or a player on it; anything else replaces what was there. Each
-// player painted is another player - there can be as many as you like.
+// have a box or a player on it; anything else replaces what was there,
+// including a finish - nothing starts on one. Each player painted is another
+// player, and each one needs a finish of its own.
 function paint(i, with_) {
   const ch = draft.cells[i];
   const goalHere = ch === SOKO.GOAL || ch === SOKO.BOX_ON_GOAL || ch === SOKO.PLAYER_ON_GOAL;
   let next = ch;
 
-  if (with_ === SOKO.WALL || with_ === SOKO.FLOOR) next = with_;
+  if (with_ === SOKO.WALL || with_ === SOKO.FLOOR || with_ === SOKO.FINISH) next = with_;
   else if (with_ === SOKO.GOAL) {
     next = ch === SOKO.BOX || ch === SOKO.BOX_ON_GOAL ? SOKO.BOX_ON_GOAL
       : ch === SOKO.PLAYER || ch === SOKO.PLAYER_ON_GOAL ? SOKO.PLAYER_ON_GOAL : SOKO.GOAL;
@@ -965,9 +971,9 @@ window.addEventListener("keydown", (e) => {
       restart();
     }
   } else {
-    const tools = [SOKO.WALL, SOKO.FLOOR, SOKO.GOAL, SOKO.BOX, SOKO.PLAYER];
+    const tools = [SOKO.WALL, SOKO.FLOOR, SOKO.GOAL, SOKO.BOX, SOKO.PLAYER, SOKO.FINISH];
     const n = Number(e.key);
-    if (n >= 1 && n <= 5) chooseTool(tools[n - 1]);
+    if (n >= 1 && n <= tools.length) chooseTool(tools[n - 1]);
   }
 });
 

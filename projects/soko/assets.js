@@ -32,6 +32,8 @@ const ART = {
       box: "assets/dev/box.svg",
       boxOnGoal: "assets/dev/box-on-goal.svg",
       player: "assets/dev/player.svg",
+      finish: "assets/dev/finish.svg",
+      finishOpen: "assets/dev/finish-open.svg",
     },
 
     // Yours. Uncomment a line once the file exists. PNG, SVG, JPG or WebP all
@@ -43,6 +45,8 @@ const ART = {
       // box: "assets/mine/box.png",
       // boxOnGoal: "assets/mine/box-on-goal.png",
       // player: "assets/mine/player.png",
+      // finish: "assets/mine/finish.png",            (shut: not every box is home)
+      // finishOpen: "assets/mine/finish-open.png",   (open: stand on it to win)
 
       // Optional. If any of these exist the player turns to face the way it
       // last moved; any that don't fall back to `player`.

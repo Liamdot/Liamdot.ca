@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- developer art: a finish that's open - every box is home, so a player
+       standing here counts. Drawn on top of the floor, so keep the background
+       transparent. -->
+  <ellipse cx="25" cy="51" rx="10" ry="3" fill="#9fcf8f"/>
+  <rect x="23" y="13" width="4" height="39" rx="2" fill="#4a413b"/>
+  <path d="M27 14 L49 22 L27 30 Z" fill="#3fa85e"/>
+</svg>

@@ -1,7 +1,7 @@
 // Soko's built-in levels, in the order they're played.
 //
-// Each one is the usual Sokoban text, written between backticks - see the top
-// of soko.js for what each character means. Indent it however you like; the
+// Each one is the usual Sokoban text, plus "!" for a finish, written between
+// backticks - see the top of soko.js for what each character means. Indent it however you like; the
 // shared indentation is ignored. The quickest way to make one is the editor in
 // the game itself: build it there, press "copy as text", and paste the result
 // in here as a new entry.
@@ -13,16 +13,16 @@ const LEVELS = [
   {
     name: "First push",
     map: `
-      #######
-      #@ $ .#
-      #######
+      ########
+      #!@ $ .#
+      ########
     `,
   },
   {
     name: "Round the back",
     map: `
       ######
-      #    #
+      #!   #
       # #$ #
       # @ .#
       ######
@@ -33,7 +33,7 @@ const LEVELS = [
     map: `
       #######
       #.  $ #
-      #  #  #
+      #  # !#
       #@ $ .#
       #######
     `,
@@ -42,7 +42,7 @@ const LEVELS = [
     name: "Two of them",
     map: `
       #######
-      #     #
+      #    !#
       # $ $ #
       #@ ## #
       #  .. #
@@ -53,7 +53,7 @@ const LEVELS = [
     name: "Store room",
     map: `
         ######
-      ###    #
+      ###   !#
       #. $## #
       # $  . #
       #.$ #  #
@@ -67,7 +67,7 @@ const LEVELS = [
         #######
         #     #
       ###$##$ #
-      #   ..  #
+      #!  ..  #
       #  #$## #
       ## @.   #
        ########
@@ -77,7 +77,7 @@ const LEVELS = [
     name: "Zigzag",
     map: `
        ########
-       #  #   #
+       #! #   #
        #  $ $ #
       ### ##@ #
       #  . #$ #
@@ -90,7 +90,7 @@ const LEVELS = [
     name: "Courtyard",
     map: `
       #########
-      #   #   #
+      #   #  !#
       #  $@$  #
       # $#.#  #
       ## ...  #
