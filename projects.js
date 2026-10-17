@@ -19,11 +19,11 @@
 
 const PROJECTS = [
   {
-    title: "Soko",
+    title: "Sokoball",
     blurb: "Push the balls home, then build levels of your own",
     date: "2026-10-16",
-    url: "projects/soko/",
-    thumb: "thumbs/soko.svg",
+    url: "projects/sokoball/",
+    thumb: "thumbs/sokoball.svg",
   },
   {
     title: "Bloom",

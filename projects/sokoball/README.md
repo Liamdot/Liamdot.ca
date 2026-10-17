@@ -1,6 +1,6 @@
-# Soko — how to work on it
+# Sokoball — how to work on it
 
-Soko is a pushing puzzle in the Sokoban mould: fill every goal with a ball,
+Sokoball is a pushing puzzle in the Sokoban mould: fill every goal with a ball,
 and never pull. Goals are holes in the floor. A ball pushed into one drops in
 and is gone, and the filled hole is floor you can walk on; until then you
 can't step in. Plain holes work the same way but don't need filling — they're
@@ -27,23 +27,23 @@ building next.
 ## 1. Where everything is
 
 ```
-projects/soko/
-  index.html     the page: bar, board, editor panel, info panel
-  style.css      how it looks
-  soko.js        THE RULES - levels, moves, undo, share codes, the solver
-  solver.js      runs the solver in the background so the page doesn't freeze
-  assets.js      which picture is drawn for what   <- edit this for your art
-  levels.js      the built-in levels, and the map  <- edit this for levels
-  app.js         everything on screen: drawing, input, editor, sharing
+projects/sokoball/
+  index.html    the page: bar, board, editor panel, info panel
+  style.css     how it looks
+  sokoball.js   THE RULES - levels, moves, undo, share codes, the solver
+  solver.js     runs the solver in the background so the page doesn't freeze
+  assets.js     which picture is drawn for what   <- edit this for your art
+  levels.js     the built-in levels, and the map  <- edit this for levels
+  app.js        everything on screen: drawing, input, editor, sharing
   assets/
-    dev/         the developer art - plain on purpose, always kept
-    mine/        your art goes here
-  README.md      this
+    dev/        the developer art - plain on purpose, always kept
+    mine/       your art goes here
+  README.md     this
 ```
 
-The split that matters: **`soko.js` knows nothing about the screen**, and
-`app.js` knows nothing about the rules beyond calling `soko.js`. If you change
-how the game *plays*, it's `soko.js`. If you change how it *looks or behaves
+The split that matters: **`sokoball.js` knows nothing about the screen**, and
+`app.js` knows nothing about the rules beyond calling `sokoball.js`. If you change
+how the game *plays*, it's `sokoball.js`. If you change how it *looks or behaves
 on screen*, it's `app.js` and `style.css`.
 
 ## 2. Running it on your own computer
@@ -54,7 +54,7 @@ From the root of the site:
 python3 serve.py
 ```
 
-then open <http://localhost:8123/projects/soko/>.
+then open <http://localhost:8123/projects/sokoball/>.
 
 Use `serve.py` rather than `python3 -m http.server`. It tells the browser
 never to cache, so a change shows up on a normal reload. Plenty of "it's
@@ -109,7 +109,7 @@ picture is what you see — no padding is added.
 4. Reload. Your ball is in; everything else is still the developer art.
 5. Repeat for the rest, in any order.
 
-If a picture doesn't appear, open the browser console: Soko says which file
+If a picture doesn't appear, open the browser console: Sokoball says which file
 it couldn't load and that it fell back to the developer art.
 
 ### Three settings worth knowing
@@ -144,7 +144,7 @@ Press **make**. You get a grid and seven tools:
 - **The edge is solid.** There's no need to build a wall round the outside —
   walls are only for the inside of a level.
 
-Under the tools, Soko tells you what's wrong with the level as you go — no
+Under the tools, Sokoball tells you what's wrong with the level as you go — no
 player, more goals than balls, too few finishes, or balls, goals or finishes no
 player can reach.
 
@@ -210,7 +210,7 @@ Two traps when you redraw it, both of which I walked into making this one:
 - **Every gap needs its ball.** An open gap, even one square, is a way round.
 
 The letters cap the campaign at 26 levels. If it ever needs more, that's a
-change to `parseWorld` in `soko.js`.
+change to `parseWorld` in `sokoball.js`.
 
 Where you are on the map and where you've pushed things is saved. Change the
 map and everyone's balls go back to where they started (solved levels stay
@@ -226,12 +226,12 @@ also paste in levels you find elsewhere, with **paste a level**.
 | `#` | wall |
 | `-` or space | floor (`_` works too) |
 | `.` | goal — a hole that has to be filled |
-| `^` | a plain hole (Soko's own) |
+| `^` | a plain hole (Sokoball's own) |
 | `$` | ball |
 | `*` | a goal that starts filled (a "box on a goal" anywhere else) |
 | `@` | a player — as many as you like |
 | `+` | a player standing on a goal that starts filled |
-| `!` | a finish (Soko's own too; other programs won't know it) |
+| `!` | a finish (Sokoball's own too; other programs won't know it) |
 
 Levels from other Sokoban programs still work: each of their boxes fills a
 goal, so the counts come out the same. What changes is that a box can no
@@ -264,7 +264,7 @@ filled nearest-first, and it lets you fill a hole you can't get next to.
 like:
 
 ```
-https://liamdot.ca/projects/soko/#n=Wall+flower&l=9%23%7C%237-%23%7C...
+https://liamdot.ca/projects/sokoball/#n=Wall+flower&l=9%23%7C%237-%23%7C...
 ```
 
 The whole level is in that link — its name, and the level squashed down with
@@ -283,7 +283,7 @@ biggest thing on the roadmap.
 
 ## 6. Changing how it plays
 
-Everything about movement is in **one function in `soko.js`: `moveAll`**. It
+Everything about movement is in **one function in `sokoball.js`: `moveAll`**. It
 takes every player and one direction, and decides who moves, who gets stuck
 and which balls get pushed. Want ice that keeps you sliding, balls that can be
 pulled, players that only move on alternate turns? It's there.
@@ -315,7 +315,7 @@ cost is speed: it can't take the shortcuts a solver built around one set of
 rules could, so it gives up sooner on big levels. If it ever gets in the way,
 it's the one function `solve` to delete.
 
-If you add a new kind of square, it needs a character (in `soko.js`), a
+If you add a new kind of square, it needs a character (in `sokoball.js`), a
 picture name (in `assets.js` and `PICTURES` in `app.js`), a developer
 picture (in `assets/dev/`) and a tool button (in `index.html`).
 
@@ -345,7 +345,7 @@ they're what people look at.
 
 **Next — more levels, and a bigger map.** Eight is a taster, and none of them use more than one
 player yet. Twenty to thirty with a steady climb is a game — and the
-several-players-at-once rule is the most interesting thing Soko has that plain
+several-players-at-once rule is the most interesting thing Sokoball has that plain
 Sokoban doesn't. Levels that are *about* it — lining players up against walls
 so only some of them move — are where it'll stand out.
 

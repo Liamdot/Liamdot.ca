@@ -1,4 +1,4 @@
-// Soko: the rules, and nothing else. No drawing and no page in here, so the
+// Sokoball: the rules, and nothing else. No drawing and no page in here, so the
 // game, the level editor and the solver all agree on what a level is and what
 // a move does.
 //
@@ -19,7 +19,7 @@
 // Goals and holes are both holes in the floor. A ball pushed or rolled into
 // one drops in and is gone, and the hole becomes floor anyone can walk on.
 // Until then a player can't step into it. Goals are the holes that have to be
-// filled; plain holes (^, Soko's own) are only in the way. A ball or a player
+// filled; plain holes (^, Sokoball's own) are only in the way. A ball or a player
 // "on a goal" (* and +) means that goal starts filled - which keeps levels from
 // other Sokoban programs working, since each of their boxes fills a goal.
 //
@@ -37,7 +37,7 @@
 // anything a player can walk on, finishes included - so a ball left on a
 // finish blocks it until it's moved.
 
-const SOKO = (() => {
+const SOKOBALL = (() => {
   // =========================================================================
   // 1. Levels on paper
   // =========================================================================

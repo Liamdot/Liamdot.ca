@@ -1,15 +1,15 @@
 // Runs the solver off the page, so checking a big level doesn't freeze it.
 //
-// soko.js has nothing to do with the page, which is what lets it load in here
+// sokoball.js has nothing to do with the page, which is what lets it load in here
 // unchanged. It's loaded with the same ?v= the page used - otherwise this could
 // pick up a stale copy and check a level against rules the game no longer has.
 
-importScripts(`soko.js${self.location.search}`);
+importScripts(`sokoball.js${self.location.search}`);
 
 self.onmessage = (e) => {
   try {
-    const level = SOKO.parse(e.data.text);
-    self.postMessage(SOKO.solve(level, e.data.budget));
+    const level = SOKOBALL.parse(e.data.text);
+    self.postMessage(SOKOBALL.solve(level, e.data.budget));
   } catch (err) {
     self.postMessage({ result: "broken" });
   }

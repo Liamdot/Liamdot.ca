@@ -1,5 +1,5 @@
-// Soko: everything you can see and press. The rules themselves are in soko.js,
-// the art in assets.js and the built-in levels in levels.js.
+// Sokoball: everything you can see and press. The rules themselves are in
+// sokoball.js, the art in assets.js and the built-in levels in levels.js.
 //
 //   1. Saved        - progress, your levels, and the level you're making
 //   2. Art          - loading the pictures, falling back to the developer art
@@ -20,7 +20,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({
 // 1. Saved
 // ===========================================================================
 
-const SAVE_KEY = "soko";
+const SAVE_KEY = "sokoball";
 
 const save = {
   solved: {},   // level key -> true, for every level you've solved
@@ -51,7 +51,7 @@ function load() {
 // list, so reordering levels.js doesn't move anyone's records about, and
 // changing a level starts its record afresh.
 function keyOf(map) {
-  const text = SOKO.rowsOf(map).join("\n");
+  const text = SOKOBALL.rowsOf(map).join("\n");
   let hash = 2166136261;
   for (let i = 0; i < text.length; i++) {
     hash ^= text.charCodeAt(i);
@@ -99,7 +99,7 @@ function loadArt() {
     img.onload = () => draw();
     img.onerror = () => {
       if (own && fallback && img.dataset.tried !== "dev") {
-        console.warn(`Soko: couldn't load ${own} for "${name}" - using the developer art instead.`);
+        console.warn(`Sokoball: couldn't load ${own} for "${name}" - using the developer art instead.`);
         img.dataset.tried = "dev";
         img.src = bust(fallback);
       }
@@ -126,7 +126,7 @@ const ctx = canvas.getContext("2d");
 
 let mode = "play";       // "play" or "make"
 let current = null;      // what's being played: { kind, name, map, ... }, kind "world" for the map
-let game = null;         // its state, from SOKO.start
+let game = null;         // its state, from SOKOBALL.start
 let anim = null;         // the move being drawn: { players, balls, t0 }, each a list of [from, to]
 let hover = -1;          // the square under the pointer, in the editor
 
@@ -205,7 +205,7 @@ function drawGame() {
   const landing = new Set(falling.map(([, to]) => to));
 
   // the finishes stay shut until every goal is filled
-  const open = SOKO.finishOpen(game);
+  const open = SOKOBALL.finishOpen(game);
   // on the map, locked balls stand in for walls, and doors for finishes
   const locked = (i) => level.locked && level.locked[i];
   for (let i = 0; i < ballAt.length; i++) {
@@ -292,20 +292,20 @@ function drawDraft() {
     const ch = cells[i];
     const x = ox + (i % width) * tile;
     const y = oy + Math.floor(i / width) * tile;
-    if (ch === SOKO.WALL) {
+    if (ch === SOKOBALL.WALL) {
       picture("wall", x, y, tile);
       continue;
     }
     picture("floor", x, y, tile);
-    if (ch === SOKO.GOAL) picture("goal", x, y, tile);
-    if (ch === SOKO.HOLE) picture("hole", x, y, tile);
-    if (ch === SOKO.BALL_ON_GOAL || ch === SOKO.PLAYER_ON_GOAL) picture("goalFilled", x, y, tile);
-    if (ch === SOKO.FINISH) picture("finish", x, y, tile);
-    if (ch === SOKO.BALL) picture("ball", x, y, tile);
-    if (ch === SOKO.PLAYER || ch === SOKO.PLAYER_ON_GOAL) picture("player", x, y, tile);
+    if (ch === SOKOBALL.GOAL) picture("goal", x, y, tile);
+    if (ch === SOKOBALL.HOLE) picture("hole", x, y, tile);
+    if (ch === SOKOBALL.BALL_ON_GOAL || ch === SOKOBALL.PLAYER_ON_GOAL) picture("goalFilled", x, y, tile);
+    if (ch === SOKOBALL.FINISH) picture("finish", x, y, tile);
+    if (ch === SOKOBALL.BALL) picture("ball", x, y, tile);
+    if (ch === SOKOBALL.PLAYER || ch === SOKOBALL.PLAYER_ON_GOAL) picture("player", x, y, tile);
   }
 
-  drawEdge(width, height, tile, ox, oy, (i) => cells[i] !== SOKO.WALL);
+  drawEdge(width, height, tile, ox, oy, (i) => cells[i] !== SOKOBALL.WALL);
 
   // a faint grid, so you can see where one square stops
   ctx.strokeStyle = "rgba(22, 22, 26, 0.12)";
@@ -359,7 +359,7 @@ function animate(change) {
 // on shut. Where you are and where you've pushed things is remembered, so
 // coming out of a level puts you back on its door with the map as you left it.
 
-let world = null;        // from SOKO.parseWorld
+let world = null;        // from SOKOBALL.parseWorld
 
 function solvedLevels() {
   return new Set(LEVELS.map((lv, n) => (save.solved[keyOf(lv.map)] ? n : -1)).filter((n) => n >= 0));
@@ -380,7 +380,7 @@ function doorHere() {
 // Back to the map, standing on square `at` if given, or wherever you were.
 function goToMap(at = null) {
   const solved = solvedLevels();
-  const level = SOKO.worldLevel(world, solved);
+  const level = SOKOBALL.worldLevel(world, solved);
   const key = keyOf(WORLD);
   if (!save.world || save.world.key !== key) {
     save.world = { key, player: world.start, balls: null, freed: [] };
@@ -389,7 +389,7 @@ function goToMap(at = null) {
 
   clearTimeout(finishTimer);
   current = { kind: "world", name: "Map" };
-  game = SOKO.start(level);
+  game = SOKOBALL.start(level);
   // the balls where you left them, if they still make sense on this map -
   // plus any freed since, which start where they were locked
   if (saved.balls && saved.balls.every((b) => level.inside[b] && !level.wall[b])) {
@@ -444,12 +444,12 @@ function fade(change) {
 function play(entry) {
   let level;
   try {
-    level = SOKO.parse(entry.map);
+    level = SOKOBALL.parse(entry.map);
   } catch (e) {
     flash(e.message);
     return false;
   }
-  const problems = SOKO.check(level);
+  const problems = SOKOBALL.check(level);
   if (problems.length) {
     flash(problems[0]);
     return false;
@@ -457,7 +457,7 @@ function play(entry) {
 
   clearTimeout(finishTimer);
   current = entry;
-  game = SOKO.start(level);
+  game = SOKOBALL.start(level);
   anim = null;
   hideCards();
   // a shared level stays in the address bar so a reload keeps it; anything
@@ -477,7 +477,7 @@ let finishTimer = 0;
 
 function act(dir) {
   if (mode !== "play" || !game || game.done) return;
-  const change = SOKO.move(game, dir);
+  const change = SOKOBALL.move(game, dir);
   if (!change) {
     draw();                                  // still worth showing the turn
     return;
@@ -489,7 +489,7 @@ function act(dir) {
     return;
   }
   showBar();
-  if (SOKO.solved(game)) {
+  if (SOKOBALL.solved(game)) {
     // Finished the moment the last ball lands, not a beat later - a held key
     // would otherwise get one more step in between.
     game.done = true;
@@ -512,7 +512,7 @@ function rewound() {
 function takeBack() {
   if (mode !== "play" || !game) return;
   hideCards();
-  if (!SOKO.undo(game)) return;
+  if (!SOKOBALL.undo(game)) return;
   // taking back the winning move means it isn't won any more
   clearTimeout(finishTimer);
   game.done = false;
@@ -590,7 +590,7 @@ function showBar() {
 // ===========================================================================
 
 let draft = null;        // { id, name, width, height, cells: [one character per square] }
-let tool = SOKO.WALL;
+let tool = SOKOBALL.WALL;
 let painting = null;     // what's being painted while the pointer is down
 let verdict = null;      // what "check" last said, until the next change
 
@@ -603,14 +603,14 @@ const STARTER = `
 -------!-`;
 
 function draftFrom(map, name = "", id = null) {
-  const rows = SOKO.rowsOf(map);
+  const rows = SOKOBALL.rowsOf(map);
   return { id, name, width: rows[0].length, height: rows.length, cells: rows.join("").split("") };
 }
 
 function draftText() {
   const rows = [];
   for (let y = 0; y < draft.height; y++) rows.push(draft.cells.slice(y * draft.width, (y + 1) * draft.width));
-  return SOKO.writeRows(rows);
+  return SOKOBALL.writeRows(rows);
 }
 
 function storeDraft() {
@@ -644,7 +644,7 @@ function resizeDraft(width, height) {
   const cells = [];
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      cells.push(x < draft.width && y < draft.height ? draft.cells[y * draft.width + x] : SOKO.FLOOR);
+      cells.push(x < draft.width && y < draft.height ? draft.cells[y * draft.width + x] : SOKOBALL.FLOOR);
     }
   }
   Object.assign(draft, { width, height, cells });
@@ -656,8 +656,8 @@ function resizeDraft(width, height) {
 // The draft as a level, and anything stopping it being played.
 function draftLevel() {
   try {
-    const level = SOKO.parse(draftText());
-    return { level, problems: SOKO.check(level) };
+    const level = SOKOBALL.parse(draftText());
+    return { level, problems: SOKOBALL.check(level) };
   } catch (e) {
     return { level: null, problems: [e.message] };
   }
@@ -682,7 +682,7 @@ function showProblems() {
 // seconds without everything locking up. It's given the same ?v= as the page's
 // own scripts so it always checks against the rules the game is using.
 let checker = null;
-const VERSION = (document.querySelector('script[src*="soko.js"]').getAttribute("src").match(/\?.*$/) || [""])[0];
+const VERSION = (document.querySelector('script[src*="sokoball.js"]').getAttribute("src").match(/\?.*$/) || [""])[0];
 
 function stopChecking() {
   if (checker) checker.terminate();
@@ -713,12 +713,12 @@ function checkDraft() {
   try {
     checker = new Worker(`solver.js${VERSION}`);
     checker.onmessage = (e) => report(e.data);
-    checker.onerror = () => report(SOKO.solve(level, 250000));
+    checker.onerror = () => report(SOKOBALL.solve(level, 250000));
     checker.postMessage({ text: draftText(), budget: 2000000 });
   } catch (err) {
     // no workers here (a page opened straight from disk, say): a smaller check
     // on the page itself is better than none
-    setTimeout(() => report(SOKO.solve(level, 250000)), 30);
+    setTimeout(() => report(SOKOBALL.solve(level, 250000)), 30);
   }
 }
 
@@ -793,14 +793,14 @@ function keepDraft() {
 // ===========================================================================
 //
 // A shared level travels entirely in the link: its name, and the level itself
-// squashed by SOKO.encode. Nothing is sent anywhere or stored on a server, so
+// squashed by SOKOBALL.encode. Nothing is sent anywhere or stored on a server, so
 // there's nothing to look after and nothing anyone can fill with rubbish -
 // a link is only ever seen by whoever it's given to.
 
 function linkFor(name, map) {
   const params = new URLSearchParams();
   if (name) params.set("n", name.slice(0, 40));
-  params.set("l", SOKO.encode(map));
+  params.set("l", SOKOBALL.encode(map));
   return `${location.origin}${location.pathname}#${params}`;
 }
 
@@ -813,7 +813,7 @@ function levelFromLink(link) {
   return {
     kind: "shared",
     name: (params.get("n") || "Untitled level").slice(0, 40),
-    map: SOKO.decode(code),
+    map: SOKOBALL.decode(code),
   };
 }
 
@@ -858,7 +858,7 @@ function pasteLevel() {
   const fromLink = levelFromLink(text);
   const map = fromLink ? fromLink.map : text;
   try {
-    SOKO.parse(map);
+    SOKOBALL.parse(map);
   } catch (e) {
     flash(e.message);
     return;
@@ -1091,7 +1091,7 @@ window.addEventListener("keydown", (e) => {
       restart();
     }
   } else {
-    const tools = [SOKO.WALL, SOKO.FLOOR, SOKO.GOAL, SOKO.HOLE, SOKO.BALL, SOKO.PLAYER, SOKO.FINISH];
+    const tools = [SOKOBALL.WALL, SOKOBALL.FLOOR, SOKOBALL.GOAL, SOKOBALL.HOLE, SOKOBALL.BALL, SOKOBALL.PLAYER, SOKOBALL.FINISH];
     const n = Number(e.key);
     if (n >= 1 && n <= tools.length) chooseTool(tools[n - 1]);
   }
@@ -1114,7 +1114,7 @@ canvas.addEventListener("pointerdown", (e) => {
     const i = squareAt(e);
     if (i < 0) return;
     // right-click, or a pen's eraser end, paints floor
-    painting = e.button === 2 || e.button === 5 ? SOKO.FLOOR : tool;
+    painting = e.button === 2 || e.button === 5 ? SOKOBALL.FLOOR : tool;
     try {
       canvas.setPointerCapture(e.pointerId);
     } catch (err) {
@@ -1135,7 +1135,7 @@ canvas.addEventListener("pointermove", (e) => {
     if (!painting) draw();
   }
   // players are placed one click at a time - dragging would lay a whole crowd
-  if (painting && i >= 0 && painting !== SOKO.PLAYER && paint(i, painting)) edited();
+  if (painting && i >= 0 && painting !== SOKOBALL.PLAYER && paint(i, painting)) edited();
 });
 
 canvas.addEventListener("pointerup", (e) => {
@@ -1307,7 +1307,7 @@ window.addEventListener("hashchange", () => {
 
 load();
 loadArt();
-world = SOKO.parseWorld(WORLD);
+world = SOKOBALL.parseWorld(WORLD);
 draft = save.draft ? draftFrom(save.draft.map, save.draft.name, save.draft.id) : draftFrom(STARTER);
 
 const shared = levelFromLink(location.hash);

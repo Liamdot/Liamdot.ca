@@ -1,4 +1,4 @@
-// Soko's art: which picture is drawn for each thing on the board.
+// Sokoball's art: which picture is drawn for each thing on the board.
 //
 // Everything starts on the developer art in assets/dev/. To use your own,
 // put your pictures in assets/mine/, list them under `mine` below, and change
