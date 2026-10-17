@@ -25,8 +25,9 @@
 // A level is won by getting a box onto every goal and then every player onto
 // a finish - one finish each, so a level needs at least as many finishes as
 // players. There can be spare boxes, but never more goals than boxes.
-// Finishes stay shut until every goal has a box, and boxes can never be
-// pushed onto them, so they can't be blocked.
+// Finishes stay shut until every goal has a box. A box can be pushed onto
+// anything a player can walk on, finishes included - so a box left on a
+// finish blocks it until it's moved.
 
 const SOKO = (() => {
   // =========================================================================
@@ -217,8 +218,8 @@ const SOKO = (() => {
   // first, so a line of them moves like a train: each one steps into the space
   // the one ahead has just left. Anyone who can't move - a wall, the edge, a
   // box with nowhere to go, a stuck player in front - stays put, and the rest
-  // carry on without them. Players can walk over the finish whether it's open
-  // or not; boxes can't be pushed onto it at all.
+  // carry on without them. Anywhere a player can walk, a box can be pushed:
+  // finishes, and doors on the map, are floor as far as moving goes.
   //
   // Changes `players` and `boxAt` in place and says what moved, or returns null
   // if nothing did. Both the game and the solver go through this, so they can
@@ -237,7 +238,7 @@ const SOKO = (() => {
       if (to < 0 || level.wall[to] || occupied.has(to)) continue;
       if (boxAt[to]) {
         const beyond = step(level, to, dir);
-        if (beyond < 0 || level.wall[beyond] || level.finish[beyond] || boxAt[beyond] || occupied.has(beyond)) continue;
+        if (beyond < 0 || level.wall[beyond] || boxAt[beyond] || occupied.has(beyond)) continue;
         boxAt[to] = 0;
         boxAt[beyond] = 1;
         pushed.push([to, beyond]);
@@ -321,8 +322,9 @@ const SOKO = (() => {
   //
   // plus #, floor, @ for where you start, and $ for a box that's free from the
   // start. Locked boxes are what keep the next door shut: solving a level frees
-  // its boxes, and you push them out of the way to get on. Boxes can't be
-  // pushed onto a door, so a door can never be buried.
+  // its boxes, and you push them out of the way to get on. A box can be pushed
+  // onto a door like anywhere else, and then has to be moved off it again
+  // before the door can be used.
 
   function parseWorld(text) {
     const rows = rowsOf(text);
@@ -361,7 +363,7 @@ const SOKO = (() => {
 
   // The map as a level to walk round, with the boxes of every level in
   // `solved` (a Set of level numbers) let loose. Locked boxes stand as walls.
-  // Doors go in `finish`, which is what stops boxes being pushed onto them.
+  // Doors go in `finish` too, though nothing about moving treats them differently.
   function worldLevel(world, solved) {
     const size = world.width * world.height;
     const wall = world.wall.slice();

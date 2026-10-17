@@ -108,10 +108,9 @@ const LEVELS = [
 // solving it lets you push them aside. The rest is the usual: # wall, space or
 // - floor, @ where you start, $ a box that's free from the start.
 //
-// Two things to watch when you redraw it. A box can't be pushed onto a door,
-// so don't put a door straight in line with a gap a box gets pushed through -
-// the box stops in front of the door and you're stuck behind it. And make sure
-// every gap in a wall has its box: an open gap is a way round.
+// Two things to watch when you redraw it. Boxes can be pushed onto doors, so a
+// door straight in line with a gap is easy to bury: put doors off to one side.
+// And make sure every gap in a wall has its box: an open gap is a way round.
 //
 // The map is remembered by what it looks like, like the levels are: change it
 // and everyone's boxes go back to where they started (their solved levels

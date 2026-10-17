@@ -4,7 +4,8 @@ Soko is a box-pushing puzzle in the Sokoban mould: push a box onto every goal,
 never pull, one box at a time. That opens the finishes, and the level is won
 when every player is standing on one. A level can have any number of players,
 and every press moves all of them the same way at once. There can be spare
-boxes, but never more goals than boxes. The edge of a level is as solid as a
+boxes, but never more goals than boxes. A box can be pushed anywhere a player
+can walk, finishes and doors included. The edge of a level is as solid as a
 wall.
 
 The campaign is a map you walk round. Each level is a door on it, and
@@ -195,9 +196,9 @@ back where it started, in case one gets pushed somewhere it blocks you.
 
 Two traps when you redraw it, both of which I walked into making this one:
 
-- **A box can't be pushed onto a door.** If a door sits straight in line with
-  a gap, the box stops in front of the door and you're stuck in the gap
-  behind it. Put doors off to one side of any gap.
+- **Boxes can be pushed onto doors.** A door straight in line with a gap is
+  easy to bury under the box that came through it. Put doors off to one side
+  of any gap.
 - **Every gap needs its box.** An open gap, even one square, is a way round.
 
 The letters cap the campaign at 26 levels. If it ever needs more, that's a
