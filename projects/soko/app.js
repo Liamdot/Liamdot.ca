@@ -330,6 +330,7 @@ function play(entry) {
     return false;
   }
 
+  clearTimeout(finishTimer);
   current = entry;
   game = SOKO.start(level);
   anim = null;
@@ -351,8 +352,10 @@ function builtIn(index) {
   return lv ? { kind: "built", index, name: lv.name, map: lv.map } : null;
 }
 
+let finishTimer = 0;
+
 function act(dir) {
-  if (mode !== "play" || !game || !$("solved").hidden) return;
+  if (mode !== "play" || !game || game.done) return;
   const change = SOKO.move(game, dir);
   if (!change) {
     draw();                                  // still worth showing the turn
@@ -360,7 +363,13 @@ function act(dir) {
   }
   animate(change);
   showBar();
-  if (SOKO.solved(game)) setTimeout(finished, ANIM_MS + 40);
+  if (SOKO.solved(game)) {
+    // Finished the moment the last box lands, not when the card comes up a
+    // beat later - a held key would otherwise get one more step in between.
+    game.done = true;
+    letGoOfEverything();
+    finishTimer = setTimeout(finished, ANIM_MS + 40);
+  }
 }
 
 // Going back is instant, and the board drains of colour for a moment as it
@@ -378,6 +387,9 @@ function takeBack() {
   if (mode !== "play" || !game) return;
   hideCards();
   if (!SOKO.undo(game)) return;
+  // taking back the winning move means it isn't won any more
+  clearTimeout(finishTimer);
+  game.done = false;
   rewound();
   showBar();
   draw();
@@ -390,12 +402,12 @@ function restart() {
 }
 
 function finished() {
-  const first = current.kind !== "test" && !save.solved[keyOf(current.map)];
+  if (!game || !game.done) return;
   if (current.kind !== "test") {
     save.solved[keyOf(current.map)] = true;
     store();
   }
-  showSolved(first);
+  showSolved();
 }
 
 function nextEntry() {
@@ -412,11 +424,9 @@ function showBar() {
   const playing = mode === "play";
   const testing = playing && current && current.kind === "test";
 
-  let label = "making a level";
+  let label = "editor";
   if (playing && current) {
     label = current.kind === "built" ? `${current.index + 1}. ${current.name}` : current.name;
-    if (current.kind === "shared") label += " (shared)";
-    if (testing) label += " (testing)";
   }
   $("level-name").textContent = label;
 
@@ -533,7 +543,7 @@ function showProblems() {
     box.textContent = verdict.text;
   } else {
     box.className = "problems";
-    box.textContent = "Playable. Press check to find out whether it can actually be solved.";
+    box.textContent = "Playable.";
   }
 }
 
@@ -557,15 +567,15 @@ function checkDraft() {
   }
   const box = $("problems");
   box.className = "problems";
-  box.textContent = "Trying every way of playing it... big levels take a few seconds.";
+  box.textContent = "Checking...";
 
   const report = (result) => {
     stopChecking();
     verdict = {
-      solved: { good: true, text: `Can be solved. The shortest way takes ${result.moves} move${result.moves === 1 ? "" : "s"}.` },
-      impossible: { good: false, text: "Can't be solved - whatever you do, a box ends up stuck." },
-      unknown: { good: true, text: "Too big to try every possibility. It might well be fine - test it yourself." },
-    }[result.result] || { good: false, text: "Something's wrong with it." };
+      solved: { good: true, text: `Solvable in ${result.moves} move${result.moves === 1 ? "" : "s"}.` },
+      impossible: { good: false, text: "Not solvable." },
+      unknown: { good: true, text: "Too big to check." },
+    }[result.result] || { good: false, text: "Couldn't check." };
     showProblems();
   };
 
@@ -624,13 +634,13 @@ function testDraft() {
     return;
   }
   showMode("play");
-  play({ kind: "test", name: draft.name || "your level", map: draftText() });
+  play({ kind: "test", name: draft.name || "untitled", map: draftText() });
 }
 
 function keepDraft() {
   const { problems } = draftLevel();
   if (problems.length) {
-    flash(`Not yet: ${problems[0]}`);
+    flash(problems[0]);
     return;
   }
   const name = draft.name.trim() || `Level ${save.mine.length + 1}`;
@@ -644,7 +654,7 @@ function keepDraft() {
   draft.name = name;
   $("draft-name").value = name;
   storeDraft();
-  flash(existing ? `Updated "${name}".` : `Kept "${name}" - it's under levels now.`);
+  flash(existing ? "Updated." : "Kept.");
 }
 
 // ===========================================================================
@@ -671,7 +681,7 @@ function levelFromLink(link) {
   if (!code) return null;
   return {
     kind: "shared",
-    name: (params.get("n") || "a shared level").slice(0, 40),
+    name: (params.get("n") || "untitled").slice(0, 40),
     map: SOKO.decode(code),
   };
 }
@@ -719,7 +729,7 @@ function pasteLevel() {
   try {
     SOKO.parse(map);
   } catch (e) {
-    flash(`That isn't a level: ${e.message}`);
+    flash(e.message);
     return;
   }
   draft = draftFrom(map, fromLink ? fromLink.name : draft.name, null);
@@ -727,7 +737,7 @@ function pasteLevel() {
   $("draft-w").value = draft.width;
   $("draft-h").value = draft.height;
   edited();
-  flash("Pasted in. It's yours to change.");
+  flash("Pasted.");
 }
 
 // ===========================================================================
@@ -747,18 +757,17 @@ function flash(text) {
   flashTimer = setTimeout(() => { el.hidden = true; }, 2600);
 }
 
-function showSolved(first) {
+function showSolved() {
   const next = nextEntry();
   const testing = current.kind === "test";
   const card = $("solved");
   card.innerHTML = `
     <h2>Solved</h2>
-    <p class="sub">${testing ? "It works." : esc(current.name) + (first ? "" : " &mdash; again")}</p>
     <div class="row">
       ${testing ? `<button class="pill strong" data-go="editor">back to editor</button>` : ""}
-      ${next ? `<button class="pill strong" data-go="next">next level</button>` : ""}
+      ${next ? `<button class="pill strong" data-go="next">next</button>` : ""}
       <button class="pill" data-go="again">again</button>
-      ${current.kind === "shared" ? `<button class="pill" data-go="keep-shared">keep it</button>` : ""}
+      ${current.kind === "shared" ? `<button class="pill" data-go="keep-shared">keep</button>` : ""}
       ${!testing && !next ? `<button class="pill" data-go="levels">levels</button>` : ""}
     </div>`;
   card.hidden = false;
@@ -782,7 +791,7 @@ function keepShared() {
     save.mine.push({ id: `m${Date.now().toString(36)}`, name: current.name, map: current.map });
     store();
   }
-  flash(already ? "You've already got that one." : "Kept - it's under levels now.");
+  flash(already ? "Already kept." : "Kept.");
 }
 
 function showLevels() {
@@ -803,7 +812,7 @@ function showLevels() {
         <button class="tiny" data-share="${esc(m.id)}">share</button>
         <button class="tiny danger" data-delete="${esc(m.id)}">delete</button>
       </div>`).join("")
-    : `<p class="sub">Nothing yet. Press <strong>make</strong> to build one.</p>`;
+    : `<p class="sub">None yet.</p>`;
 
   card.innerHTML = `
     <div class="card-head"><h2>Levels</h2><button class="close" data-close aria-label="Close">&times;</button></div>
@@ -846,20 +855,19 @@ function showShare(name, map) {
   const link = linkFor(name, map);
   const card = $("share");
   card.innerHTML = `
-    <div class="card-head"><h2>Share "${esc(name || "your level")}"</h2><button class="close" data-close aria-label="Close">&times;</button></div>
-    <p class="sub">The whole level is in this link. Anyone who opens it plays it, and can keep a copy.</p>
+    <div class="card-head"><h2>Share</h2><button class="close" data-close aria-label="Close">&times;</button></div>
     <input class="link" id="share-link" readonly value="${esc(link)}">
-    <div class="row"><button class="pill strong" id="share-copy">copy link</button></div>`;
+    <div class="row"><button class="pill strong" id="share-copy">copy</button></div>`;
   card.hidden = false;
   const input = $("share-link");
   input.addEventListener("focus", () => input.select());
   $("share-copy").addEventListener("click", async () => {
     if (await copyText(link)) {
       $("share-copy").textContent = "copied";
-      setTimeout(() => { if ($("share-copy")) $("share-copy").textContent = "copy link"; }, 1400);
+      setTimeout(() => { if ($("share-copy")) $("share-copy").textContent = "copy"; }, 1400);
     } else {
       input.focus();
-      flash("Couldn't copy - it's selected, so copy it yourself.");
+      flash("Couldn't copy.");
     }
   });
 }
@@ -1094,13 +1102,13 @@ $("keep-btn").addEventListener("click", keepDraft);
 $("share-btn").addEventListener("click", () => {
   const { problems } = draftLevel();
   if (problems.length) {
-    flash(`Not yet: ${problems[0]}`);
+    flash(problems[0]);
     return;
   }
   showShare(draft.name, draftText());
 });
 $("copy-text-btn").addEventListener("click", async () => {
-  flash(await copyText(draftText()) ? "Copied as text - paste it into levels.js to make it a built-in level." : "Couldn't copy.");
+  flash(await copyText(draftText()) ? "Copied." : "Couldn't copy.");
 });
 $("paste-btn").addEventListener("click", pasteLevel);
 
@@ -1109,7 +1117,7 @@ $("new-btn").addEventListener("click", (e) => {
   // asks twice, so a slip doesn't lose a level
   if (!fresh) {
     fresh = true;
-    e.target.textContent = "sure? this clears it";
+    e.target.textContent = "sure?";
     setTimeout(() => { fresh = false; e.target.textContent = "start again"; }, 2500);
     return;
   }
@@ -1139,7 +1147,7 @@ resetBtn.addEventListener("click", () => {
   if (!resetArmed) {
     resetArmed = true;
     resetBtn.classList.add("sure");
-    resetBtn.textContent = "really? your levels are kept";
+    resetBtn.textContent = "sure?";
     return;
   }
   resetArmed = false;
@@ -1147,7 +1155,7 @@ resetBtn.addEventListener("click", () => {
   save.solved = {};
   save.at = 0;
   store();
-  resetBtn.textContent = "cleared - back to level 1";
+  resetBtn.textContent = "cleared";
   setTimeout(() => { if (!resetArmed) resetBtn.textContent = "clear my save"; }, 2500);
   if (mode === "play") play(builtIn(0));
 });

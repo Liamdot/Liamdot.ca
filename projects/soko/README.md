@@ -136,9 +136,9 @@ When it's playable:
   this, four in seven couldn't be solved.
 
   It runs in the background, so a big level can take a few seconds without
-  the page freezing. On a really big or open level it may give up and say
-  it's too big to try everything — that doesn't mean it's broken, just that
-  you'll have to test it yourself.
+  the page freezing. On a really big or open level it may give up with
+  "Too big to check." — that doesn't mean it's broken, just that you'll have
+  to test it yourself.
 - **test** plays it. **back to editor** comes back.
 - **keep** saves it to *your levels* (under **levels** in play mode). Editing
   a kept level and pressing keep again updates it rather than making a copy.

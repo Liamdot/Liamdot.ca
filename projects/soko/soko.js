@@ -76,7 +76,7 @@ const SOKO = (() => {
   // it's a fair one is check()'s business, further down.
   function parse(text) {
     const rows = rowsOf(text);
-    if (!rows.length) throw new Error("There's nothing there.");
+    if (!rows.length) throw new Error("Empty level.");
 
     const height = rows.length;
     const width = rows[0].length;
@@ -90,7 +90,7 @@ const SOKO = (() => {
       for (let x = 0; x < width; x++) {
         const ch = rows[y][x];
         const i = y * width + x;
-        if (!KNOWN.has(ch)) throw new Error(`"${ch}" on row ${y + 1} isn't a level character.`);
+        if (!KNOWN.has(ch)) throw new Error(`Unknown character "${ch}" on row ${y + 1}.`);
         if (ch === WALL) wall[i] = 1;
         if (ch === GOAL || ch === BOX_ON_GOAL || ch === PLAYER_ON_GOAL) goal[i] = 1;
         if (ch === BOX || ch === BOX_ON_GOAL) boxes.push(i);
@@ -157,26 +157,25 @@ const SOKO = (() => {
     return seen;
   }
 
-  // Is this level fit to play? A list of problems, each a sentence a person
-  // can act on. Empty means it's fine.
+  // Is this level fit to play? A list of problems, each short enough to show
+  // under the editor. Empty means it's fine.
   function check(level) {
     const problems = [];
     const goals = level.goal.reduce((n, g) => n + g, 0);
     const boxes = level.boxes.length;
 
-    if (!level.players.length) problems.push("It needs a player (@) - as many as you like.");
-    if (!boxes) problems.push("It needs at least one box ($).");
-    if (!goals) problems.push("It needs at least one goal (.).");
+    if (!level.players.length) problems.push("Needs a player.");
+    if (!boxes) problems.push("Needs a box.");
+    if (!goals) problems.push("Needs a goal.");
     if (boxes && goals && boxes !== goals) {
-      problems.push(`It has ${boxes} box${boxes === 1 ? "" : "es"} and ${goals} goal${
-        goals === 1 ? "" : "s"} - they have to match.`);
+      problems.push(`Boxes (${boxes}) and goals (${goals}) must match.`);
     }
     if (level.players.length) {
       const stray = level.boxes.filter((b) => !level.inside[b]).length;
-      if (stray) problems.push(`${stray} box${stray === 1 ? " is" : "es are"} where no player can get to.`);
+      if (stray) problems.push(`${stray} box${stray === 1 ? "" : "es"} out of reach.`);
       let lost = 0;
       for (let i = 0; i < level.goal.length; i++) if (level.goal[i] && !level.inside[i]) lost++;
-      if (lost) problems.push(`${lost} goal${lost === 1 ? " is" : "s are"} where no player can get to.`);
+      if (lost) problems.push(`${lost} goal${lost === 1 ? "" : "s"} out of reach.`);
     }
     return problems;
   }

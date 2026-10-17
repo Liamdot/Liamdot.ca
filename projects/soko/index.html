@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Soko - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=9">
-  <link rel="stylesheet" href="../../game.css?v=9">
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="../../style.css?v=10">
+  <link rel="stylesheet" href="../../game.css?v=10">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -35,32 +35,31 @@
     <div class="info-panel" id="info-panel" hidden>
       <h2>Soko</h2>
       <p class="meta">made October 2026</p>
-      <p>Push every box onto a goal. You can push but never pull, and only one box at a time &mdash; so a box in a corner stays there.</p>
+      <p>Push every box onto a goal.</p>
 
       <h3>How to play</h3>
       <ul>
-        <li>Arrow keys or WASD to move; on a phone, swipe the board or use the buttons under it. Hold a direction to keep going</li>
-        <li>Some levels have more than one of you. Every press moves all of you the same way at once, and anyone who's blocked just stays put while the rest carry on</li>
-        <li>The edge of a level is as solid as a wall</li>
-        <li><strong>undo</strong> takes back a move (Z) and <strong>restart</strong> starts again (R) &mdash; the board greys for a moment so you can see it went backwards</li>
-        <li><strong>levels</strong> lists everything there is to play, built in or made by you</li>
+        <li>Arrow keys or WASD. Hold to keep moving</li>
+        <li>On a phone: swipe, or the buttons under the board</li>
+        <li>All players move together; a blocked player stays put</li>
+        <li>The edge is solid</li>
+        <li><strong>undo</strong> (Z), <strong>restart</strong> (R)</li>
       </ul>
 
       <h3>Making levels</h3>
       <ul>
-        <li>Press <strong>make</strong> and paint with walls, floor, goals, boxes and players &mdash; right-click paints floor</li>
-        <li>No need to wall the outside in: the edge is solid. Put down as many players as you like</li>
-        <li><strong>check</strong> tells you what's wrong with it, and tries every way of playing it to see whether it can be solved at all</li>
-        <li><strong>test</strong> plays it, <strong>keep</strong> saves it to your levels</li>
-        <li><strong>share</strong> gives you a link with the whole level in it &mdash; whoever opens it plays your level, and can keep it</li>
-        <li>Levels are plain text in the usual Sokoban format, so you can paste in ones from elsewhere too</li>
+        <li><strong>make</strong>: paint walls, floor, goals, boxes and players. Right-click paints floor</li>
+        <li><strong>check</strong>: whether it can be solved</li>
+        <li><strong>test</strong>, <strong>keep</strong>, <strong>share</strong></li>
+        <li>Standard Sokoban text format</li>
       </ul>
 
       <h3>Updates</h3>
       <ul>
-        <li><strong>v0.3</strong> &ndash; hold a direction to keep walking</li>
-        <li><strong>v0.2</strong> &ndash; as many players as you like, all moving at once; the edge is solid; no move counter; undo is instant</li>
-        <li><strong>v0.1</strong> &ndash; eight levels, an editor, and levels by link</li>
+        <li><strong>v0.4</strong> &ndash; fixes, plainer text</li>
+        <li><strong>v0.3</strong> &ndash; hold to move</li>
+        <li><strong>v0.2</strong> &ndash; several players, solid edge, no move counter, instant undo</li>
+        <li><strong>v0.1</strong> &ndash; first version</li>
       </ul>
 
       <p class="wipe-line">
@@ -126,7 +125,7 @@
           <button class="pill" id="new-btn">start again</button>
         </div>
         <textarea class="paste-box" id="paste-box" hidden rows="8"
-          placeholder="Paste a level here - the text, or a share link - then press paste a level again."></textarea>
+          placeholder="Level text or share link"></textarea>
       </aside>
     </div>
 
@@ -139,10 +138,10 @@
     </div>
   </main>
 
-  <script src="../../nav.js?v=9"></script>
-  <script src="soko.js?v=9"></script>
-  <script src="assets.js?v=9"></script>
-  <script src="levels.js?v=9"></script>
-  <script src="app.js?v=9"></script>
+  <script src="../../nav.js?v=10"></script>
+  <script src="soko.js?v=10"></script>
+  <script src="assets.js?v=10"></script>
+  <script src="levels.js?v=10"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
