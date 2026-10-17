@@ -52,17 +52,6 @@
   font-weight: 700;
 }
 
-.stat {
-  color: #a39a8f;
-  font-size: 0.8rem;
-}
-
-.stat strong {
-  margin-left: 4px;
-  color: #f1ede4;
-  font-variant-numeric: tabular-nums;
-}
-
 .spacer {
   flex: 1;
 }
@@ -121,6 +110,14 @@
   height: 100%;
   touch-action: none;
   user-select: none;
+  transition: filter 0.3s ease;
+}
+
+/* Undo and restart drain the colour for a moment, so going back never looks
+   like going forward. It greys at once and fades back in. */
+.board.rewound {
+  filter: saturate(0.12) brightness(0.9);
+  transition: none;
 }
 
 .board.painting {
@@ -157,14 +154,6 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-}
-
-.card .big {
-  margin: 4px 0;
-  color: #e9a23b;
-  font-size: 1.5rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
 }
 
 .card .sub {
@@ -461,17 +450,22 @@ button.level-row:hover,
 
 /* ---- the d-pad, for phones ---- */
 
+/* Only where there are fingers. Asked of the browser live rather than decided
+   once when the page loads, so a laptop that folds into a tablet gets the
+   buttons the moment it does. */
 .dpad {
   display: none;
 }
 
-body.touch .dpad {
-  display: grid;
-  gap: 8px;
-  grid-template-areas: ". up ." "left down right";
-  grid-template-columns: repeat(3, 58px);
-  justify-content: center;
-  padding: 10px 0 14px;
+@media (pointer: coarse) {
+  .dpad {
+    display: grid;
+    gap: 8px;
+    grid-template-areas: ". up ." "left down right";
+    grid-template-columns: repeat(3, 58px);
+    justify-content: center;
+    padding: 10px 0 14px;
+  }
 }
 
 .dpad button {

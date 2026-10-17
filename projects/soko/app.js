@@ -125,7 +125,7 @@ const ctx = canvas.getContext("2d");
 let mode = "play";       // "play" or "make"
 let current = null;      // the level being played: { kind, name, map, ... }
 let game = null;         // its state, from SOKO.start
-let anim = null;         // the move being drawn: { from, to, boxFrom, boxTo, t0 }
+let anim = null;         // the move being drawn: { players, boxes, t0 }, each a list of [from, to]
 let hover = -1;          // the square under the pointer, in the editor
 
 const ANIM_MS = 110;
@@ -195,6 +195,10 @@ function drawGame() {
     const [bx, by] = at(to);
     return [ax + (bx - ax) * t, ay + (by - ay) * t];
   };
+  // where each thing that moved came from, looked up by where it is now
+  const cameFrom = (list) => new Map(anim && t < 1 ? list.map(([from, to]) => [to, from]) : []);
+  const boxFrom = cameFrom(anim ? anim.boxes : []);
+  const playerFrom = cameFrom(anim ? anim.players : []);
 
   for (let i = 0; i < boxAt.length; i++) {
     const [x, y] = at(i);
@@ -204,17 +208,48 @@ function drawGame() {
       if (level.goal[i]) picture("goal", x, y, tile);
     }
   }
+  drawEdge(level.width, level.height, tile, ox, oy, (i) => level.inside[i] && !level.wall[i]);
 
   for (let i = 0; i < boxAt.length; i++) {
     if (!boxAt[i]) continue;
-    const moving = anim && anim.boxTo === i && t < 1;
-    const [x, y] = moving ? between(anim.boxFrom, anim.boxTo) : at(i);
+    const moving = boxFrom.has(i);
+    const [x, y] = moving ? between(boxFrom.get(i), i) : at(i);
     // a box only counts as home once it has finished arriving
     picture(level.goal[i] && !moving ? "boxOnGoal" : "box", x, y, tile);
   }
 
-  const [px, py] = anim && t < 1 ? between(anim.from, anim.to) : at(game.player);
-  picture("player", px, py, tile, playerPicture(game.facing));
+  const face = playerPicture(game.facing);
+  for (const p of game.players) {
+    const [x, y] = playerFrom.has(p) ? between(playerFrom.get(p), p) : at(p);
+    picture("player", x, y, tile, face);
+  }
+}
+
+// The edge of a level is as solid as a wall, so where floor runs right up to
+// it, it gets a hard edge to say so. A level with its own walls round the
+// outside has no floor there, and looks exactly as it would anyway.
+function drawEdge(width, height, tile, ox, oy, isFloor) {
+  const e = Math.max(3, Math.round(tile * 0.12));
+  ctx.fillStyle = ART.edge || STAND_INS.wall;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (!isFloor(y * width + x)) continue;
+      const px = ox + x * tile;
+      const py = oy + y * tile;
+      const left = x === 0;
+      const right = x === width - 1;
+      const top = y === 0;
+      const bottom = y === height - 1;
+      if (left) ctx.fillRect(px - e, py, e, tile);
+      if (right) ctx.fillRect(px + tile, py, e, tile);
+      if (top) ctx.fillRect(px, py - e, tile, e);
+      if (bottom) ctx.fillRect(px, py + tile, tile, e);
+      if (left && top) ctx.fillRect(px - e, py - e, e, e);
+      if (right && top) ctx.fillRect(px + tile, py - e, e, e);
+      if (left && bottom) ctx.fillRect(px - e, py + tile, e, e);
+      if (right && bottom) ctx.fillRect(px + tile, py + tile, e, e);
+    }
+  }
 }
 
 function drawDraft() {
@@ -235,6 +270,8 @@ function drawDraft() {
     if (ch === SOKO.BOX_ON_GOAL) picture("boxOnGoal", x, y, tile);
     if (ch === SOKO.PLAYER || ch === SOKO.PLAYER_ON_GOAL) picture("player", x, y, tile);
   }
+
+  drawEdge(width, height, tile, ox, oy, (i) => cells[i] !== SOKO.WALL);
 
   // a faint grid, so you can see where one square stops
   ctx.strokeStyle = "rgba(22, 22, 26, 0.12)";
@@ -326,33 +363,39 @@ function act(dir) {
   if (SOKO.solved(game)) setTimeout(finished, ANIM_MS + 40);
 }
 
+// Going back is instant, and the board drains of colour for a moment as it
+// happens - so taking a move back never looks like making one. Hold undo down
+// and it stays grey until you let go.
+let rewindTimer = 0;
+function rewound() {
+  anim = null;
+  canvas.classList.add("rewound");
+  clearTimeout(rewindTimer);
+  rewindTimer = setTimeout(() => canvas.classList.remove("rewound"), 160);
+}
+
 function takeBack() {
   if (mode !== "play" || !game) return;
   hideCards();
-  animate(SOKO.undo(game));
+  if (!SOKO.undo(game)) return;
+  rewound();
   showBar();
+  draw();
 }
 
 function restart() {
-  if (current) play(current);
+  if (!current || !game || !game.history.length) return;
+  rewound();
+  play(current);
 }
 
 function finished() {
-  const record = { moves: game.moves, pushes: game.pushes };
-  let best = null;
-  let better = false;
-
+  const first = current.kind !== "test" && !save.solved[keyOf(current.map)];
   if (current.kind !== "test") {
-    const key = keyOf(current.map);
-    const was = save.solved[key];
-    better = !was || record.moves < was.moves || record.pushes < was.pushes;
-    best = was
-      ? { moves: Math.min(was.moves, record.moves), pushes: Math.min(was.pushes, record.pushes) }
-      : record;
-    save.solved[key] = best;
+    save.solved[keyOf(current.map)] = true;
     store();
   }
-  showSolved(record, best, better);
+  showSolved(first);
 }
 
 function nextEntry() {
@@ -376,10 +419,8 @@ function showBar() {
     if (testing) label += " (testing)";
   }
   $("level-name").textContent = label;
-  $("moves").textContent = game ? game.moves : 0;
-  $("pushes").textContent = game ? game.pushes : 0;
 
-  // the stats, undo and restart only mean anything while playing; the level
+  // undo and restart only mean anything while playing; the level
   // list is swapped for a way back while testing something from the editor
   for (const el of document.querySelectorAll(".play-only")) el.hidden = !playing;
   $("levels-btn").hidden = !playing || testing;
@@ -400,14 +441,13 @@ let tool = SOKO.WALL;
 let painting = null;     // what's being painted while the pointer is down
 let verdict = null;      // what "check" last said, until the next change
 
+// No walls needed round the outside: the edge is solid already.
 const STARTER = `
-#########
-#       #
-#       #
-# @  $ .#
-#       #
-#       #
-#########`;
+---------
+---------
+--@--$-.-
+---------
+---------`;
 
 function draftFrom(map, name = "", id = null) {
   const rows = SOKO.rowsOf(map);
@@ -416,10 +456,8 @@ function draftFrom(map, name = "", id = null) {
 
 function draftText() {
   const rows = [];
-  for (let y = 0; y < draft.height; y++) {
-    rows.push(draft.cells.slice(y * draft.width, (y + 1) * draft.width).join("").replace(/\s+$/, ""));
-  }
-  return rows.join("\n");
+  for (let y = 0; y < draft.height; y++) rows.push(draft.cells.slice(y * draft.width, (y + 1) * draft.width));
+  return SOKO.writeRows(rows);
 }
 
 function storeDraft() {
@@ -427,9 +465,9 @@ function storeDraft() {
   store();
 }
 
-// What painting one square with the current tool turns it into. Goals and
-// boxes stack (a box on a goal), and there's only ever one player: putting
-// them somewhere takes them away from wherever they were.
+// What painting one square with the current tool turns it into. A goal can
+// have a box or a player on it; anything else replaces what was there. Each
+// player painted is another player - there can be as many as you like.
 function paint(i, with_) {
   const ch = draft.cells[i];
   const goalHere = ch === SOKO.GOAL || ch === SOKO.BOX_ON_GOAL || ch === SOKO.PLAYER_ON_GOAL;
@@ -442,7 +480,6 @@ function paint(i, with_) {
   } else if (with_ === SOKO.BOX) {
     next = goalHere ? SOKO.BOX_ON_GOAL : SOKO.BOX;
   } else if (with_ === SOKO.PLAYER) {
-    draft.cells = draft.cells.map((c) => (c === SOKO.PLAYER ? SOKO.FLOOR : c === SOKO.PLAYER_ON_GOAL ? SOKO.GOAL : c));
     next = goalHere ? SOKO.PLAYER_ON_GOAL : SOKO.PLAYER;
   }
 
@@ -452,6 +489,7 @@ function paint(i, with_) {
 }
 
 function edited() {
+  stopChecking();
   verdict = null;
   storeDraft();
   showProblems();
@@ -499,25 +537,48 @@ function showProblems() {
   }
 }
 
+// The solver runs in solver.js, off the page, so a big level can take a few
+// seconds without everything locking up. It's given the same ?v= as the page's
+// own scripts so it always checks against the rules the game is using.
+let checker = null;
+const VERSION = (document.querySelector('script[src*="soko.js"]').getAttribute("src").match(/\?.*$/) || [""])[0];
+
+function stopChecking() {
+  if (checker) checker.terminate();
+  checker = null;
+}
+
 function checkDraft() {
   const { level, problems } = draftLevel();
+  stopChecking();
   if (problems.length) {
     showProblems();
     return;
   }
   const box = $("problems");
   box.className = "problems";
-  box.textContent = "Checking...";
-  // let the page say so before the search starts
-  setTimeout(() => {
-    const result = SOKO.solve(level, 250000);
+  box.textContent = "Trying every way of playing it... big levels take a few seconds.";
+
+  const report = (result) => {
+    stopChecking();
     verdict = {
-      solved: { good: true, text: `Can be solved, in ${result.pushes} push${result.pushes === 1 ? "" : "es"} at the fewest.` },
+      solved: { good: true, text: `Can be solved. The shortest way takes ${result.moves} move${result.moves === 1 ? "" : "s"}.` },
       impossible: { good: false, text: "Can't be solved - whatever you do, a box ends up stuck." },
-      unknown: { good: true, text: "Too big to check every possibility. It might well be fine - test it yourself." },
+      unknown: { good: true, text: "Too big to try every possibility. It might well be fine - test it yourself." },
     }[result.result] || { good: false, text: "Something's wrong with it." };
     showProblems();
-  }, 30);
+  };
+
+  try {
+    checker = new Worker(`solver.js${VERSION}`);
+    checker.onmessage = (e) => report(e.data);
+    checker.onerror = () => report(SOKO.solve(level, 250000));
+    checker.postMessage({ text: draftText(), budget: 2000000 });
+  } catch (err) {
+    // no workers here (a page opened straight from disk, say): a smaller check
+    // on the page itself is better than none
+    setTimeout(() => report(SOKO.solve(level, 250000)), 30);
+  }
 }
 
 function startMaking(entry = null) {
@@ -685,15 +746,13 @@ function flash(text) {
   flashTimer = setTimeout(() => { el.hidden = true; }, 2600);
 }
 
-function showSolved(record, best, better) {
+function showSolved(first) {
   const next = nextEntry();
   const testing = current.kind === "test";
   const card = $("solved");
   card.innerHTML = `
     <h2>Solved</h2>
-    <p class="big">${record.moves} move${record.moves === 1 ? "" : "s"}, ${record.pushes} push${record.pushes === 1 ? "" : "es"}</p>
-    ${best ? `<p class="sub">${better ? "Your best yet." : `Your best: ${best.moves} moves, ${best.pushes} pushes.`}</p>` : ""}
-    ${testing ? `<p class="sub">It works.</p>` : ""}
+    <p class="sub">${testing ? "It works." : esc(current.name) + (first ? "" : " &mdash; again")}</p>
     <div class="row">
       ${testing ? `<button class="pill strong" data-go="editor">back to editor</button>` : ""}
       ${next ? `<button class="pill strong" data-go="next">next level</button>` : ""}
@@ -728,10 +787,7 @@ function keepShared() {
 function showLevels() {
   const card = $("levels");
   const record = (map) => save.solved[keyOf(map)];
-  const mark = (map) => {
-    const r = record(map);
-    return r ? `<span class="done" title="Solved">&#10003; ${r.moves}</span>` : "";
-  };
+  const mark = (map) => (record(map) ? `<span class="done" title="Solved">&#10003;</span>` : "");
 
   const built = LEVELS.map((lv, i) => `
     <button class="level-row${current && current.kind === "built" && current.index === i ? " here" : ""}" data-play="built" data-i="${i}">
@@ -885,7 +941,7 @@ canvas.addEventListener("pointermove", (e) => {
     hover = i;
     if (!painting) draw();
   }
-  // the player is only ever in one place, so dragging it doesn't paint a trail
+  // players are placed one click at a time - dragging would lay a whole crowd
   if (painting && i >= 0 && painting !== SOKO.PLAYER && paint(i, painting)) edited();
 });
 
@@ -1033,9 +1089,6 @@ window.addEventListener("hashchange", () => {
 load();
 loadArt();
 draft = save.draft ? draftFrom(save.draft.map, save.draft.name, save.draft.id) : draftFrom(STARTER);
-
-// show the d-pad only where there are fingers
-document.body.classList.toggle("touch", window.matchMedia("(pointer: coarse)").matches);
 
 const shared = levelFromLink(location.hash);
 showMode("play");
