@@ -132,7 +132,8 @@ let hover = -1;          // the square under the pointer, in the editor
 
 const ANIM_MS = 110;     // one square
 const ROLL_MS = 38;      // and this much more for each extra square a ball rolls
-const SHUT_MS = 200;     // a grate closing again after something falls through
+const DROP_MS = 260;     // a grate opening, and something dropping through it
+const SHUT_MS = 260;     // the grate swinging shut again after
 
 function resize() {
   const ratio = window.devicePixelRatio || 1;
@@ -220,25 +221,42 @@ function drawGame() {
     }
     return { xy: at(cell), t: 1 };
   };
-  // balls on their way into a hole or through a grate: a hole stays open
-  // until they get there
-  const falling = anim ? anim.chain.filter((e) => e.ball && e.fell && progress(e) < 1) : [];
-  // and players on their way through a grate, who aren't in the game any more
-  const dying = anim ? anim.chain.filter((e) => e.died && progress(e) < 1) : [];
-  // Grates opening under whatever's falling through, and shutting again after.
-  // They start to open as it arrives, are wide open as it drops, and close
-  // once it's gone. How open each is, 0 to 1, by square.
+  const clamp = (v) => Math.min(1, Math.max(0, v));
+  const since = (e) => now - anim.t0 - e.start;
+
+  // Something on its way down and out of the game: where it is and how big.
+  // Into a hole, it shrinks over the end of the move that takes it there.
+  // Through a grate it arrives first, at full size, then the grate opens and
+  // it drops - DROP_MS more - and the grate swings shut behind it (SHUT_MS).
+  const going = (e) => {
+    const t = progress(e);
+    const [ax, ay] = at(e.from);
+    const [bx, by] = at(e.to);
+    const sink = e.through
+      ? 0.75 * clamp((since(e) - e.ms - DROP_MS * 0.25) / (DROP_MS * 0.75))
+      : 0.45 * clamp((t - 0.55) / 0.45);
+    const size = tile * (1 - sink);
+    return [ax + (bx - ax) * t + (tile - size) / 2, ay + (by - ay) * t + (tile - size) / 2, size];
+  };
+  const stillGoing = (e) => since(e) < e.ms + (e.through ? DROP_MS : 0);
+
+  // balls on their way into a hole or through a grate - a hole stays open
+  // until they get there - and players on their way through a grate, who
+  // aren't in the game any more
+  const falling = anim ? anim.chain.filter((e) => e.ball && e.fell && stillGoing(e)) : [];
+  const dying = anim ? anim.chain.filter((e) => e.died && stillGoing(e)) : [];
+  // How open each grate is, 0 to 1, by square: starting to open as something
+  // arrives, wide open as it drops, then shutting.
   const trapdoors = new Map();
   if (anim) {
     for (const e of anim.chain) {
       if (!e.through) continue;
-      const since = now - anim.t0 - e.start;
-      const opening = Math.min(1, Math.max(0, (since - e.ms * 0.4) / (e.ms * 0.3)));
-      const shutting = Math.min(1, Math.max(0, (since - e.ms) / SHUT_MS));
+      const opening = clamp((since(e) - e.ms * 0.6) / (e.ms * 0.4 + DROP_MS * 0.4));
+      const shutting = clamp((since(e) - e.ms - DROP_MS) / SHUT_MS);
       trapdoors.set(e.to, Math.max(trapdoors.get(e.to) || 0, opening * (1 - shutting)));
     }
   }
-  const landing = new Set(falling.map((e) => e.to));
+  const landing = new Set(falling.filter((e) => !e.through).map((e) => e.to));
 
   // the finishes stay shut until every goal is filled
   const open = SOKOBALL.finishOpen(game);
@@ -271,25 +289,12 @@ function drawGame() {
     const [x, y] = track(true, i).xy;
     picture("ball", x, y, tile);
   }
-  // shrinking as it drops in, over the last part of the way
-  for (const e of falling) {
-    const t = progress(e);
-    const [ax, ay] = at(e.from);
-    const [bx, by] = at(e.to);
-    const size = tile * (1 - 0.45 * Math.max(0, (t - 0.55) / 0.45));
-    picture("ball", ax + (bx - ax) * t + (tile - size) / 2, ay + (by - ay) * t + (tile - size) / 2, size);
-  }
+  for (const e of falling) picture("ball", ...going(e));
 
   // a player stuck in a hole sits down in it, a little smaller - shrinking
   // into it over the end of the movement that took it there
   const face = playerPicture(game.facing);
-  for (const e of dying) {
-    const t = progress(e);
-    const [ax, ay] = at(e.from);
-    const [bx, by] = at(e.to);
-    const size = tile * (1 - 0.6 * Math.max(0, (t - 0.55) / 0.45));
-    picture("player", ax + (bx - ax) * t + (tile - size) / 2, ay + (by - ay) * t + (tile - size) / 2, size, face);
-  }
+  for (const e of dying) picture("player", ...going(e), face);
   for (const p of game.players) {
     const { xy: [x, y], t } = track(false, p);
     const sunk = game.holes[p] ? 0.22 * Math.max(0, (t - 0.55) / 0.45) : 0;
@@ -302,24 +307,30 @@ function drawGame() {
 // half swings down into the hole on a hinge at its outer edge. Seen from above,
 // a flap swinging down gets narrower - squashed towards its hinge - and darker
 // as it tips away from the light, until it hangs straight down out of sight.
+//
+// Only the barred part opens: the frame round it stays, drawn as part of
+// grateOpen. ART.grateInset says where the frame ends.
 function drawTrapdoor(open, x, y, tile) {
   picture("grateOpen", x, y, tile);
   const angle = (open * Math.PI) / 2;
   const across = Math.cos(angle);              // how much of its width still shows
   if (across < 0.02) return;
+  const inset = tile * (ART.grateInset || 0);
+  const span = tile - inset * 2;               // the barred part, across and down
   for (const side of [-1, 1]) {
     ctx.save();
-    // the hinge: the left edge of the square for the left half, the right
-    // edge for the right one, so each squashes towards its own side
-    ctx.translate(side < 0 ? x : x + tile, y);
+    // the hinge: the inside of the frame on the left for the left half, on
+    // the right for the right one, so each squashes towards its own side
+    const hinge = side < 0 ? x + inset : x + tile - inset;
+    ctx.translate(hinge, y);
     ctx.scale(across, 1);
-    const from = side < 0 ? 0 : -tile / 2;    // this half, measured from its hinge
+    const from = side < 0 ? 0 : -span / 2;    // this half, measured from its hinge
     ctx.beginPath();
-    ctx.rect(from, 0, tile / 2, tile);
+    ctx.rect(from, inset, span / 2, span);
     ctx.clip();
-    picture("grate", side < 0 ? 0 : -tile, 0, tile);
+    picture("grate", x - hinge, 0, tile);
     ctx.fillStyle = `rgba(0, 0, 0, ${0.65 * Math.sin(angle)})`;
-    ctx.fillRect(from, 0, tile / 2, tile);
+    ctx.fillRect(from, inset, span / 2, span);
     ctx.restore();
   }
 }
@@ -437,7 +448,7 @@ function animate(change) {
     // `through`: fell through a grate, which then has to shut again
     return { ...e, start: starts[e.wave], ms: length(e), fell: Boolean(how), through: how === "grate" || e.died };
   });
-  const end = (e) => e.start + e.ms + (e.through ? SHUT_MS : 0);
+  const end = (e) => e.start + e.ms + (e.through ? DROP_MS + SHUT_MS : 0);
   anim = { chain, t0: performance.now(), ms: Math.max(...chain.map(end)) };
   requestAnimationFrame(tick);
 }
