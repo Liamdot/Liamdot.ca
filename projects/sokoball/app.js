@@ -185,8 +185,8 @@ function drawGame() {
   const { tile, ox, oy } = layout(level.width, level.height);
   const at = (i) => [ox + (i % level.width) * tile, oy + Math.floor(i / level.width) * tile];
 
-  // How far through its own movement each piece is, eased so it settles. In a
-  // chain reaction each knock starts when the one before it lands.
+  // How far through its own movement each piece is, eased so it settles.
+  // Anything knocked rolling starts once the step that knocked it is done.
   const now = performance.now();
   const progress = (e) => {
     const t = Math.min(1, Math.max(0, (now - anim.t0 - e.start) / e.ms));
@@ -362,9 +362,9 @@ function tick() {
   }
 }
 
-// A step takes ANIM_MS. Something knocked rolling takes a little longer the
-// further it goes, so a long roll still reads as a roll - and in a chain
-// reaction, each knock waits for the one before it to land.
+// A step takes ANIM_MS. Something knocked rolling waits for the step to
+// finish, then takes a little longer the further it goes, so a long roll still
+// reads as a roll.
 function animate(change) {
   if (!change) return;
   const w = game.level.width;

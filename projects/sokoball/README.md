@@ -5,17 +5,15 @@ and never pull. Goals are holes in the floor. A ball pushed into one drops in
 and is gone, and the filled hole is floor you can walk on. Plain holes work
 the same way but don't need filling — they're only in the way. Push a ball
 into another ball and it works like a Newton's cradle — the one you pushed
-stays put and the far one rolls away until it hits a wall or drops into a
-hole. If it hits a ball or a player instead, it stops and *that* one rolls on,
-so one push can set off a chain. Filling every goal opens the finishes, and the level is
+stays put and the far one rolls away until it hits something, which it stops
+against, or drops into a hole. Filling every goal opens the finishes, and the level is
 won when every player is standing on one.
 
 A level can have any number of players, and every press moves all of them the
 same way at once. A player who walks into an open hole is stuck in it. Walking
-into a stuck player, or hitting them with a rolling ball, knocks them out the
-same way: they roll on until they hit a wall, drop into another hole, or hit
-something that rolls on in turn. A player standing on the floor gets knocked
-rolling by a ball too. If every player is stuck, it's over until you undo or
+into a stuck player knocks them out, and so does pushing a ball that's
+touching them: they roll until they hit something or drop into another hole.
+A player standing on the floor is never knocked about. If every player is stuck, it's over until you undo or
 restart.
 
 There can be spare balls, but never more goals than balls. A ball can be pushed anywhere a player
@@ -297,12 +295,14 @@ takes every player and one direction, and decides who moves, who gets stuck
 and which balls get pushed. Want ice that keeps you sliding, balls that can be
 pulled, players that only move on alternate turns? It's there.
 
-The Newton's cradle and the chain reactions are `strike`, inside `moveAll`:
-what gets knocked, how far it rolls, and what it knocks next. Anything rolling
-stops at a wall or the edge, drops into the first open hole, or stops against
-a ball or player and passes the knock on. What happens when a ball reaches a
-hole is `fall`, just under it. How long a roll takes on screen is `ROLL_MS` in
-`app.js`, and in a chain each knock starts when the one before it lands.
+The Newton's cradle is `strike`, inside `moveAll`: what gets knocked and how
+far it rolls. Anything rolling stops against a wall, the edge, a ball or a
+player, or drops into the first open hole. I tried letting whatever it hits
+roll on in turn (chain reactions) and took it out again: rolls that only stop
+at walls leave far fewer places to park a ball, and parking balls as
+backstops is where the puzzles are. What happens when a ball reaches a hole is
+`fall`, just under it. How long a roll takes on screen is `ROLL_MS` in
+`app.js`.
 
 How fast holding a direction walks is set near the top of section 8 of
 `app.js`: `HOLD_PAUSE` is how long a press waits before it starts repeating

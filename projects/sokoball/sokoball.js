@@ -240,10 +240,11 @@ const SOKOBALL = (() => {
   // on the map, are floor as far as moving goes.
   //
   // Walking into a ball with room behind it pushes it one square. Walking into
-  // a ball with something behind it - another ball, a player - strikes it
-  // instead, like a Newton's cradle: you and the ball stay put, and whatever's
-  // at the far end of the row goes rolling (see strike). So does walking into
-  // a player stuck in a hole.
+  // a ball with something behind it strikes it instead, like a Newton's
+  // cradle: you and the ball stay put, and whatever's at the far end of the
+  // row goes rolling (see strike) - another ball, or a player stuck in a hole,
+  // who gets knocked out. Walking straight into a stuck player knocks them out
+  // too. Anything rolling stops against whatever it hits.
   //
   // Holes: a ball that goes into an open hole drops in and fills it (see
   // fall). A player that goes into one is stuck there - it doesn't fill it, and
@@ -258,7 +259,7 @@ const SOKOBALL = (() => {
   //            the hole at `to`
   //   chain    every movement in the order it happened, for drawing: each is
   //            { ball, from, to, wave }, where wave 0 is the step everyone
-  //            takes and wave 1, 2, ... are the knocks of a chain reaction
+  //            takes and wave 1 is anything knocked rolling
   // Both the game and the solver go through this, so they can never disagree
   // about what a move does.
   function moveAll(level, players, ballAt, holes, dir) {
@@ -293,28 +294,24 @@ const SOKOBALL = (() => {
     };
 
     // The thing at `first` is struck from behind. The knock passes along any
-    // row of things touching it to the last one, which rolls on until the
-    // next square is a wall or the edge, or until it drops into an empty hole.
-    // If what stops it is another ball or player, that one is struck in turn,
-    // and so on down the line.
+    // row of things touching it to the last one, which rolls on until it's
+    // stopped - by a wall, the edge, or another ball or player, which it comes
+    // to rest against - or until it drops into an empty hole. Only a ball or a
+    // player stuck in a hole can be knocked rolling: a player standing on the
+    // floor is in charge of where they go, so a row that ends in one doesn't
+    // move at all.
     const strike = (first) => {
-      let at = first;
-      for (let wave = 1; ; wave++) {
-        let last = at;
-        while (thing(step(level, last, dir))) last = step(level, last, dir);
-        let to = step(level, last, dir);
-        if (solid(to)) return;               // the row is up against a wall
-        while (!holes[to]) {
-          const next = step(level, to, dir);
-          if (solid(next) || thing(next)) break;
-          to = next;
-        }
-        const dropped = holes[to];
-        shift(last, to, wave);
+      let last = first;
+      while (thing(step(level, last, dir))) last = step(level, last, dir);
+      if (!ballAt[last] && !holes[last]) return;
+      let to = step(level, last, dir);
+      if (solid(to)) return;                 // the row is up against a wall
+      while (!holes[to]) {
         const next = step(level, to, dir);
-        if (dropped || !thing(next)) return;
-        at = next;                           // it hit something: that rolls next
+        if (solid(next) || thing(next)) break;
+        to = next;
       }
+      shift(last, to, 1);
     };
 
     for (const n of order) {

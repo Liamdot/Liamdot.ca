@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sokoball - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=29">
-  <link rel="stylesheet" href="../../game.css?v=29">
-  <link rel="stylesheet" href="style.css?v=29">
+  <link rel="stylesheet" href="../../style.css?v=31">
+  <link rel="stylesheet" href="../../game.css?v=31">
+  <link rel="stylesheet" href="style.css?v=31">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -44,9 +44,9 @@
         <li>Solving a level takes you back to the map, and <strong>map</strong> (Esc) leaves a level without solving it</li>
         <li>Move with the arrow keys or WASD, and hold a direction to keep moving</li>
         <li>Goals and holes are holes in the floor. A ball pushed or rolled into one drops in and fills it, and then it's floor you can walk on</li>
-        <li>A player who walks into an open hole is stuck in it. Walking into a stuck player, or hitting them with a rolling ball, knocks them out. If every player is stuck, undo or restart</li>
+        <li>A player who walks into an open hole is stuck in it. Walking into a stuck player, or pushing a ball that's touching them, knocks them out. If every player is stuck, undo or restart</li>
         <li>Goals, with the red rim, are the ones that have to be filled. Plain holes are just in the way, and filling one costs a ball</li>
-        <li>Pushing a ball into another works like a Newton's cradle: the ball you push stays put, and the last ball in the row rolls until it hits a wall or drops into a hole. If it hits a ball or a player, that one rolls on instead, so one push can set off a chain</li>
+        <li>Pushing a ball into another works like a Newton's cradle: the ball you push stays put, and the last ball in the row rolls until it hits something or drops into a hole. If the last in the row is a player stuck in a hole, they get knocked out instead</li>
         <li>On a phone, swipe the board or use the buttons below it</li>
         <li>When a level has several players, they all move together. A player that's blocked stays where it is</li>
         <li>The finishes are lowered grey flags until every goal is filled, then they go up and turn green. The level is won when every player is standing on a green flag</li>
@@ -70,7 +70,7 @@
 
       <h3>Updates</h3>
       <ul>
-        <li><strong>v0.12</strong> &ndash; chain reactions: anything rolling that hits a ball or a player sets it rolling</li>
+        <li><strong>v0.12</strong> &ndash; pushing a ball that's touching a stuck player knocks them out</li>
         <li><strong>v0.11</strong> &ndash; players can fall into holes and be bumped out, and the player is the size of a ball</li>
         <li><strong>v0.10</strong> &ndash; Soko is called Sokoball now</li>
         <li><strong>v0.9</strong> &ndash; goals are holes that balls drop into, there are plain holes in the way, and three new levels in place of Hallway, Zigzag and Courtyard</li>
@@ -168,10 +168,10 @@
     </div>
   </main>
 
-  <script src="../../nav.js?v=29"></script>
-  <script src="sokoball.js?v=29"></script>
-  <script src="assets.js?v=29"></script>
-  <script src="levels.js?v=29"></script>
-  <script src="app.js?v=29"></script>
+  <script src="../../nav.js?v=31"></script>
+  <script src="sokoball.js?v=31"></script>
+  <script src="assets.js?v=31"></script>
+  <script src="levels.js?v=31"></script>
+  <script src="app.js?v=31"></script>
 </body>
 </html>
