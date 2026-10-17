@@ -21,7 +21,7 @@ const ART = {
 
   // Bump this whenever you replace a picture but keep its file name. Browsers
   // hang on to images for a few hours, so without it you'd see the old one.
-  version: 1,
+  version: 2,
 
   sets: {
     // The developer art. Plain on purpose, and always there to fall back on.
