@@ -314,8 +314,7 @@ at walls leave far fewer places to park a ball, and parking balls as
 backstops is where the puzzles are. What happens when a ball reaches a hole is
 `fall`, just under it. How long a roll takes on screen is `ROLL_MS` in
 `app.js`; how long a grate takes to open and drop something through is
-`DROP_MS`, and to swing shut again `SHUT_MS`. If you draw your own grate, set
-`grateInset` in `assets.js` to where its frame ends, so only the bars open.
+`DROP_MS`, and to swing shut again `SHUT_MS`.
 
 How fast holding a direction walks is set near the top of section 8 of
 `app.js`: `HOLD_PAUSE` is how long a press waits before it starts repeating

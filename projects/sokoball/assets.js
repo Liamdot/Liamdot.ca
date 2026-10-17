@@ -19,15 +19,9 @@ const ART = {
   // it. Match it to your wall when you draw one.
   edge: "#5b5049",
 
-  // How far in from the edge of the grate picture its frame ends and the bars
-  // begin, as a fraction of the picture's width. Only the part inside opens
-  // when something falls through - the frame round it stays put. The
-  // developer grate's frame is 9 pixels in on a 64-pixel picture.
-  grateInset: 9 / 64,
-
   // Bump this whenever you replace a picture but keep its file name. Browsers
   // hang on to images for a few hours, so without it you'd see the old one.
-  version: 4,
+  version: 5,
 
   sets: {
     // The developer art. Plain on purpose, and always there to fall back on.

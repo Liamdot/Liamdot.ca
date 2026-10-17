@@ -132,8 +132,8 @@ let hover = -1;          // the square under the pointer, in the editor
 
 const ANIM_MS = 110;     // one square
 const ROLL_MS = 38;      // and this much more for each extra square a ball rolls
-const DROP_MS = 260;     // a grate opening, and something dropping through it
-const SHUT_MS = 260;     // the grate swinging shut again after
+const DROP_MS = 200;     // a grate opening, and something dropping through it
+const SHUT_MS = 200;     // the grate swinging shut again after
 
 function resize() {
   const ratio = window.devicePixelRatio || 1;
@@ -307,30 +307,24 @@ function drawGame() {
 // half swings down into the hole on a hinge at its outer edge. Seen from above,
 // a flap swinging down gets narrower - squashed towards its hinge - and darker
 // as it tips away from the light, until it hangs straight down out of sight.
-//
-// Only the barred part opens: the frame round it stays, drawn as part of
-// grateOpen. ART.grateInset says where the frame ends.
 function drawTrapdoor(open, x, y, tile) {
   picture("grateOpen", x, y, tile);
   const angle = (open * Math.PI) / 2;
   const across = Math.cos(angle);              // how much of its width still shows
   if (across < 0.02) return;
-  const inset = tile * (ART.grateInset || 0);
-  const span = tile - inset * 2;               // the barred part, across and down
   for (const side of [-1, 1]) {
     ctx.save();
-    // the hinge: the inside of the frame on the left for the left half, on
-    // the right for the right one, so each squashes towards its own side
-    const hinge = side < 0 ? x + inset : x + tile - inset;
-    ctx.translate(hinge, y);
+    // the hinge: the left edge of the square for the left half, the right
+    // edge for the right one, so each squashes towards its own side
+    ctx.translate(side < 0 ? x : x + tile, y);
     ctx.scale(across, 1);
-    const from = side < 0 ? 0 : -span / 2;    // this half, measured from its hinge
+    const from = side < 0 ? 0 : -tile / 2;    // this half, measured from its hinge
     ctx.beginPath();
-    ctx.rect(from, inset, span / 2, span);
+    ctx.rect(from, 0, tile / 2, tile);
     ctx.clip();
-    picture("grate", x - hinge, 0, tile);
+    picture("grate", side < 0 ? 0 : -tile, 0, tile);
     ctx.fillStyle = `rgba(0, 0, 0, ${0.65 * Math.sin(angle)})`;
-    ctx.fillRect(from, inset, span / 2, span);
+    ctx.fillRect(from, 0, tile / 2, tile);
     ctx.restore();
   }
 }
