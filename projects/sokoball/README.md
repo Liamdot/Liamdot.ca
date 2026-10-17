@@ -15,8 +15,13 @@ A level can have any number of players, and every press moves all of them the
 same way at once. A player who walks into an open hole is stuck in it. Walking
 into a stuck player knocks them out, and so does pushing a ball that's
 touching them: they roll until they hit something or drop into another hole.
-A player standing on the floor is never knocked about. If every player is stuck, it's over until you undo or
-restart.
+A player standing on the floor is never knocked about.
+
+Grates can only be crossed at speed. Anything rolling — a cradle shot, or a
+player knocked out of a hole — passes straight over. But a player who walks
+onto one, a ball pushed onto one, or anything whose roll stops on one falls
+through and is gone. If every player is stuck or gone, it's over until you
+undo or restart.
 
 There can be spare balls, but never more goals than balls. A ball can be pushed anywhere a player
 can walk, finishes and doors included. The edge of a level is as solid as a
@@ -87,6 +92,7 @@ picture in the game as soon as it's done.
 | `goalFilled` | a goal a ball has dropped into | should look finished — it's how you know you're done |
 | `hole` | a plain hole, only in the way | same |
 | `holeFilled` | a plain hole a ball has dropped into | it's floor now, so it should look walkable |
+| `grate` | a grate: roll across it, or fall through | drawn on top of the floor |
 | `ball` | a ball | |
 | `player` | the player | every player uses it |
 | `finish` | a finish while it's shut | a goal still needs filling. **Transparent background** |
@@ -138,12 +144,13 @@ to `"dev"`.
 
 ### In the game
 
-Press **make**. You get a grid and seven tools:
+Press **make**. You get a grid and eight tools:
 
-- **wall**, **floor**, **goal**, **hole**, **ball**, **player**, **finish** —
-  click to paint, drag to paint a run. Players go down one click at a time, as
-  many as you like. Right-click paints floor, which is how you rub things out.
-- Keys **1–7** pick the tools.
+- **wall**, **floor**, **goal**, **hole**, **grate**, **ball**, **player**,
+  **finish** — click to paint, drag to paint a run. Players go down one click
+  at a time, as many as you like. Right-click paints floor, which is how you
+  rub things out.
+- Keys **1–8** pick the tools.
 - A level needs at least one finish a player can reach, and enough balls and
   players to fill every goal with one player left over to reach the finish. Spare balls are fine — they make a good red
   herring. Balls and goals are optional: with no goals, the finishes are open
@@ -236,6 +243,7 @@ also paste in levels you find elsewhere, with **paste a level**.
 | `-` or space | floor (`_` works too) |
 | `.` | goal — a hole that has to be filled |
 | `^` | a plain hole (Sokoball's own) |
+| `=` | a grate (Sokoball's own too) |
 | `$` | ball |
 | `*` | a goal that starts filled (a "box on a goal" anywhere else) |
 | `@` | a player — as many as you like |

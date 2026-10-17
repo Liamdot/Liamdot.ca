@@ -68,13 +68,13 @@ function keyOf(map) {
 // doesn't have - or that fails to load - comes from the developer set instead.
 // That's what lets you replace the art one picture at a time.
 
-const PICTURES = ["floor", "wall", "goal", "goalFilled", "hole", "holeFilled", "ball", "player", "finish", "finishOpen",
+const PICTURES = ["floor", "wall", "goal", "goalFilled", "hole", "holeFilled", "grate", "ball", "player", "finish", "finishOpen",
   "door", "doorDone", "ballLocked", "playerUp", "playerDown", "playerLeft", "playerRight"];
 
 // what to draw until a picture has loaded, or if there's no picture at all
 const STAND_INS = {
   floor: "#e9e2d3", wall: "#5b5049", goal: "#c8553d", goalFilled: "#79b36f",
-  hole: "#3a322d", holeFilled: "#b98a5a", ball: "#c98a43", player: "#2f6f9f",
+  hole: "#3a322d", holeFilled: "#b98a5a", grate: "#6b6158", ball: "#c98a43", player: "#2f6f9f",
   finish: "#bdb4a7", finishOpen: "#3fa85e",
   door: "#cfc5b4", doorDone: "#a9d39b", ballLocked: "#a39a8f",
 };
@@ -219,8 +219,11 @@ function drawGame() {
     }
     return { xy: at(cell), t: 1 };
   };
-  // balls on their way into a hole: the hole stays open until they get there
+  // balls on their way into a hole or through a grate: a hole stays open
+  // until they get there
   const falling = anim ? anim.chain.filter((e) => e.ball && e.fell && progress(e) < 1) : [];
+  // and players on their way through a grate, who aren't in the game any more
+  const dying = anim ? anim.chain.filter((e) => e.died && progress(e) < 1) : [];
   const landing = new Set(falling.map((e) => e.to));
 
   // the finishes stay shut until every goal is filled
@@ -237,6 +240,7 @@ function drawGame() {
         const gaping = game.holes[i] || landing.has(i);
         picture(level.goal[i] ? (gaping ? "goal" : "goalFilled") : (gaping ? "hole" : "holeFilled"), x, y, tile);
       }
+      if (level.grate[i]) picture("grate", x, y, tile);
       if (level.doors) {
         if (level.doors.has(i)) drawDoor(level.doors.get(i), x, y, tile);
       } else if (level.finish[i]) picture(open ? "finishOpen" : "finish", x, y, tile);
@@ -262,6 +266,13 @@ function drawGame() {
   // a player stuck in a hole sits down in it, a little smaller - shrinking
   // into it over the end of the movement that took it there
   const face = playerPicture(game.facing);
+  for (const e of dying) {
+    const t = progress(e);
+    const [ax, ay] = at(e.from);
+    const [bx, by] = at(e.to);
+    const size = tile * (1 - 0.6 * Math.max(0, (t - 0.55) / 0.45));
+    picture("player", ax + (bx - ax) * t + (tile - size) / 2, ay + (by - ay) * t + (tile - size) / 2, size, face);
+  }
   for (const p of game.players) {
     const { xy: [x, y], t } = track(false, p);
     const sunk = game.holes[p] ? 0.22 * Math.max(0, (t - 0.55) / 0.45) : 0;
@@ -323,6 +334,7 @@ function drawDraft() {
     picture("floor", x, y, tile);
     if (ch === SOKOBALL.GOAL) picture("goal", x, y, tile);
     if (ch === SOKOBALL.HOLE) picture("hole", x, y, tile);
+    if (ch === SOKOBALL.GRATE) picture("grate", x, y, tile);
     if (ch === SOKOBALL.BALL_ON_GOAL || ch === SOKOBALL.PLAYER_ON_GOAL) picture("goalFilled", x, y, tile);
     if (ch === SOKOBALL.FINISH) picture("finish", x, y, tile);
     if (ch === SOKOBALL.BALL) picture("ball", x, y, tile);
@@ -942,7 +954,8 @@ function showSolved() {
   card.hidden = false;
 }
 
-// Every player is in a hole: just the two ways out, quietly, at the bottom.
+// Every player is stuck in a hole or gone: just the two ways out, quietly, at
+// the bottom.
 function showStuck() {
   $("stuck").hidden = false;
 }
@@ -1142,7 +1155,7 @@ window.addEventListener("keydown", (e) => {
       restart();
     }
   } else {
-    const tools = [SOKOBALL.WALL, SOKOBALL.FLOOR, SOKOBALL.GOAL, SOKOBALL.HOLE, SOKOBALL.BALL, SOKOBALL.PLAYER, SOKOBALL.FINISH];
+    const tools = [SOKOBALL.WALL, SOKOBALL.FLOOR, SOKOBALL.GOAL, SOKOBALL.HOLE, SOKOBALL.GRATE, SOKOBALL.BALL, SOKOBALL.PLAYER, SOKOBALL.FINISH];
     const n = Number(e.key);
     if (n >= 1 && n <= tools.length) chooseTool(tools[n - 1]);
   }

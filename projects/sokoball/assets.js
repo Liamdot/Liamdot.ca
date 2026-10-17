@@ -32,6 +32,7 @@ const ART = {
       goalFilled: "assets/dev/goal-filled.svg",
       hole: "assets/dev/hole.svg",
       holeFilled: "assets/dev/hole-filled.svg",
+      grate: "assets/dev/grate.svg",
       ball: "assets/dev/ball.svg",
       player: "assets/dev/player.svg",
       finish: "assets/dev/finish.svg",
@@ -50,6 +51,7 @@ const ART = {
       // goalFilled: "assets/mine/goal-filled.png",   (one a ball has dropped into)
       // hole: "assets/mine/hole.png",                (a plain hole, only in the way)
       // holeFilled: "assets/mine/hole-filled.png",   (one a ball has dropped into)
+      // grate: "assets/mine/grate.png",              (roll across it or fall through)
       // ball: "assets/mine/ball.png",
       // player: "assets/mine/player.png",
       // finish: "assets/mine/finish.png",            (shut: a goal still needs a ball)

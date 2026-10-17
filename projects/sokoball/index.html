@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sokoball - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=32">
-  <link rel="stylesheet" href="../../game.css?v=32">
-  <link rel="stylesheet" href="style.css?v=32">
+  <link rel="stylesheet" href="../../style.css?v=33">
+  <link rel="stylesheet" href="../../game.css?v=33">
+  <link rel="stylesheet" href="style.css?v=33">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -45,6 +45,7 @@
         <li>Move with the arrow keys or WASD, and hold a direction to keep moving</li>
         <li>Goals and holes are holes in the floor. A ball pushed or rolled into one drops in and fills it, and then it's floor you can walk on</li>
         <li>A player who walks into an open hole is stuck in it. Walking into a stuck player, or pushing a ball that's touching them, knocks them out. If every player is stuck, undo or restart</li>
+        <li>Grates can only be crossed rolling. Walk onto one, push a ball onto one, or end a roll on one, and it falls through. If every player is stuck or gone, undo or restart</li>
         <li>Goals, with the red rim, are the ones that have to be filled. Plain holes are just in the way, and filling one costs a ball</li>
         <li>Pushing a ball into another works like a Newton's cradle: the ball you push stays put, and the last ball in the row rolls until it hits something or drops into a hole. If the last in the row is a player stuck in a hole, they get knocked out instead</li>
         <li>On a phone, swipe the board or use the buttons below it</li>
@@ -71,6 +72,7 @@
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v0.14</strong> &ndash; grates: roll across them or fall through</li>
         <li><strong>v0.13</strong> &ndash; only one player has to reach a finish, and a player stuck in a goal fills it</li>
         <li><strong>v0.12</strong> &ndash; pushing a ball that's touching a stuck player knocks them out</li>
         <li><strong>v0.11</strong> &ndash; players can fall into holes and be bumped out, and the player is the size of a ball</li>
@@ -130,9 +132,10 @@
           <button class="tool" data-tool=" " title="Floor (2)"><span class="swatch-floor"></span>floor</button>
           <button class="tool" data-tool="." title="Goal: a hole that has to be filled (3)"><span class="swatch-goal"></span>goal</button>
           <button class="tool" data-tool="^" title="Hole: only in the way (4)"><span class="swatch-hole"></span>hole</button>
-          <button class="tool" data-tool="$" title="Ball (5)"><span class="swatch-ball"></span>ball</button>
-          <button class="tool" data-tool="@" title="Player (6)"><span class="swatch-player"></span>player</button>
-          <button class="tool" data-tool="!" title="Finish (7)"><span class="swatch-finish"></span>finish</button>
+          <button class="tool" data-tool="=" title="Grate: roll across it or fall through (5)"><span class="swatch-grate"></span>grate</button>
+          <button class="tool" data-tool="$" title="Ball (6)"><span class="swatch-ball"></span>ball</button>
+          <button class="tool" data-tool="@" title="Player (7)"><span class="swatch-player"></span>player</button>
+          <button class="tool" data-tool="!" title="Finish (8)"><span class="swatch-finish"></span>finish</button>
         </div>
 
         <label class="field">name
@@ -170,10 +173,10 @@
     </div>
   </main>
 
-  <script src="../../nav.js?v=32"></script>
-  <script src="sokoball.js?v=32"></script>
-  <script src="assets.js?v=32"></script>
-  <script src="levels.js?v=32"></script>
-  <script src="app.js?v=32"></script>
+  <script src="../../nav.js?v=33"></script>
+  <script src="sokoball.js?v=33"></script>
+  <script src="assets.js?v=33"></script>
+  <script src="levels.js?v=33"></script>
+  <script src="app.js?v=33"></script>
 </body>
 </html>

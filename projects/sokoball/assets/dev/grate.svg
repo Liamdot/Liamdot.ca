@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- developer art: a grate. Anything rolling gets across; anything that
+       stops on it falls through. Drawn on top of the floor. -->
+  <rect x="4" y="4" width="56" height="56" rx="3" fill="#1a1613"/>
+  <g fill="#9a8f84">
+    <rect x="4" y="4" width="56" height="5" rx="2"/>
+    <rect x="4" y="55" width="56" height="5" rx="2"/>
+    <rect x="4" y="4" width="5" height="56" rx="2"/>
+    <rect x="55" y="4" width="5" height="56" rx="2"/>
+    <rect x="17" y="6" width="4" height="52"/>
+    <rect x="30" y="6" width="4" height="52"/>
+    <rect x="43" y="6" width="4" height="52"/>
+  </g>
+</svg>

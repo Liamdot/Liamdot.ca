@@ -14,12 +14,18 @@
 //
 //   #  wall          @  player          $  ball          .  goal
 //   -  floor         +  player on goal  *  ball on goal   !  finish
-//   ^  hole
+//   ^  hole          =  grate
 //
 // Goals and holes are both holes in the floor. A ball pushed or rolled into
-// one drops in and is gone, and the hole becomes floor anyone can walk on.
-// Until then a player can't step into it. Goals are the holes that have to be
-// filled; plain holes (^, Sokoball's own) are only in the way. A ball or a player
+// one drops in and is gone, and the hole becomes floor anyone can walk on. A
+// player who walks into one is stuck in it until knocked out. Goals are the
+// holes that have to be filled; plain holes (^, Sokoball's own) are only in
+// the way.
+//
+// A grate (=, also Sokoball's own) can only be crossed at speed. Anything
+// rolling passes straight over it, but a player who walks onto one, a ball
+// pushed onto one, or anything whose roll ends on one falls through and is
+// gone for good. A ball or a player
 // "on a goal" (* and +) means that goal starts filled - which keeps levels from
 // other Sokoban programs working, since each of their boxes fills a goal.
 //
@@ -52,8 +58,9 @@ const SOKOBALL = (() => {
   const PLAYER_ON_GOAL = "+";
   const FINISH = "!";
   const HOLE = "^";
+  const GRATE = "=";
 
-  const KNOWN = new Set([WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE]);
+  const KNOWN = new Set([WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE, GRATE]);
 
   // Turns the text of a level into rows of single characters, all the same
   // length, with floor as a space. Blank lines either side go, and so does
@@ -92,6 +99,7 @@ const SOKOBALL = (() => {
   //   hole[i]           - the holes open at the start, goals and plain holes
   //                       alike. Which are still open is part of the game,
   //                       not the level: see start()
+  //   grate[i]          - grates, which only a roll gets across
   //   inside[i]         - floor some player can reach; anything else is the
   //                       dark outside, and isn't drawn as floor
   //   balls, players    - where each starts
@@ -108,6 +116,7 @@ const SOKOBALL = (() => {
     const wall = new Uint8Array(size);
     const goal = new Uint8Array(size);
     const hole = new Uint8Array(size);
+    const grate = new Uint8Array(size);
     const finish = new Uint8Array(size);
     const balls = [];
     const players = [];
@@ -121,12 +130,13 @@ const SOKOBALL = (() => {
         if (ch === FINISH) finish[i] = 1;
         if (ch === GOAL || ch === BALL_ON_GOAL || ch === PLAYER_ON_GOAL) goal[i] = 1;
         if (ch === GOAL || ch === HOLE) hole[i] = 1;
+        if (ch === GRATE) grate[i] = 1;
         if (ch === BALL) balls.push(i);
         if (ch === PLAYER || ch === PLAYER_ON_GOAL) players.push(i);
       }
     }
 
-    const level = { width, height, wall, goal, hole, finish, balls, players };
+    const level = { width, height, wall, goal, hole, grate, finish, balls, players };
     level.inside = reach(level, players);
     return level;
   }
@@ -144,6 +154,7 @@ const SOKOBALL = (() => {
         if (level.wall[i]) row += WALL;
         else if (onPlayer[i]) row += level.goal[i] ? PLAYER_ON_GOAL : PLAYER;
         else if (holes[i]) row += level.goal[i] ? GOAL : HOLE;
+        else if (level.grate[i]) row += GRATE;
         else if (onBall[i]) row += BALL;
         else if (level.finish[i]) row += FINISH;
         else row += level.goal[i] ? BALL_ON_GOAL : FLOOR;
@@ -256,10 +267,12 @@ const SOKOBALL = (() => {
   // returns null if nothing did:
   //   players  [from, to] for each player that moved
   //   balls    [from, to] for each ball, with a third `true` if it fell into
-  //            the hole at `to`
+  //            the hole at `to`, or "grate" if it fell through a grate there
   //   chain    every movement in the order it happened, for drawing: each is
-  //            { ball, from, to, wave }, where wave 0 is the step everyone
-  //            takes and wave 1 is anything knocked rolling
+  //            { ball, from, to, wave, died }, where wave 0 is the step
+  //            everyone takes and wave 1 is anything knocked rolling, and
+  //            `died` marks a player who fell through a grate
+  // A player who falls through a grate is taken out of `players` altogether.
   // Both the game and the solver go through this, so they can never disagree
   // about what a move does.
   function moveAll(level, players, ballAt, holes, dir) {
@@ -275,28 +288,34 @@ const SOKOBALL = (() => {
     const solid = (i) => i < 0 || level.wall[i];
     const thing = (i) => i >= 0 && (ballAt[i] || playerAt.has(i));
 
-    // moves whatever is at `from` - a ball drops into an open hole at `to`;
-    // a player in one is stuck there
+    // Moves whatever is at `from` to `to`, and that's where it stops. A ball
+    // drops into an open hole there, or through a grate; a player in a hole is
+    // stuck in it, and one on a grate falls through.
     const shift = (from, to, wave) => {
       if (ballAt[from]) {
-        const ball = fall(ballAt, holes, from, to);
+        const ball = fall(level, ballAt, holes, from, to);
         pushed.push(ball);
         chain.push({ ball: true, from, to, wave });
       } else {
         const n = playerAt.get(from);
+        const died = level.grate[to] === 1;
         playerAt.delete(from);
-        playerAt.set(to, n);
-        players[n] = to;
+        if (died) players[n] = -1;           // taken out once everyone's moved
+        else {
+          playerAt.set(to, n);
+          players[n] = to;
+        }
         if (wave) knocked.add(n);
         moved.push([from, to]);
-        chain.push({ ball: false, from, to, wave });
+        chain.push({ ball: false, from, to, wave, died });
       }
     };
 
     // The thing at `first` is struck from behind. The knock passes along any
     // row of things touching it to the last one, which rolls on until it's
     // stopped - by a wall, the edge, or another ball or player, which it comes
-    // to rest against - or until it drops into an empty hole. Only a ball or a
+    // to rest against - or until it drops into an empty hole. It rolls over
+    // grates, but if it comes to rest on one it falls through. Only a ball or a
     // player stuck in a hole can be knocked rolling: a player standing on the
     // floor is in charge of where they go, so a row that ends in one doesn't
     // move at all.
@@ -315,7 +334,7 @@ const SOKOBALL = (() => {
     };
 
     for (const n of order) {
-      if (knocked.has(n)) continue;
+      if (knocked.has(n) || players[n] < 0) continue;
       const from = players[n];
       if (holes[from]) continue;               // stuck in a hole
       const to = step(level, from, dir);
@@ -334,23 +353,22 @@ const SOKOBALL = (() => {
         }
         shift(to, beyond, 0);                  // an ordinary push: one square
       }
-      playerAt.delete(from);
-      playerAt.set(to, n);
-      players[n] = to;
-      moved.push([from, to]);
-      chain.push({ ball: false, from, to, wave: 0 });
+      shift(from, to, 0);
     }
+    for (let n = players.length - 1; n >= 0; n--) if (players[n] < 0) players.splice(n, 1);
     return chain.length ? { players: moved, balls: pushed, chain } : null;
   }
 
   // Moves a ball. If it lands on an open hole it drops in: the ball is gone
-  // and the hole is filled, floor from now on.
-  function fall(ballAt, holes, from, to) {
+  // and the hole is filled, floor from now on. If it lands on a grate it falls
+  // through, and it's just gone.
+  function fall(level, ballAt, holes, from, to) {
     ballAt[from] = 0;
     if (holes[to]) {
       holes[to] = 0;
       return [from, to, true];
     }
+    if (level.grate[to]) return [from, to, "grate"];
     ballAt[to] = 1;
     return [from, to];
   }
@@ -374,13 +392,13 @@ const SOKOBALL = (() => {
   }
 
   // Puts the last move back - a ball that fell in climbs back out, and its
-  // hole opens again.
+  // hole opens again; anything that fell through a grate comes back up.
   function undo(game) {
     const last = game.history.pop();
     if (!last) return false;
-    for (const [from, to, fell] of last.balls.slice().reverse()) {
-      if (fell) game.holes[to] = 1;
-      else game.ballAt[to] = 0;
+    for (const [from, to, gone] of last.balls.slice().reverse()) {
+      if (gone === true) game.holes[to] = 1;   // climbs back out of its hole
+      if (!gone) game.ballAt[to] = 0;
       game.ballAt[from] = 1;
     }
     game.players = last.players;
@@ -417,8 +435,8 @@ const SOKOBALL = (() => {
     return won(game.level, game.players, openHoles(game));
   }
 
-  // Every player is stuck in a hole, so nobody can move again. Only undo or
-  // restart can help.
+  // Every player is stuck in a hole or has fallen through a grate, so nobody
+  // can move again. Only undo or restart can help.
   function stuck(game) {
     return game.players.every((p) => game.holes[p]);
   }
@@ -496,7 +514,7 @@ const SOKOBALL = (() => {
     for (const i of world.doors.keys()) finish[i] = 1;
     return {
       width: world.width, height: world.height, wall, locked, finish, balls,
-      goal: new Uint8Array(size), hole: new Uint8Array(size), players: [world.start],
+      goal: new Uint8Array(size), hole: new Uint8Array(size), grate: new Uint8Array(size), players: [world.start],
       inside: world.inside, doors: world.doors,
     };
   }
@@ -583,11 +601,11 @@ const SOKOBALL = (() => {
           let holes = state.holes;
           if (change.balls.length) {
             balls = state.balls.slice();
-            for (const [from, to, fell] of change.balls) {
+            for (const [from, to, gone] of change.balls) {
               const at = balls.indexOf(from);
-              if (fell) {
+              if (gone) {
                 balls.splice(at, 1);
-                holes = holes.filter((h) => h !== to);
+                if (gone === true) holes = holes.filter((h) => h !== to);
               } else balls[at] = to;
             }
             balls.sort((a, b) => a - b);
@@ -607,7 +625,7 @@ const SOKOBALL = (() => {
   }
 
   return {
-    WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE,
+    WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE, GRATE,
     rowsOf, writeRows, parse, toText, check, start, move, undo, solved, stuck, finishOpen, encode, decode, solve,
     parseWorld, worldLevel,
   };
