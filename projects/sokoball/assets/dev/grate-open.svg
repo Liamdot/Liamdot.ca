@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
   <!-- developer art: under a grate, seen while it's open - just the drop.
        The grate's two halves swing down into this. -->
-  <rect x="4" y="4" width="56" height="56" rx="3" fill="#0d0b0a"/>
-  <rect x="9" y="9" width="46" height="46" rx="2" fill="#050404"/>
+  <rect x="4" y="4" width="56" height="56" rx="3" fill="#050404"/>
 </svg>

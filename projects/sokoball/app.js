@@ -307,11 +307,32 @@ function drawGame() {
 // half swings down into the hole on a hinge at its outer edge. Seen from above,
 // a flap swinging down gets narrower - squashed towards its hinge - and darker
 // as it tips away from the light, until it hangs straight down out of sight.
+//
+// The darkening is done on a copy of the grate picture first, so it only
+// lands on the grate itself - painting it straight onto the board would shade
+// the floor showing round the edges of the picture too, as a grey box.
+const flap = document.createElement("canvas");
+
 function drawTrapdoor(open, x, y, tile) {
   picture("grateOpen", x, y, tile);
   const angle = (open * Math.PI) / 2;
   const across = Math.cos(angle);              // how much of its width still shows
   if (across < 0.02) return;
+
+  const size = Math.max(1, Math.round(tile * (window.devicePixelRatio || 1)));
+  flap.width = size;
+  flap.height = size;
+  const f = flap.getContext("2d");
+  f.imageSmoothingEnabled = !ART.pixelated;
+  if (ready(art.grate)) f.drawImage(art.grate, 0, 0, size, size);
+  else {
+    f.fillStyle = STAND_INS.grate;
+    f.fillRect(0, 0, size, size);
+  }
+  f.globalCompositeOperation = "source-atop";  // only where the grate is
+  f.fillStyle = `rgba(0, 0, 0, ${0.65 * Math.sin(angle)})`;
+  f.fillRect(0, 0, size, size);
+
   for (const side of [-1, 1]) {
     ctx.save();
     // the hinge: the left edge of the square for the left half, the right
@@ -322,9 +343,7 @@ function drawTrapdoor(open, x, y, tile) {
     ctx.beginPath();
     ctx.rect(from, 0, tile / 2, tile);
     ctx.clip();
-    picture("grate", side < 0 ? 0 : -tile, 0, tile);
-    ctx.fillStyle = `rgba(0, 0, 0, ${0.65 * Math.sin(angle)})`;
-    ctx.fillRect(from, 0, tile / 2, tile);
+    ctx.drawImage(flap, side < 0 ? 0 : -tile, 0, tile, tile);
     ctx.restore();
   }
 }
