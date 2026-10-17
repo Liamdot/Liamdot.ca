@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <!-- developer art: a box. The cross runs corner to corner, clipped to the box
-       so it meets the rounded corners exactly, with the frame drawn over it. -->
-  <defs><clipPath id="crate"><rect x="6" y="6" width="52" height="52" rx="4"/></clipPath></defs>
-  <rect x="6" y="6" width="52" height="52" rx="4" fill="#c98a43"/>
-  <path d="M6 6 L58 58 M58 6 L6 58" stroke="#9b6530" stroke-width="4" clip-path="url(#crate)"/>
-  <rect x="6" y="6" width="52" height="52" rx="4" fill="none" stroke="#9b6530" stroke-width="5"/>
-</svg>

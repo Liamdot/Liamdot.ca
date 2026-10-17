@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <!-- developer art: a box sitting on a goal - it should look finished -->
-  <defs><clipPath id="crate"><rect x="6" y="6" width="52" height="52" rx="4"/></clipPath></defs>
-  <rect x="6" y="6" width="52" height="52" rx="4" fill="#79b36f"/>
-  <path d="M6 6 L58 58 M58 6 L6 58" stroke="#4b7c44" stroke-width="4" clip-path="url(#crate)"/>
-  <rect x="6" y="6" width="52" height="52" rx="4" fill="none" stroke="#4b7c44" stroke-width="5"/>
-</svg>

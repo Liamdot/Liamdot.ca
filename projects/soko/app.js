@@ -24,7 +24,7 @@ const SAVE_KEY = "soko";
 
 const save = {
   solved: {},   // level key -> true, for every level you've solved
-  world: null,  // the map as you left it: { key, player, boxes, freed }
+  world: null,  // the map as you left it: { key, player, balls, freed }
   mine: [],     // levels you've kept: { id, name, map }
   draft: null,  // what's in the editor: { id, name, map }
 };
@@ -68,15 +68,15 @@ function keyOf(map) {
 // doesn't have - or that fails to load - comes from the developer set instead.
 // That's what lets you replace the art one picture at a time.
 
-const PICTURES = ["floor", "wall", "goal", "box", "boxOnGoal", "player", "finish", "finishOpen",
-  "door", "doorDone", "boxLocked", "playerUp", "playerDown", "playerLeft", "playerRight"];
+const PICTURES = ["floor", "wall", "goal", "ball", "ballOnGoal", "player", "finish", "finishOpen",
+  "door", "doorDone", "ballLocked", "playerUp", "playerDown", "playerLeft", "playerRight"];
 
 // what to draw until a picture has loaded, or if there's no picture at all
 const STAND_INS = {
   floor: "#e9e2d3", wall: "#5b5049", goal: "#c8553d",
-  box: "#c98a43", boxOnGoal: "#79b36f", player: "#2f6f9f",
+  ball: "#c98a43", ballOnGoal: "#79b36f", player: "#2f6f9f",
   finish: "#bdb4a7", finishOpen: "#3fa85e",
-  door: "#cfc5b4", doorDone: "#a9d39b", boxLocked: "#a39a8f",
+  door: "#cfc5b4", doorDone: "#a9d39b", ballLocked: "#a39a8f",
 };
 
 const art = {};
@@ -127,10 +127,11 @@ const ctx = canvas.getContext("2d");
 let mode = "play";       // "play" or "make"
 let current = null;      // what's being played: { kind, name, map, ... }, kind "world" for the map
 let game = null;         // its state, from SOKO.start
-let anim = null;         // the move being drawn: { players, boxes, t0 }, each a list of [from, to]
+let anim = null;         // the move being drawn: { players, balls, t0 }, each a list of [from, to]
 let hover = -1;          // the square under the pointer, in the editor
 
-const ANIM_MS = 110;
+const ANIM_MS = 110;     // one square
+const ROLL_MS = 38;      // and this much more for each extra square a ball rolls
 
 function resize() {
   const ratio = window.devicePixelRatio || 1;
@@ -160,12 +161,12 @@ function picture(name, x, y, size, img = art[name]) {
     ctx.beginPath();
     ctx.arc(x + size / 2, y + size / 2, size * 0.18, 0, Math.PI * 2);
     ctx.fill();
-  } else if (name === "player") {
+  } else if (name === "player" || name.startsWith("ball")) {
     ctx.beginPath();
-    ctx.arc(x + size / 2, y + size / 2, size * 0.34, 0, Math.PI * 2);
+    ctx.arc(x + size / 2, y + size / 2, size * (name === "player" ? 0.34 : 0.38), 0, Math.PI * 2);
     ctx.fill();
   } else {
-    const inset = name === "box" || name === "boxOnGoal" || name === "boxLocked" || name.startsWith("door") ? 0.1 : 0;
+    const inset = name.startsWith("door") ? 0.1 : 0;
     ctx.fillRect(x + size * inset, y + size * inset, size * (1 - inset * 2), size * (1 - inset * 2));
   }
 }
@@ -180,14 +181,14 @@ function draw() {
 }
 
 function drawGame() {
-  const { level, boxAt } = game;
+  const { level, ballAt } = game;
   const { tile, ox, oy } = layout(level.width, level.height);
   const at = (i) => [ox + (i % level.width) * tile, oy + Math.floor(i / level.width) * tile];
 
   // how far through the current move we are, eased so it settles
   let t = 1;
   if (anim) {
-    t = Math.min(1, (performance.now() - anim.t0) / ANIM_MS);
+    t = Math.min(1, (performance.now() - anim.t0) / anim.ms);
     t = 1 - (1 - t) * (1 - t);
   }
   const between = (from, to) => {
@@ -197,14 +198,14 @@ function drawGame() {
   };
   // where each thing that moved came from, looked up by where it is now
   const cameFrom = (list) => new Map(anim && t < 1 ? list.map(([from, to]) => [to, from]) : []);
-  const boxFrom = cameFrom(anim ? anim.boxes : []);
+  const ballFrom = cameFrom(anim ? anim.balls : []);
   const playerFrom = cameFrom(anim ? anim.players : []);
 
-  // the finishes stay shut until every goal has a box
+  // the finishes stay shut until every goal has a ball
   const open = SOKO.finishOpen(game);
-  // on the map, locked boxes stand in for walls, and doors for finishes
+  // on the map, locked balls stand in for walls, and doors for finishes
   const locked = (i) => level.locked && level.locked[i];
-  for (let i = 0; i < boxAt.length; i++) {
+  for (let i = 0; i < ballAt.length; i++) {
     const [x, y] = at(i);
     if (level.wall[i] && !locked(i)) picture("wall", x, y, tile);
     else if (level.inside[i]) {
@@ -213,17 +214,17 @@ function drawGame() {
       if (level.doors) {
         if (level.doors.has(i)) drawDoor(level.doors.get(i), x, y, tile);
       } else if (level.finish[i]) picture(open ? "finishOpen" : "finish", x, y, tile);
-      if (locked(i)) picture("boxLocked", x, y, tile);
+      if (locked(i)) picture("ballLocked", x, y, tile);
     }
   }
   drawEdge(level.width, level.height, tile, ox, oy, (i) => level.inside[i] && (!level.wall[i] || locked(i)));
 
-  for (let i = 0; i < boxAt.length; i++) {
-    if (!boxAt[i]) continue;
-    const moving = boxFrom.has(i);
-    const [x, y] = moving ? between(boxFrom.get(i), i) : at(i);
-    // a box only counts as home once it has finished arriving
-    picture(level.goal[i] && !moving ? "boxOnGoal" : "box", x, y, tile);
+  for (let i = 0; i < ballAt.length; i++) {
+    if (!ballAt[i]) continue;
+    const moving = ballFrom.has(i);
+    const [x, y] = moving ? between(ballFrom.get(i), i) : at(i);
+    // a ball only counts as home once it has finished arriving
+    picture(level.goal[i] && !moving ? "ballOnGoal" : "ball", x, y, tile);
   }
 
   const face = playerPicture(game.facing);
@@ -284,10 +285,10 @@ function drawDraft() {
       continue;
     }
     picture("floor", x, y, tile);
-    if (ch === SOKO.GOAL || ch === SOKO.BOX_ON_GOAL || ch === SOKO.PLAYER_ON_GOAL) picture("goal", x, y, tile);
+    if (ch === SOKO.GOAL || ch === SOKO.BALL_ON_GOAL || ch === SOKO.PLAYER_ON_GOAL) picture("goal", x, y, tile);
     if (ch === SOKO.FINISH) picture("finish", x, y, tile);
-    if (ch === SOKO.BOX) picture("box", x, y, tile);
-    if (ch === SOKO.BOX_ON_GOAL) picture("boxOnGoal", x, y, tile);
+    if (ch === SOKO.BALL) picture("ball", x, y, tile);
+    if (ch === SOKO.BALL_ON_GOAL) picture("ballOnGoal", x, y, tile);
     if (ch === SOKO.PLAYER || ch === SOKO.PLAYER_ON_GOAL) picture("player", x, y, tile);
   }
 
@@ -317,16 +318,20 @@ function drawDraft() {
 // keeps drawing until the move has finished arriving
 function tick() {
   draw();
-  if (anim && performance.now() - anim.t0 < ANIM_MS) requestAnimationFrame(tick);
+  if (anim && performance.now() - anim.t0 < anim.ms) requestAnimationFrame(tick);
   else {
     anim = null;
     draw();
   }
 }
 
+// A step takes ANIM_MS. A ball sent rolling by the cradle takes a little
+// longer the further it goes, so a long roll still reads as a roll.
 function animate(change) {
   if (!change) return;
-  anim = { ...change, t0: performance.now() };
+  const w = game.level.width;
+  const far = Math.max(1, ...change.balls.map(([from, to]) => Math.abs((to % w) - (from % w)) + Math.abs(Math.floor(to / w) - Math.floor(from / w))));
+  anim = { ...change, t0: performance.now(), ms: ANIM_MS + ROLL_MS * (far - 1) };
   requestAnimationFrame(tick);
 }
 
@@ -337,7 +342,7 @@ function animate(change) {
 // ---- the map ----
 //
 // The campaign is a map you walk round (WORLD, in levels.js). Each level is a
-// door on it, and solving a level frees the boxes that were holding the way
+// door on it, and solving a level frees the balls that were holding the way
 // on shut. Where you are and where you've pushed things is remembered, so
 // coming out of a level puts you back on its door with the map as you left it.
 
@@ -365,25 +370,25 @@ function goToMap(at = null) {
   const level = SOKO.worldLevel(world, solved);
   const key = keyOf(WORLD);
   if (!save.world || save.world.key !== key) {
-    save.world = { key, player: world.start, boxes: null, freed: [] };
+    save.world = { key, player: world.start, balls: null, freed: [] };
   }
   const saved = save.world;
 
   clearTimeout(finishTimer);
   current = { kind: "world", name: "Map" };
   game = SOKO.start(level);
-  // the boxes where you left them, if they still make sense on this map -
+  // the balls where you left them, if they still make sense on this map -
   // plus any freed since, which start where they were locked
-  if (saved.boxes && saved.boxes.every((b) => level.inside[b] && !level.wall[b])) {
-    game.boxAt.fill(0);
-    for (const b of saved.boxes) game.boxAt[b] = 1;
+  if (saved.balls && saved.balls.every((b) => level.inside[b] && !level.wall[b])) {
+    game.ballAt.fill(0);
+    for (const b of saved.balls) game.ballAt[b] = 1;
     for (const n of solved) {
-      if (!saved.freed.includes(n)) for (const i of world.locks.get(n) || []) game.boxAt[i] = 1;
+      if (!saved.freed.includes(n)) for (const i of world.locks.get(n) || []) game.ballAt[i] = 1;
     }
   }
   saved.freed = [...solved];
   const player = at !== null ? at : saved.player;
-  game.players = [level.inside[player] && !level.wall[player] && !game.boxAt[player] ? player : world.start];
+  game.players = [level.inside[player] && !level.wall[player] && !game.ballAt[player] ? player : world.start];
   rememberMap();
 
   anim = null;
@@ -396,8 +401,8 @@ function goToMap(at = null) {
 function rememberMap() {
   if (!current || current.kind !== "world") return;
   save.world.player = game.players[0];
-  save.world.boxes = [];
-  for (let i = 0; i < game.boxAt.length; i++) if (game.boxAt[i]) save.world.boxes.push(i);
+  save.world.balls = [];
+  for (let i = 0; i < game.ballAt.length; i++) if (game.ballAt[i]) save.world.balls.push(i);
   store();
 }
 
@@ -472,11 +477,11 @@ function act(dir) {
   }
   showBar();
   if (SOKO.solved(game)) {
-    // Finished the moment the last box lands, not a beat later - a held key
+    // Finished the moment the last ball lands, not a beat later - a held key
     // would otherwise get one more step in between.
     game.done = true;
     letGoOfEverything();
-    finishTimer = setTimeout(finished, ANIM_MS + 40);
+    finishTimer = setTimeout(finished, anim.ms + 40);
   }
 }
 
@@ -504,13 +509,13 @@ function takeBack() {
   draw();
 }
 
-// On the map, restart puts every box back where it started and you back at
-// the beginning - the way out if a box ends up somewhere it blocks you.
+// On the map, restart puts every ball back where it started and you back at
+// the beginning - the way out if a ball ends up somewhere it blocks you.
 function restart() {
   if (!current || !game) return;
   if (current.kind === "world") {
     rewound();
-    save.world.boxes = null;
+    save.world.balls = null;
     goToMap(world.start);
     return;
   }
@@ -601,20 +606,20 @@ function storeDraft() {
 }
 
 // What painting one square with the current tool turns it into. A goal can
-// have a box or a player on it; anything else replaces what was there,
+// have a ball or a player on it; anything else replaces what was there,
 // including a finish - nothing starts on one. Each player painted is another
 // player, and each one needs a finish of its own.
 function paint(i, with_) {
   const ch = draft.cells[i];
-  const goalHere = ch === SOKO.GOAL || ch === SOKO.BOX_ON_GOAL || ch === SOKO.PLAYER_ON_GOAL;
+  const goalHere = ch === SOKO.GOAL || ch === SOKO.BALL_ON_GOAL || ch === SOKO.PLAYER_ON_GOAL;
   let next = ch;
 
   if (with_ === SOKO.WALL || with_ === SOKO.FLOOR || with_ === SOKO.FINISH) next = with_;
   else if (with_ === SOKO.GOAL) {
-    next = ch === SOKO.BOX || ch === SOKO.BOX_ON_GOAL ? SOKO.BOX_ON_GOAL
+    next = ch === SOKO.BALL || ch === SOKO.BALL_ON_GOAL ? SOKO.BALL_ON_GOAL
       : ch === SOKO.PLAYER || ch === SOKO.PLAYER_ON_GOAL ? SOKO.PLAYER_ON_GOAL : SOKO.GOAL;
-  } else if (with_ === SOKO.BOX) {
-    next = goalHere ? SOKO.BOX_ON_GOAL : SOKO.BOX;
+  } else if (with_ === SOKO.BALL) {
+    next = goalHere ? SOKO.BALL_ON_GOAL : SOKO.BALL;
   } else if (with_ === SOKO.PLAYER) {
     next = goalHere ? SOKO.PLAYER_ON_GOAL : SOKO.PLAYER;
   }
@@ -660,16 +665,16 @@ function draftLevel() {
 
 function showProblems() {
   const { problems } = draftLevel();
-  const box = $("problems");
+  const note = $("problems");
   if (problems.length) {
-    box.className = "problems bad";
-    box.innerHTML = `<ul>${problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`;
+    note.className = "problems bad";
+    note.innerHTML = `<ul>${problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`;
   } else if (verdict) {
-    box.className = `problems ${verdict.good ? "good" : "bad"}`;
-    box.textContent = verdict.text;
+    note.className = `problems ${verdict.good ? "good" : "bad"}`;
+    note.textContent = verdict.text;
   } else {
-    box.className = "problems";
-    box.textContent = "The level is playable. Press check to see whether it can be solved.";
+    note.className = "problems";
+    note.textContent = "The level is playable. Press check to see whether it can be solved.";
   }
 }
 
@@ -691,9 +696,9 @@ function checkDraft() {
     showProblems();
     return;
   }
-  const box = $("problems");
-  box.className = "problems";
-  box.textContent = "Checking whether the puzzle can be solved...";
+  const note = $("problems");
+  note.className = "problems";
+  note.textContent = "Checking whether the puzzle can be solved...";
 
   const report = (result) => {
     stopChecking();
@@ -824,14 +829,14 @@ async function copyText(text) {
     // refused - try the old way
   }
   try {
-    const box = document.createElement("textarea");
-    box.value = text;
-    box.setAttribute("readonly", "");
-    box.style.cssText = "position:fixed;top:-1000px;opacity:0";
-    document.body.append(box);
-    box.select();
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.setAttribute("readonly", "");
+    field.style.cssText = "position:fixed;top:-1000px;opacity:0";
+    document.body.append(field);
+    field.select();
     const done = document.execCommand("copy");
-    box.remove();
+    field.remove();
     return done;
   } catch (e) {
     return false;
@@ -839,15 +844,15 @@ async function copyText(text) {
 }
 
 function pasteLevel() {
-  const box = $("paste-box");
-  if (box.hidden) {
-    box.hidden = false;
-    box.value = "";
-    box.focus();
+  const field = $("paste-field");
+  if (field.hidden) {
+    field.hidden = false;
+    field.value = "";
+    field.focus();
     return;
   }
-  const text = box.value.trim();
-  box.hidden = true;
+  const text = field.value.trim();
+  field.hidden = true;
   if (!text) return;
 
   const fromLink = levelFromLink(text);
@@ -1086,7 +1091,7 @@ window.addEventListener("keydown", (e) => {
       restart();
     }
   } else {
-    const tools = [SOKO.WALL, SOKO.FLOOR, SOKO.GOAL, SOKO.BOX, SOKO.PLAYER, SOKO.FINISH];
+    const tools = [SOKO.WALL, SOKO.FLOOR, SOKO.GOAL, SOKO.BALL, SOKO.PLAYER, SOKO.FINISH];
     const n = Number(e.key);
     if (n >= 1 && n <= tools.length) chooseTool(tools[n - 1]);
   }

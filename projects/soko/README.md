@@ -1,15 +1,17 @@
 # Soko — how to work on it
 
-Soko is a box-pushing puzzle in the Sokoban mould: push a box onto every goal,
-never pull, one box at a time. That opens the finishes, and the level is won
+Soko is a pushing puzzle in the Sokoban mould: push a ball onto every goal,
+and never pull. Push a ball into another ball and it works like a Newton's
+cradle — the one you pushed stays put and the far one rolls away until
+something stops it, or until an empty goal catches it. That opens the finishes, and the level is won
 when every player is standing on one. A level can have any number of players,
 and every press moves all of them the same way at once. There can be spare
-boxes, but never more goals than boxes. A box can be pushed anywhere a player
+balls, but never more goals than balls. A ball can be pushed anywhere a player
 can walk, finishes and doors included. The edge of a level is as solid as a
 wall.
 
 The campaign is a map you walk round. Each level is a door on it, and
-solving a level frees the boxes that block the way to the next door. It ships
+solving a level frees the balls that block the way to the next door. It ships
 with eight levels, a level editor that can tell you whether a level is
 solvable, and share links that carry a whole level in the URL.
 
@@ -69,15 +71,15 @@ picture in the game as soon as it's done.
 |---|---|---|
 | `floor` | open floor | drawn under everything else on the floor |
 | `wall` | a wall | |
-| `goal` | where a box should end up | **drawn on top of the floor, so leave its background transparent** |
-| `box` | a box | |
-| `boxOnGoal` | a box sitting on a goal | should look finished — it's how you know you're done |
+| `goal` | where a ball should end up | **drawn on top of the floor, so leave its background transparent** |
+| `ball` | a ball | |
+| `ballOnGoal` | a ball sitting on a goal | should look finished — it's how you know you're done |
 | `player` | the player | every player uses it |
-| `finish` | a finish while it's shut | a goal still needs a box. **Transparent background** |
+| `finish` | a finish while it's shut | a goal still needs a ball. **Transparent background** |
 | `finishOpen` | a finish that's open | stand on it to win. **Transparent background** |
 | `door` | a level's door on the map | its number is drawn on top, so keep the middle plain |
 | `doorDone` | the door of a level you've solved | same |
-| `boxLocked` | a box on the map that hasn't been freed yet | should look stuck |
+| `ballLocked` | a ball on the map that hasn't been freed yet | should look stuck |
 | `playerUp` `playerDown` `playerLeft` `playerRight` | optional | if present, the players turn to face the way they moved |
 
 Square pictures, any size; **64 × 64 is plenty**. PNG, SVG, JPG and WebP all
@@ -87,19 +89,19 @@ picture is what you see — no padding is added.
 ### Step by step
 
 1. Draw your picture and save it into `assets/mine/` — say
-   `assets/mine/box.png`.
+   `assets/mine/ball.png`.
 2. In `assets.js`, under `mine`, uncomment the matching line so it points at
    your file:
    ```js
    mine: {
-     box: "assets/mine/box.png",
+     ball: "assets/mine/ball.png",
    },
    ```
 3. At the top of `assets.js`, set `use` to `"mine"`:
    ```js
    use: "mine",
    ```
-4. Reload. Your box is in; everything else is still the developer art.
+4. Reload. Your ball is in; everything else is still the developer art.
 5. Repeat for the rest, in any order.
 
 If a picture doesn't appear, open the browser console: Soko says which file
@@ -124,13 +126,13 @@ to `"dev"`.
 
 Press **make**. You get a grid and six tools:
 
-- **wall**, **floor**, **goal**, **box**, **player**, **finish** — click to
+- **wall**, **floor**, **goal**, **ball**, **player**, **finish** — click to
   paint, drag to paint a run. Players go down one click at a time, as many as
   you like. Right-click paints floor, which is how you rub things out.
 - Keys **1–6** pick the tools.
 - A level needs at least one finish per player, all of them reachable, and at
-  least as many boxes as goals. Spare boxes are fine — they make a good red
-  herring. Boxes and goals are optional: with no goals, the finishes are open
+  least as many balls as goals. Spare balls are fine — they make a good red
+  herring. Balls and goals are optional: with no goals, the finishes are open
   from the start and the level is just about getting there.
 - **wide** and **tall** resize the grid (3 to 30 each way). What's there
   stays put; new squares are floor.
@@ -138,14 +140,14 @@ Press **make**. You get a grid and six tools:
   walls are only for the inside of a level.
 
 Under the tools, Soko tells you what's wrong with the level as you go — no
-player, more goals than boxes, too few finishes, or boxes, goals or finishes no
+player, more goals than balls, too few finishes, or balls, goals or finishes no
 player can reach.
 
 When it's playable:
 
 - **check** tries every way of playing it and tells you whether it can be
   solved at all, and how long the shortest solution is. Press it every time.
-  A box against a wall can only ever slide along that wall, and a box in a
+  A ball against a wall can only ever slide along that wall, and a ball in a
   corner never moves again — it's very easy to build a level that looks fine
   and can't be done. Of the harder levels I sketched by hand while building
   this, four in seven couldn't be solved.
@@ -187,26 +189,26 @@ as a level, with two extra kinds of character:
 | character | means |
 |---|---|
 | `A` to `Z` | the door to a level — `A` is the first in `LEVELS`, `B` the second |
-| `a` to `z` | a box locked in place until the level with the same letter is solved |
-| `#` `@` `$` | wall, where you start, and a box that's free from the start |
+| `a` to `z` | a ball locked in place until the level with the same letter is solved |
+| `#` `@` `$` | wall, where you start, and a ball that's free from the start |
 
-The idea is that each level's boxes sit in the gaps between rooms, so the way
+The idea is that each level's balls sit in the gaps between rooms, so the way
 to the next door stays shut until you've solved the level before it. Once a
-box is free you push it out of the way. **restart** on the map puts every box
+ball is free you push it out of the way. **restart** on the map puts every ball
 back where it started, in case one gets pushed somewhere it blocks you.
 
 Two traps when you redraw it, both of which I walked into making this one:
 
-- **Boxes can be pushed onto doors.** A door straight in line with a gap is
-  easy to bury under the box that came through it. Put doors off to one side
+- **Balls can be pushed onto doors.** A door straight in line with a gap is
+  easy to bury under the ball that came through it. Put doors off to one side
   of any gap.
-- **Every gap needs its box.** An open gap, even one square, is a way round.
+- **Every gap needs its ball.** An open gap, even one square, is a way round.
 
 The letters cap the campaign at 26 levels. If it ever needs more, that's a
 change to `parseWorld` in `soko.js`.
 
 Where you are on the map and where you've pushed things is saved. Change the
-map and everyone's boxes go back to where they started (solved levels stay
+map and everyone's balls go back to where they started (solved levels stay
 solved).
 
 ### The text format
@@ -219,8 +221,8 @@ also paste in levels you find elsewhere, with **paste a level**.
 | `#` | wall |
 | `-` or space | floor (`_` works too) |
 | `.` | goal |
-| `$` | box |
-| `*` | box already on a goal |
+| `$` | ball |
+| `*` | ball already on a goal |
 | `@` | a player — as many as you like |
 | `+` | a player standing on a goal |
 | `!` | a finish (this one is Soko's own; other programs won't know it) |
@@ -233,8 +235,8 @@ them as `-` for you, so this only matters if you're typing a level by hand.
 ### A tip for hard levels
 
 The best way I found to make a level hard is to design it **backwards**:
-draw the walls and goals, put the boxes *on* the goals, then imagine pulling
-them off one at a time. Anywhere you can pull a box to, it can be pushed
+draw the walls and goals, put the balls *on* the goals, then imagine pulling
+them off one at a time. Anywhere you can pull a ball to, it can be pushed
 back from — so the result is solvable by construction. That's how Zigzag and
 Courtyard were made. It works cleanly for one player; with several moving
 together, pulling one back drags the others too, which is harder to reason
@@ -267,8 +269,14 @@ biggest thing on the roadmap.
 
 Everything about movement is in **one function in `soko.js`: `moveAll`**. It
 takes every player and one direction, and decides who moves, who gets stuck
-and which boxes get pushed. Want ice that keeps you sliding, boxes that can be
+and which balls get pushed. Want ice that keeps you sliding, balls that can be
 pulled, players that only move on alternate turns? It's there.
+
+The Newton's cradle is the function just under it, `cradle`: which ball in a
+row rolls, how far, and what stops it. Rolling balls stop at anything solid,
+at a player, and in an empty goal. If you'd rather goals didn't catch them,
+it's the `!level.goal[at]` in its loop. How long a roll takes on screen is
+`ROLL_MS` in `app.js`.
 
 How fast holding a direction walks is set near the top of section 8 of
 `app.js`: `HOLD_PAUSE` is how long a press waits before it starts repeating
@@ -278,7 +286,7 @@ finishes sliding before the next begins.
 
 Around it:
 
-- **`won`** — what counts as finished: a box on every goal (`boxesHome`),
+- **`won`** — what counts as finished: a ball on every goal (`ballsHome`),
   then every player on a finish. The game and the solver both ask it.
 - **`check`** — what makes a level unplayable in the editor.
 - **`undo`** — puts the last move back.
@@ -316,7 +324,7 @@ picture (in `assets/dev/`) and a tool button (in `index.html`).
 
 A suggested order. Each step is useful on its own.
 
-**Now — your art.** Work through section 3. Start with `box` and `player`;
+**Now — your art.** Work through section 3. Start with `ball` and `player`;
 they're what people look at.
 
 **Next — more levels, and a bigger map.** Eight is a taster, and none of them use more than one
@@ -326,13 +334,13 @@ Sokoban doesn't. Levels that are *about* it — lining players up against walls
 so only some of them move — are where it'll stand out.
 
 **Then — feel.**
-- Sound, in the style of Bloom: a soft scrape for a push, a knock for a box
+- Sound, in the style of Bloom: a soft roll for a push, a clack for the cradle, a knock for a ball
   landing on a goal, something bigger for finishing.
 - A small celebration on finishing a level.
 
 **Then — editor power.**
 - **"Make it hard"** — a button that keeps your walls and goals and finds the
-  box positions that need the longest solution, using the backwards method in
+  ball positions that need the longest solution, using the backwards method in
   section 4. I proved this works for one player while building the built-in
   levels.
 - **Hints** — the solver already finds the shortest solution; teaching it to
@@ -351,9 +359,9 @@ to share.
 I made a call on each of these so the game works now. Any of them is easy to
 change — say which.
 
-1. **How hard should the map be?** Right now each gate is one box in a gap,
+1. **How hard should the map be?** Right now each gate is one ball in a gap,
    pushed straight through. There's room for small puzzles of their own
-   between levels — a box that has to go round a corner, or two boxes in one
+   between levels — a ball that has to go round a corner, or two balls in one
    gap — but they make it easier to get stuck.
 2. **Pixel art or smooth?** It only changes `pixelated` in `assets.js`, but
    it's worth deciding before you draw everything.

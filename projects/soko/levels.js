@@ -103,17 +103,17 @@ const LEVELS = [
 
 // The map. Walk onto a door and press Enter to play its level. Doors are
 // capital letters - A is the first level above, B the second - and each
-// lowercase letter is a box held in place until the level with that letter is
-// solved. Put a level's boxes where they block the way to the next door, and
+// lowercase letter is a ball held in place until the level with that letter is
+// solved. Put a level's balls where they block the way to the next door, and
 // solving it lets you push them aside. The rest is the usual: # wall, space or
-// - floor, @ where you start, $ a box that's free from the start.
+// - floor, @ where you start, $ a ball that's free from the start.
 //
-// Two things to watch when you redraw it. Boxes can be pushed onto doors, so a
+// Two things to watch when you redraw it. Balls can be pushed onto doors, so a
 // door straight in line with a gap is easy to bury: put doors off to one side.
-// And make sure every gap in a wall has its box: an open gap is a way round.
+// And make sure every gap in a wall has its ball: an open gap is a way round.
 //
 // The map is remembered by what it looks like, like the levels are: change it
-// and everyone's boxes go back to where they started (their solved levels
+// and everyone's balls go back to where they started (their solved levels
 // stay solved).
 
 const WORLD = `

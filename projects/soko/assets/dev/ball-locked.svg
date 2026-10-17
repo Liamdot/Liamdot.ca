@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- developer art: a ball on the map that's still locked - the same ball in
+       grey, with a padlock on it. It comes free when its level is solved. -->
+  <circle cx="32" cy="33" r="24" fill="#a39a8f" stroke="#7d746b" stroke-width="4"/>
+  <path d="M26 33 V28 a6 6 0 0 1 12 0 V33" fill="none" stroke="#4a413b" stroke-width="3.5"/>
+  <rect x="22" y="32" width="20" height="14" rx="2.5" fill="#4a413b"/>
+  <circle cx="32" cy="38.5" r="2.2" fill="#a39a8f"/>
+</svg>
