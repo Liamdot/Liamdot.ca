@@ -4,10 +4,10 @@
 //   1. Saved        - progress, your levels, and the level you're making
 //   2. Art          - loading the pictures, falling back to the developer art
 //   3. The board    - fitting a level to the screen and drawing it
-//   4. Playing      - moves, undo, and finishing a level
+//   4. Playing      - the map, moves, undo, and finishing a level
 //   5. Making       - the editor
 //   6. Sharing      - levels in links, and copying text about
-//   7. Panels       - the level list, the solved card, the share card
+//   7. Panels       - your levels, the solved card, the share card
 //   8. Input        - keys, swipes and the buttons
 //   9. Start
 
@@ -23,8 +23,8 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({
 const SAVE_KEY = "soko";
 
 const save = {
-  solved: {},   // level key -> { moves, pushes }: your best on each
-  at: 0,        // the built-in level you were last on
+  solved: {},   // level key -> true, for every level you've solved
+  world: null,  // the map as you left it: { key, player, boxes, freed }
   mine: [],     // levels you've kept: { id, name, map }
   draft: null,  // what's in the editor: { id, name, map }
 };
@@ -69,13 +69,14 @@ function keyOf(map) {
 // That's what lets you replace the art one picture at a time.
 
 const PICTURES = ["floor", "wall", "goal", "box", "boxOnGoal", "player", "finish", "finishOpen",
-  "playerUp", "playerDown", "playerLeft", "playerRight"];
+  "door", "doorDone", "boxLocked", "playerUp", "playerDown", "playerLeft", "playerRight"];
 
 // what to draw until a picture has loaded, or if there's no picture at all
 const STAND_INS = {
   floor: "#e9e2d3", wall: "#5b5049", goal: "#c8553d",
   box: "#c98a43", boxOnGoal: "#79b36f", player: "#2f6f9f",
   finish: "#bdb4a7", finishOpen: "#3fa85e",
+  door: "#cfc5b4", doorDone: "#a9d39b", boxLocked: "#a39a8f",
 };
 
 const art = {};
@@ -124,7 +125,7 @@ const canvas = $("board");
 const ctx = canvas.getContext("2d");
 
 let mode = "play";       // "play" or "make"
-let current = null;      // the level being played: { kind, name, map, ... }
+let current = null;      // what's being played: { kind, name, map, ... }, kind "world" for the map
 let game = null;         // its state, from SOKO.start
 let anim = null;         // the move being drawn: { players, boxes, t0 }, each a list of [from, to]
 let hover = -1;          // the square under the pointer, in the editor
@@ -164,10 +165,8 @@ function picture(name, x, y, size, img = art[name]) {
     ctx.arc(x + size / 2, y + size / 2, size * 0.34, 0, Math.PI * 2);
     ctx.fill();
   } else {
-    ctx.fillRect(x + (name === "box" || name === "boxOnGoal" ? size * 0.1 : 0),
-      y + (name === "box" || name === "boxOnGoal" ? size * 0.1 : 0),
-      size * (name === "box" || name === "boxOnGoal" ? 0.8 : 1),
-      size * (name === "box" || name === "boxOnGoal" ? 0.8 : 1));
+    const inset = name === "box" || name === "boxOnGoal" || name === "boxLocked" || name.startsWith("door") ? 0.1 : 0;
+    ctx.fillRect(x + size * inset, y + size * inset, size * (1 - inset * 2), size * (1 - inset * 2));
   }
 }
 
@@ -203,16 +202,21 @@ function drawGame() {
 
   // the finishes stay shut until every goal has a box
   const open = SOKO.finishOpen(game);
+  // on the map, locked boxes stand in for walls, and doors for finishes
+  const locked = (i) => level.locked && level.locked[i];
   for (let i = 0; i < boxAt.length; i++) {
     const [x, y] = at(i);
-    if (level.wall[i]) picture("wall", x, y, tile);
+    if (level.wall[i] && !locked(i)) picture("wall", x, y, tile);
     else if (level.inside[i]) {
       picture("floor", x, y, tile);
       if (level.goal[i]) picture("goal", x, y, tile);
-      if (level.finish[i]) picture(open ? "finishOpen" : "finish", x, y, tile);
+      if (level.doors) {
+        if (level.doors.has(i)) drawDoor(level.doors.get(i), x, y, tile);
+      } else if (level.finish[i]) picture(open ? "finishOpen" : "finish", x, y, tile);
+      if (locked(i)) picture("boxLocked", x, y, tile);
     }
   }
-  drawEdge(level.width, level.height, tile, ox, oy, (i) => level.inside[i] && !level.wall[i]);
+  drawEdge(level.width, level.height, tile, ox, oy, (i) => level.inside[i] && (!level.wall[i] || locked(i)));
 
   for (let i = 0; i < boxAt.length; i++) {
     if (!boxAt[i]) continue;
@@ -227,6 +231,17 @@ function drawGame() {
     const [x, y] = playerFrom.has(p) ? between(playerFrom.get(p), p) : at(p);
     picture("player", x, y, tile, face);
   }
+}
+
+// A door on the map, with its level's number on it. Solved ones go green.
+function drawDoor(n, x, y, tile) {
+  const done = LEVELS[n] && save.solved[keyOf(LEVELS[n].map)];
+  picture(done ? "doorDone" : "door", x, y, tile);
+  ctx.fillStyle = done ? "#2d6b3c" : "#5b5049";
+  ctx.font = `700 ${Math.round(tile * 0.4)}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(String(n + 1), x + tile / 2, y + tile / 2 + 1);
 }
 
 // The edge of a level is as solid as a wall, so where floor runs right up to
@@ -319,6 +334,93 @@ function animate(change) {
 // 4. Playing
 // ===========================================================================
 
+// ---- the map ----
+//
+// The campaign is a map you walk round (WORLD, in levels.js). Each level is a
+// door on it, and solving a level frees the boxes that were holding the way
+// on shut. Where you are and where you've pushed things is remembered, so
+// coming out of a level puts you back on its door with the map as you left it.
+
+let world = null;        // from SOKO.parseWorld
+
+function solvedLevels() {
+  return new Set(LEVELS.map((lv, n) => (save.solved[keyOf(lv.map)] ? n : -1)).filter((n) => n >= 0));
+}
+
+function doorOf(n) {
+  for (const [i, m] of world.doors) if (m === n) return i;
+  return null;
+}
+
+// The level on the door you're standing on, if there is one.
+function doorHere() {
+  if (!current || current.kind !== "world") return null;
+  const n = world.doors.get(game.players[0]);
+  return n !== undefined && LEVELS[n] ? n : null;
+}
+
+// Back to the map, standing on square `at` if given, or wherever you were.
+function goToMap(at = null) {
+  const solved = solvedLevels();
+  const level = SOKO.worldLevel(world, solved);
+  const key = keyOf(WORLD);
+  if (!save.world || save.world.key !== key) {
+    save.world = { key, player: world.start, boxes: null, freed: [] };
+  }
+  const saved = save.world;
+
+  clearTimeout(finishTimer);
+  current = { kind: "world", name: "Map" };
+  game = SOKO.start(level);
+  // the boxes where you left them, if they still make sense on this map -
+  // plus any freed since, which start where they were locked
+  if (saved.boxes && saved.boxes.every((b) => level.inside[b] && !level.wall[b])) {
+    game.boxAt.fill(0);
+    for (const b of saved.boxes) game.boxAt[b] = 1;
+    for (const n of solved) {
+      if (!saved.freed.includes(n)) for (const i of world.locks.get(n) || []) game.boxAt[i] = 1;
+    }
+  }
+  saved.freed = [...solved];
+  const player = at !== null ? at : saved.player;
+  game.players = [level.inside[player] && !level.wall[player] && !game.boxAt[player] ? player : world.start];
+  rememberMap();
+
+  anim = null;
+  hideCards();
+  if (location.hash) history.replaceState(null, "", location.pathname);
+  showBar();
+  draw();
+}
+
+function rememberMap() {
+  if (!current || current.kind !== "world") return;
+  save.world.player = game.players[0];
+  save.world.boxes = [];
+  for (let i = 0; i < game.boxAt.length; i++) if (game.boxAt[i]) save.world.boxes.push(i);
+  store();
+}
+
+function enterDoor() {
+  const n = doorHere();
+  if (n === null) return;
+  fade(() => play(builtIn(n)));
+}
+
+// From one screen to the next: a quick fade out, the change, and back in.
+let fadeTimer = 0;
+function fade(change) {
+  letGoOfEverything();
+  canvas.classList.add("fading");
+  clearTimeout(fadeTimer);
+  fadeTimer = setTimeout(() => {
+    change();
+    canvas.classList.remove("fading");
+  }, 180);
+}
+
+// ---- a level ----
+
 // Starts a level. Anything that can't be played is turned away with the
 // reason, and nothing changes.
 function play(entry) {
@@ -340,10 +442,6 @@ function play(entry) {
   game = SOKO.start(level);
   anim = null;
   hideCards();
-  if (entry.kind === "built") {
-    save.at = entry.index;
-    store();
-  }
   // a shared level stays in the address bar so a reload keeps it; anything
   // else takes it out, so a reload doesn't drag you back to it
   if (entry.kind !== "shared" && location.hash) history.replaceState(null, "", location.pathname);
@@ -367,10 +465,15 @@ function act(dir) {
     return;
   }
   animate(change);
+  if (current.kind === "world") {
+    rememberMap();
+    showBar();
+    return;
+  }
   showBar();
   if (SOKO.solved(game)) {
-    // Finished the moment the last box lands, not when the card comes up a
-    // beat later - a held key would otherwise get one more step in between.
+    // Finished the moment the last box lands, not a beat later - a held key
+    // would otherwise get one more step in between.
     game.done = true;
     letGoOfEverything();
     finishTimer = setTimeout(finished, ANIM_MS + 40);
@@ -396,50 +499,65 @@ function takeBack() {
   clearTimeout(finishTimer);
   game.done = false;
   rewound();
+  rememberMap();
   showBar();
   draw();
 }
 
+// On the map, restart puts every box back where it started and you back at
+// the beginning - the way out if a box ends up somewhere it blocks you.
 function restart() {
-  if (!current || !game || !game.history.length) return;
+  if (!current || !game) return;
+  if (current.kind === "world") {
+    rewound();
+    save.world.boxes = null;
+    goToMap(world.start);
+    return;
+  }
+  if (!game.history.length) return;
   rewound();
   play(current);
 }
 
+// Campaign levels and your own go straight back to the map. A shared level or
+// a test from the editor gets a card instead, for what you'd do next.
 function finished() {
   if (!game || !game.done) return;
   if (current.kind !== "test") {
     save.solved[keyOf(current.map)] = true;
     store();
   }
-  showSolved();
+  if (current.kind === "built") fade(() => goToMap(doorOf(current.index)));
+  else if (current.kind === "mine") fade(() => goToMap());
+  else showSolved();
 }
 
-function nextEntry() {
-  if (current.kind === "built") return builtIn(current.index + 1);
-  if (current.kind === "mine") {
-    const at = save.mine.findIndex((m) => m.id === current.id);
-    const next = save.mine[at + 1];
-    return next ? { kind: "mine", ...next } : null;
+function leaveLevel() {
+  if (current && current.kind !== "world" && current.kind !== "test") {
+    fade(() => goToMap(current.kind === "built" ? doorOf(current.index) : null));
   }
-  return null;
 }
 
 function showBar() {
   const playing = mode === "play";
   const testing = playing && current && current.kind === "test";
+  const onMap = playing && current && current.kind === "world";
+  const door = doorHere();
 
   let label = "Level editor";
   if (playing && current) {
-    label = current.kind === "built" ? `${current.index + 1}. ${current.name}` : current.name;
+    if (onMap) label = door !== null ? `${door + 1}. ${LEVELS[door].name}` : "Map";
+    else label = current.kind === "built" ? `${current.index + 1}. ${current.name}` : current.name;
     if (current.kind === "shared") label += " (shared)";
     if (testing) label += " (testing)";
   }
   $("level-name").textContent = label;
 
-  // undo and restart only mean anything while playing; the level
-  // list is swapped for a way back while testing something from the editor
+  // undo and restart only mean anything while playing; the way back to the
+  // map is swapped for a way back to the editor while testing
   for (const el of document.querySelectorAll(".play-only")) el.hidden = !playing;
+  $("enter-btn").hidden = !onMap || door === null;
+  $("map-btn").hidden = !playing || onMap || testing;
   $("levels-btn").hidden = !playing || testing;
   $("back-btn").hidden = !testing;
   $("undo-btn").disabled = !game || !game.history.length;
@@ -629,10 +747,10 @@ function showMode(next) {
 }
 
 // Switching modes from the buttons. Leaving the editor after testing something
-// goes back to the level you were on, since the test isn't a level to stay on.
+// goes back to the map, since the test isn't a level to stay on.
 function setMode(next) {
   showMode(next);
-  if (mode === "play" && current && current.kind === "test") play(builtIn(save.at) || builtIn(0));
+  if (mode === "play" && current && current.kind === "test") goToMap();
 }
 
 function testDraft() {
@@ -765,18 +883,17 @@ function flash(text) {
   flashTimer = setTimeout(() => { el.hidden = true; }, 2600);
 }
 
+// Only for a shared level or a test - everything else goes back to the map.
 function showSolved() {
-  const next = nextEntry();
   const testing = current.kind === "test";
   const card = $("solved");
   card.innerHTML = `
     <h2>Solved</h2>
     <div class="row">
       ${testing ? `<button class="pill strong" data-go="editor">back to editor</button>` : ""}
-      ${next ? `<button class="pill strong" data-go="next">next level</button>` : ""}
+      ${!testing ? `<button class="pill strong" data-go="keep-shared">save to my levels</button>` : ""}
       <button class="pill" data-go="again">play again</button>
-      ${current.kind === "shared" ? `<button class="pill" data-go="keep-shared">save to my levels</button>` : ""}
-      ${!testing && !next ? `<button class="pill" data-go="levels">levels</button>` : ""}
+      ${!testing ? `<button class="pill" data-go="map">map</button>` : ""}
     </div>`;
   card.hidden = false;
 }
@@ -785,10 +902,9 @@ $("solved").addEventListener("click", (e) => {
   const go = e.target.closest("[data-go]");
   if (!go) return;
   const what = go.dataset.go;
-  if (what === "next") play(nextEntry());
   if (what === "again") restart();
   if (what === "editor") setMode("make");
-  if (what === "levels") showLevels();
+  if (what === "map") fade(() => goToMap());
   if (what === "keep-shared") keepShared();
 });
 
@@ -807,11 +923,6 @@ function showLevels() {
   const record = (map) => save.solved[keyOf(map)];
   const mark = (map) => (record(map) ? `<span class="done" title="Solved">&#10003;</span>` : "");
 
-  const built = LEVELS.map((lv, i) => `
-    <button class="level-row${current && current.kind === "built" && current.index === i ? " here" : ""}" data-play="built" data-i="${i}">
-      <span class="num">${i + 1}</span><span class="name">${esc(lv.name)}</span>${mark(lv.map)}
-    </button>`).join("");
-
   const mine = save.mine.length
     ? save.mine.map((m) => `
       <div class="level-row mine">
@@ -820,13 +931,10 @@ function showLevels() {
         <button class="tiny" data-share="${esc(m.id)}">share</button>
         <button class="tiny danger" data-delete="${esc(m.id)}">delete</button>
       </div>`).join("")
-    : `<p class="sub">No saved levels yet.</p>`;
+    : `<p class="sub">No saved levels yet. Make one with <strong>make</strong>, or open a share link.</p>`;
 
   card.innerHTML = `
-    <div class="card-head"><h2>Levels</h2><button class="close" data-close aria-label="Close">&times;</button></div>
-    <h3>Built in</h3>
-    <div class="level-list">${built}</div>
-    <h3>My levels</h3>
+    <div class="card-head"><h2>My levels</h2><button class="close" data-close aria-label="Close">&times;</button></div>
     <div class="level-list">${mine}</div>`;
   card.hidden = false;
 }
@@ -836,8 +944,7 @@ $("levels").addEventListener("click", (e) => {
   if (!el) return;
   if (el.hasAttribute("data-close")) { hideCards(); return; }
 
-  if (el.dataset.play === "built") play(builtIn(Number(el.dataset.i)));
-  else if (el.dataset.play === "mine") {
+  if (el.dataset.play === "mine") {
     const m = save.mine.find((x) => x.id === el.dataset.id);
     if (m) play({ kind: "mine", ...m });
   } else if (el.dataset.edit) {
@@ -956,12 +1063,20 @@ window.addEventListener("keydown", (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
 
   if (e.key === "Escape") {
+    // closes whatever card is open, or failing that leaves the level for the map
+    const open = ["solved", "levels", "share"].some((id) => !$(id).hidden);
     hideCards();
+    if (!open && mode === "play") leaveLevel();
     return;
   }
 
   if (mode === "play") {
-    if (KEYS[e.code]) {
+    if (e.code === "Enter" || e.code === "NumpadEnter" || e.code === "Space" || e.code === "KeyE") {
+      if (doorHere() !== null) {
+        e.preventDefault();
+        if (!e.repeat) enterDoor();
+      }
+    } else if (KEYS[e.code]) {
       e.preventDefault();
       if (!e.repeat) press(`key-${e.code}:${KEYS[e.code]}`);
     } else if (e.key === "z" || e.key === "u" || e.key === "Backspace") {
@@ -1096,6 +1211,8 @@ $("dpad").addEventListener("click", (e) => {
 $("undo-btn").addEventListener("click", takeBack);
 $("restart-btn").addEventListener("click", restart);
 $("levels-btn").addEventListener("click", () => ($("levels").hidden ? showLevels() : hideCards()));
+$("enter-btn").addEventListener("click", enterDoor);
+$("map-btn").addEventListener("click", leaveLevel);
 $("back-btn").addEventListener("click", () => setMode("make"));
 
 $("draft-name").addEventListener("input", (e) => {
@@ -1162,11 +1279,11 @@ resetBtn.addEventListener("click", () => {
   resetArmed = false;
   resetBtn.classList.remove("sure");
   save.solved = {};
-  save.at = 0;
+  save.world = null;
   store();
   resetBtn.textContent = "Save cleared";
   setTimeout(() => { if (!resetArmed) resetBtn.textContent = "clear my save"; }, 2500);
-  if (mode === "play") play(builtIn(0));
+  if (mode === "play") goToMap();
 });
 
 // A share link pasted into the address bar of an open page. Straight to it:
@@ -1185,9 +1302,10 @@ window.addEventListener("hashchange", () => {
 
 load();
 loadArt();
+world = SOKO.parseWorld(WORLD);
 draft = save.draft ? draftFrom(save.draft.map, save.draft.name, save.draft.id) : draftFrom(STARTER);
 
 const shared = levelFromLink(location.hash);
 showMode("play");
-if (!(shared && play(shared))) play(builtIn(Math.min(save.at || 0, LEVELS.length - 1)));
+if (!(shared && play(shared))) goToMap();
 new ResizeObserver(resize).observe(canvas);

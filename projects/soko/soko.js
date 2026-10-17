@@ -4,8 +4,9 @@
 //
 //   1. Levels on paper  - the text format, and turning it into a level
 //   2. Playing          - moves, undo, and knowing when it's solved
-//   3. Short codes      - squashing a level small enough to put in a link
-//   4. Solving          - finding out whether a level can be done at all
+//   3. The map          - the campaign's map, its doors and its locked boxes
+//   4. Short codes      - squashing a level small enough to put in a link
+//   5. Solving          - finding out whether a level can be done at all
 //
 // Levels are written in the usual Sokoban text format, the one thousands of
 // existing levels are already in, so anything you find online pastes straight
@@ -308,7 +309,84 @@ const SOKO = (() => {
   }
 
   // =========================================================================
-  // 3. Short codes
+  // 3. The map
+  // =========================================================================
+  //
+  // The campaign is played from a map you walk round. It's the same kind of
+  // text as a level, with two more kinds of character:
+  //
+  //   A to Z   the door to a level: A is the first in levels.js, B the second...
+  //   a to z   a box that's locked in place until the level with the same
+  //            letter is solved - "b" comes free when level B is done
+  //
+  // plus #, floor, @ for where you start, and $ for a box that's free from the
+  // start. Locked boxes are what keep the next door shut: solving a level frees
+  // its boxes, and you push them out of the way to get on. Boxes can't be
+  // pushed onto a door, so a door can never be buried.
+
+  function parseWorld(text) {
+    const rows = rowsOf(text);
+    if (!rows.length) throw new Error("The map is empty.");
+    const height = rows.length;
+    const width = rows[0].length;
+    const size = width * height;
+    const wall = new Uint8Array(size);
+    const doors = new Map();        // square -> level number, counting from 0
+    const locks = new Map();        // level number -> the squares of its locked boxes
+    const boxes = [];
+    let start = -1;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const ch = rows[y][x];
+        const i = y * width + x;
+        if (ch === WALL) wall[i] = 1;
+        else if (ch === PLAYER) start = i;
+        else if (ch === BOX) boxes.push(i);
+        else if (ch >= "A" && ch <= "Z") doors.set(i, ch.charCodeAt(0) - 65);
+        else if (ch >= "a" && ch <= "z") {
+          const n = ch.charCodeAt(0) - 97;
+          if (!locks.has(n)) locks.set(n, []);
+          locks.get(n).push(i);
+        } else if (ch !== FLOOR) throw new Error(`Unknown character "${ch}" on row ${y + 1} of the map.`);
+      }
+    }
+    if (start < 0) throw new Error("The map needs a @ to start from.");
+
+    // everything walkable, as if every box were free, so the whole map is drawn
+    // from the start rather than only the part you can get to yet
+    const inside = reach({ width, height, wall }, [start]);
+    return { width, height, wall, doors, locks, boxes, start, inside };
+  }
+
+  // The map as a level to walk round, with the boxes of every level in
+  // `solved` (a Set of level numbers) let loose. Locked boxes stand as walls.
+  // Doors go in `finish`, which is what stops boxes being pushed onto them.
+  function worldLevel(world, solved) {
+    const size = world.width * world.height;
+    const wall = world.wall.slice();
+    const locked = new Uint8Array(size);
+    const finish = new Uint8Array(size);
+    const boxes = world.boxes.slice();
+    for (const [n, squares] of world.locks) {
+      for (const i of squares) {
+        if (solved.has(n)) boxes.push(i);
+        else {
+          wall[i] = 1;
+          locked[i] = 1;
+        }
+      }
+    }
+    for (const i of world.doors.keys()) finish[i] = 1;
+    return {
+      width: world.width, height: world.height, wall, locked, finish, boxes,
+      goal: new Uint8Array(size), goals: 0, players: [world.start],
+      inside: world.inside, doors: world.doors,
+    };
+  }
+
+  // =========================================================================
+  // 4. Short codes
   // =========================================================================
   //
   // A level squashed for a link: rows joined with "|", runs of the same
@@ -337,7 +415,7 @@ const SOKO = (() => {
   }
 
   // =========================================================================
-  // 4. Solving
+  // 5. Solving
   // =========================================================================
   //
   // Tries every sequence of moves, shortest first, until the level is won -
@@ -401,5 +479,6 @@ const SOKO = (() => {
   return {
     WALL, FLOOR, GOAL, BOX, BOX_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH,
     rowsOf, writeRows, parse, toText, check, start, move, undo, solved, finishOpen, encode, decode, solve,
+    parseWorld, worldLevel,
   };
 })();

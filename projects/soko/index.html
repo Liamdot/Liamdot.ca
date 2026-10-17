@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Soko - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=14">
-  <link rel="stylesheet" href="../../game.css?v=14">
-  <link rel="stylesheet" href="style.css?v=14">
+  <link rel="stylesheet" href="../../style.css?v=15">
+  <link rel="stylesheet" href="../../game.css?v=15">
+  <link rel="stylesheet" href="style.css?v=15">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -39,6 +39,9 @@
 
       <h3>How to play</h3>
       <ul>
+        <li>The levels are doors on a map. Walk onto one and press Enter, Space or E (or <strong>enter</strong>) to play it</li>
+        <li>Solving a level frees the grey boxes that block the way to the next door. Push them out of the way to get on</li>
+        <li>Solving a level takes you back to the map, and <strong>map</strong> (Esc) leaves a level without solving it</li>
         <li>Move with the arrow keys or WASD, and hold a direction to keep moving</li>
         <li>On a phone, swipe the board or use the buttons below it</li>
         <li>When a level has several players, they all move together. A player that's blocked stays where it is</li>
@@ -46,8 +49,8 @@
         <li>Some levels have more boxes than goals, so not every box has to be used</li>
         <li>Boxes can't be pushed onto a finish</li>
         <li>The edge of a level is solid, like a wall</li>
-        <li><strong>undo</strong> (Z) takes back a move, and <strong>restart</strong> (R) starts the level again</li>
-        <li><strong>levels</strong> lists the built-in levels and the ones you've saved</li>
+        <li><strong>undo</strong> (Z) takes back a move, and <strong>restart</strong> (R) starts the level again. On the map, restart puts every box back where it started, in case one ends up in the way</li>
+        <li><strong>my levels</strong> lists the levels you've made or saved</li>
       </ul>
 
       <h3>Making levels</h3>
@@ -58,11 +61,12 @@
         <li><strong>test</strong> plays it, and <strong>save to my levels</strong> keeps it in this browser</li>
         <li><strong>share</strong> makes a link that anyone can use to play it</li>
         <li>Levels use the standard Sokoban text format, so levels from elsewhere can be pasted in</li>
-        <li>Clearing your save resets your progress but keeps your saved levels</li>
+        <li>Clearing your save resets your progress and the map, but keeps your saved levels</li>
       </ul>
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v0.6</strong> &ndash; a map to walk round instead of a level list, with boxes each level frees to open the way to the next</li>
         <li><strong>v0.5</strong> &ndash; finishes: a box on every goal opens them, then every player has to reach one. Levels can have spare boxes</li>
         <li><strong>v0.4</strong> &ndash; moves stop once a level is solved, and clearer messages</li>
         <li><strong>v0.3</strong> &ndash; hold a direction to keep moving</li>
@@ -85,10 +89,12 @@
         <button class="mode" data-mode="make" role="tab">make</button>
       </div>
       <span class="level-name" id="level-name"></span>
+      <button class="pill strong" id="enter-btn" title="Enter (Enter, Space or E)" hidden>enter</button>
       <span class="spacer"></span>
+      <button class="pill play-only" id="map-btn" title="Back to the map (Esc)">map</button>
       <button class="pill play-only" id="undo-btn" title="Undo (Z)">undo</button>
       <button class="pill play-only" id="restart-btn" title="Restart (R)">restart</button>
-      <button class="pill play-only" id="levels-btn">levels</button>
+      <button class="pill play-only" id="levels-btn">my levels</button>
       <button class="pill strong" id="back-btn" hidden>back to editor</button>
     </header>
 
@@ -147,10 +153,10 @@
     </div>
   </main>
 
-  <script src="../../nav.js?v=14"></script>
-  <script src="soko.js?v=14"></script>
-  <script src="assets.js?v=14"></script>
-  <script src="levels.js?v=14"></script>
-  <script src="app.js?v=14"></script>
+  <script src="../../nav.js?v=15"></script>
+  <script src="soko.js?v=15"></script>
+  <script src="assets.js?v=15"></script>
+  <script src="levels.js?v=15"></script>
+  <script src="app.js?v=15"></script>
 </body>
 </html>

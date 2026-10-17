@@ -7,8 +7,10 @@ and every press moves all of them the same way at once. There can be spare
 boxes, but never more goals than boxes. The edge of a level is as solid as a
 wall.
 
-It ships with eight levels, a level editor that can tell you whether a level
-is solvable, and share links that carry a whole level in the URL.
+The campaign is a map you walk round. Each level is a door on it, and
+solving a level frees the boxes that block the way to the next door. It ships
+with eight levels, a level editor that can tell you whether a level is
+solvable, and share links that carry a whole level in the URL.
 
 This file is the plan for taking it from here: where things live, how to put
 your own art in, how to make levels, how sharing works, and what's worth
@@ -25,7 +27,7 @@ projects/soko/
   soko.js        THE RULES - levels, moves, undo, share codes, the solver
   solver.js      runs the solver in the background so the page doesn't freeze
   assets.js      which picture is drawn for what   <- edit this for your art
-  levels.js      the built-in levels, in order     <- edit this for levels
+  levels.js      the built-in levels, and the map  <- edit this for levels
   app.js         everything on screen: drawing, input, editor, sharing
   assets/
     dev/         the developer art - plain on purpose, always kept
@@ -72,6 +74,9 @@ picture in the game as soon as it's done.
 | `player` | the player | every player uses it |
 | `finish` | a finish while it's shut | a goal still needs a box. **Transparent background** |
 | `finishOpen` | a finish that's open | stand on it to win. **Transparent background** |
+| `door` | a level's door on the map | its number is drawn on top, so keep the middle plain |
+| `doorDone` | the door of a level you've solved | same |
+| `boxLocked` | a box on the map that hasn't been freed yet | should look stuck |
 | `playerUp` `playerDown` `playerLeft` `playerRight` | optional | if present, the players turn to face the way they moved |
 
 Square pictures, any size; **64 × 64 is plenty**. PNG, SVG, JPG and WebP all
@@ -148,8 +153,8 @@ When it's playable:
   puzzle is too large to check — that doesn't mean it's broken, just that
   you'll have to test it yourself.
 - **test** plays it. **back to editor** comes back.
-- **save to my levels** saves it to *My levels* (under **levels** in play
-  mode), in this browser. Editing a saved level and saving again updates it
+- **save to my levels** saves it to *My levels* (under **my levels** in
+  play mode), in this browser. Editing a saved level and saving again updates it
   rather than making a copy.
 
 What's in the editor is saved as you go, so closing the tab loses nothing.
@@ -169,6 +174,38 @@ What's in the editor is saved as you go, so closing the tab loses nothing.
    },
    ```
 3. Paste the text between the backticks. Indentation doesn't matter.
+4. Give it a door on the map (next section). Its letter is its place in the
+   list: the first level is `A`, the ninth is `I`.
+
+### The map
+
+The map is `WORLD`, at the bottom of `levels.js`. It's drawn in the same text
+as a level, with two extra kinds of character:
+
+| character | means |
+|---|---|
+| `A` to `Z` | the door to a level — `A` is the first in `LEVELS`, `B` the second |
+| `a` to `z` | a box locked in place until the level with the same letter is solved |
+| `#` `@` `$` | wall, where you start, and a box that's free from the start |
+
+The idea is that each level's boxes sit in the gaps between rooms, so the way
+to the next door stays shut until you've solved the level before it. Once a
+box is free you push it out of the way. **restart** on the map puts every box
+back where it started, in case one gets pushed somewhere it blocks you.
+
+Two traps when you redraw it, both of which I walked into making this one:
+
+- **A box can't be pushed onto a door.** If a door sits straight in line with
+  a gap, the box stops in front of the door and you're stuck in the gap
+  behind it. Put doors off to one side of any gap.
+- **Every gap needs its box.** An open gap, even one square, is a way round.
+
+The letters cap the campaign at 26 levels. If it ever needs more, that's a
+change to `parseWorld` in `soko.js`.
+
+Where you are on the map and where you've pushed things is saved. Change the
+map and everyone's boxes go back to where they started (solved levels stay
+solved).
 
 ### The text format
 
@@ -280,7 +317,7 @@ A suggested order. Each step is useful on its own.
 **Now — your art.** Work through section 3. Start with `box` and `player`;
 they're what people look at.
 
-**Next — more levels.** Eight is a taster, and none of them use more than one
+**Next — more levels, and a bigger map.** Eight is a taster, and none of them use more than one
 player yet. Twenty to thirty with a steady climb is a game — and the
 several-players-at-once rule is the most interesting thing Soko has that plain
 Sokoban doesn't. Levels that are *about* it — lining players up against walls
@@ -312,9 +349,10 @@ to share.
 I made a call on each of these so the game works now. Any of them is easy to
 change — say which.
 
-1. **Should levels unlock in order?** Right now every level is open from the
-   start. Locking them makes the climb matter more; leaving them open is
-   friendlier.
+1. **How hard should the map be?** Right now each gate is one box in a gap,
+   pushed straight through. There's room for small puzzles of their own
+   between levels — a box that has to go round a corner, or two boxes in one
+   gap — but they make it easier to get stuck.
 2. **Pixel art or smooth?** It only changes `pixelated` in `assets.js`, but
    it's worth deciding before you draw everything.
 3. **Sharing: links only, or a gallery?** Links are live now. A gallery is a

@@ -1,4 +1,4 @@
-// Soko's built-in levels, in the order they're played.
+// Soko's campaign: the map you walk round, and the levels behind its doors.
 //
 // Each one is the usual Sokoban text, plus "!" for a finish, written between
 // backticks - see the top of soko.js for what each character means. Indent it however you like; the
@@ -100,3 +100,32 @@ const LEVELS = [
     `,
   },
 ];
+
+// The map. Walk onto a door and press Enter to play its level. Doors are
+// capital letters - A is the first level above, B the second - and each
+// lowercase letter is a box held in place until the level with that letter is
+// solved. Put a level's boxes where they block the way to the next door, and
+// solving it lets you push them aside. The rest is the usual: # wall, space or
+// - floor, @ where you start, $ a box that's free from the start.
+//
+// Two things to watch when you redraw it. A box can't be pushed onto a door,
+// so don't put a door straight in line with a gap a box gets pushed through -
+// the box stops in front of the door and you're stuck behind it. And make sure
+// every gap in a wall has its box: an open gap is a way round.
+//
+// The map is remembered by what it looks like, like the levels are: change it
+// and everyone's boxes go back to where they started (their solved levels
+// stay solved).
+
+const WORLD = `
+  #######################
+  #     #    #     #    #
+  #  @  a  B #   C c    #
+  #  A  #    b     #  D #
+  #     #    #     #    #
+  ###################d###
+  # H  #     #     #    #
+  #    g  G  f  F  e    #
+  #    #     #     #  E #
+  #######################
+`;

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- developer art: a door to a level you've solved. The number is drawn on
+       top by the game. -->
+  <rect x="5" y="5" width="54" height="54" rx="9" fill="#b9dcae" stroke="#3fa85e" stroke-width="3"/>
+  <rect x="11" y="11" width="42" height="42" rx="5" fill="none" stroke="#8cc47f" stroke-width="2"/>
+</svg>

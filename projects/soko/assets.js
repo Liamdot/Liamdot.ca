@@ -34,6 +34,9 @@ const ART = {
       player: "assets/dev/player.svg",
       finish: "assets/dev/finish.svg",
       finishOpen: "assets/dev/finish-open.svg",
+      door: "assets/dev/door.svg",
+      doorDone: "assets/dev/door-done.svg",
+      boxLocked: "assets/dev/box-locked.svg",
     },
 
     // Yours. Uncomment a line once the file exists. PNG, SVG, JPG or WebP all
@@ -47,6 +50,9 @@ const ART = {
       // player: "assets/mine/player.png",
       // finish: "assets/mine/finish.png",            (shut: a goal still needs a box)
       // finishOpen: "assets/mine/finish-open.png",   (open: stand on it to win)
+      // door: "assets/mine/door.png",                (a level on the map; its number is drawn on top)
+      // doorDone: "assets/mine/door-done.png",       (a level you've solved)
+      // boxLocked: "assets/mine/box-locked.png",     (a box on the map that's still locked)
 
       // Optional. If any of these exist the player turns to face the way it
       // last moved; any that don't fall back to `player`.
