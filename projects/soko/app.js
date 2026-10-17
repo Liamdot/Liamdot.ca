@@ -201,7 +201,7 @@ function drawGame() {
   const boxFrom = cameFrom(anim ? anim.boxes : []);
   const playerFrom = cameFrom(anim ? anim.players : []);
 
-  // the finishes stay shut until every box is home
+  // the finishes stay shut until every goal has a box
   const open = SOKO.finishOpen(game);
   for (let i = 0; i < boxAt.length; i++) {
     const [x, y] = at(i);

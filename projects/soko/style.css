@@ -376,7 +376,7 @@ button.level-row:hover,
 .swatch-goal { border: 3px solid #c8553d; border-radius: 50% !important; }
 .swatch-box { background: #c98a43; border: 2px solid #9b6530; }
 .swatch-player { background: #2f6f9f; border-radius: 50% !important; }
-.swatch-finish { background: #e9e2d3 url("assets/dev/finish.svg") center / 150% no-repeat; }
+.swatch-finish { background: #e9e2d3 url("assets/dev/finish-open.svg") center / 150% no-repeat; }
 
 .field {
   display: flex;

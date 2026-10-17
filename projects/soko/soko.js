@@ -21,9 +21,10 @@
 //
 // There can be any number of players, and they all move together.
 //
-// A level is won by getting every box onto a goal and then every player onto
+// A level is won by getting a box onto every goal and then every player onto
 // a finish - one finish each, so a level needs at least as many finishes as
-// players. Finishes stay shut until every box is home, and boxes can never be
+// players. There can be spare boxes, but never more goals than boxes.
+// Finishes stay shut until every goal has a box, and boxes can never be
 // pushed onto them, so they can't be blocked.
 
 const SOKO = (() => {
@@ -107,7 +108,8 @@ const SOKO = (() => {
       }
     }
 
-    const level = { width, height, wall, goal, finish, boxes, players };
+    const goals = goal.reduce((n, g) => n + g, 0);
+    const level = { width, height, wall, goal, goals, finish, boxes, players };
     level.inside = reach(level, players);
     return level;
   }
@@ -178,9 +180,8 @@ const SOKO = (() => {
     if (!boxes) problems.push("The level needs at least one box.");
     if (!goals) problems.push("The level needs at least one goal.");
     if (!level.finish.some((f) => f)) problems.push("The level needs a finish.");
-    if (boxes && goals && boxes !== goals) {
-      problems.push(`The level has ${boxes} box${boxes === 1 ? "" : "es"} and ${goals} goal${
-        goals === 1 ? "" : "s"}. These must match.`);
+    if (boxes && goals > boxes) {
+      problems.push(`The level has ${goals} goals but ${boxes === 1 ? "only 1 box" : `only ${boxes} boxes`}. Every goal needs a box.`);
     }
     if (level.players.length) {
       const stray = level.boxes.filter((b) => !level.inside[b]).length;
@@ -277,9 +278,12 @@ const SOKO = (() => {
     return true;
   }
 
-  // Every box is on a goal, which is what opens the finish.
+  // Every goal has a box on it, which is what opens the finish. Spare boxes
+  // can be anywhere.
   function boxesHome(level, boxes) {
-    return boxes.every((b) => level.goal[b]);
+    let covered = 0;
+    for (const b of boxes) covered += level.goal[b];
+    return covered === level.goals;
   }
 
   // The level is won once the finishes are open and every player is standing

@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Soko - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=13">
-  <link rel="stylesheet" href="../../game.css?v=13">
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="../../style.css?v=14">
+  <link rel="stylesheet" href="../../game.css?v=14">
+  <link rel="stylesheet" href="style.css?v=14">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -35,14 +35,15 @@
     <div class="info-panel" id="info-panel" hidden>
       <h2>Soko</h2>
       <p class="meta">made October 2026</p>
-      <p>Push every box onto a goal, then get every player to a finish. Boxes can be pushed but not pulled, and only one at a time.</p>
+      <p>Push a box onto every goal, then get every player to a finish. Boxes can be pushed but not pulled, and only one at a time.</p>
 
       <h3>How to play</h3>
       <ul>
         <li>Move with the arrow keys or WASD, and hold a direction to keep moving</li>
         <li>On a phone, swipe the board or use the buttons below it</li>
         <li>When a level has several players, they all move together. A player that's blocked stays where it is</li>
-        <li>The finishes are grey flags until every box is on a goal, then they turn green. The level is won when every player is standing on a green flag</li>
+        <li>The finishes are lowered grey flags until every goal has a box on it, then they go up and turn green. The level is won when every player is standing on a green flag</li>
+        <li>Some levels have more boxes than goals, so not every box has to be used</li>
         <li>Boxes can't be pushed onto a finish</li>
         <li>The edge of a level is solid, like a wall</li>
         <li><strong>undo</strong> (Z) takes back a move, and <strong>restart</strong> (R) starts the level again</li>
@@ -62,7 +63,7 @@
 
       <h3>Updates</h3>
       <ul>
-        <li><strong>v0.5</strong> &ndash; finishes: every box on a goal opens them, then every player has to reach one</li>
+        <li><strong>v0.5</strong> &ndash; finishes: a box on every goal opens them, then every player has to reach one. Levels can have spare boxes</li>
         <li><strong>v0.4</strong> &ndash; moves stop once a level is solved, and clearer messages</li>
         <li><strong>v0.3</strong> &ndash; hold a direction to keep moving</li>
         <li><strong>v0.2</strong> &ndash; several players moving together, a solid edge, no move counter, and instant undo</li>
@@ -146,10 +147,10 @@
     </div>
   </main>
 
-  <script src="../../nav.js?v=13"></script>
-  <script src="soko.js?v=13"></script>
-  <script src="assets.js?v=13"></script>
-  <script src="levels.js?v=13"></script>
-  <script src="app.js?v=13"></script>
+  <script src="../../nav.js?v=14"></script>
+  <script src="soko.js?v=14"></script>
+  <script src="assets.js?v=14"></script>
+  <script src="levels.js?v=14"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>

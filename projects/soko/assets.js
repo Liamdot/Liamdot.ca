@@ -21,7 +21,7 @@ const ART = {
 
   // Bump this whenever you replace a picture but keep its file name. Browsers
   // hang on to images for a few hours, so without it you'd see the old one.
-  version: 2,
+  version: 4,
 
   sets: {
     // The developer art. Plain on purpose, and always there to fall back on.
@@ -45,7 +45,7 @@ const ART = {
       // box: "assets/mine/box.png",
       // boxOnGoal: "assets/mine/box-on-goal.png",
       // player: "assets/mine/player.png",
-      // finish: "assets/mine/finish.png",            (shut: not every box is home)
+      // finish: "assets/mine/finish.png",            (shut: a goal still needs a box)
       // finishOpen: "assets/mine/finish-open.png",   (open: stand on it to win)
 
       // Optional. If any of these exist the player turns to face the way it

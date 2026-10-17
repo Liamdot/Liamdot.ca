@@ -1,9 +1,11 @@
 # Soko — how to work on it
 
-Soko is a box-pushing puzzle in the Sokoban mould: push every box onto a goal,
-never pull, one box at a time. A level can have any number of players, and
-every press moves all of them the same way at once. The edge of a level is as
-solid as a wall.
+Soko is a box-pushing puzzle in the Sokoban mould: push a box onto every goal,
+never pull, one box at a time. That opens the finishes, and the level is won
+when every player is standing on one. A level can have any number of players,
+and every press moves all of them the same way at once. There can be spare
+boxes, but never more goals than boxes. The edge of a level is as solid as a
+wall.
 
 It ships with eight levels, a level editor that can tell you whether a level
 is solvable, and share links that carry a whole level in the URL.
@@ -68,6 +70,8 @@ picture in the game as soon as it's done.
 | `box` | a box | |
 | `boxOnGoal` | a box sitting on a goal | should look finished — it's how you know you're done |
 | `player` | the player | every player uses it |
+| `finish` | a finish while it's shut | a goal still needs a box. **Transparent background** |
+| `finishOpen` | a finish that's open | stand on it to win. **Transparent background** |
 | `playerUp` `playerDown` `playerLeft` `playerRight` | optional | if present, the players turn to face the way they moved |
 
 Square pictures, any size; **64 × 64 is plenty**. PNG, SVG, JPG and WebP all
@@ -112,19 +116,23 @@ to `"dev"`.
 
 ### In the game
 
-Press **make**. You get a grid and five tools:
+Press **make**. You get a grid and six tools:
 
-- **wall**, **floor**, **goal**, **box**, **player** — click to paint, drag
-  to paint a run. Players go down one click at a time, as many as you like.
-  Right-click paints floor, which is how you rub things out.
-- Keys **1–5** pick the tools.
+- **wall**, **floor**, **goal**, **box**, **player**, **finish** — click to
+  paint, drag to paint a run. Players go down one click at a time, as many as
+  you like. Right-click paints floor, which is how you rub things out.
+- Keys **1–6** pick the tools.
+- A level needs at least one finish per player, all of them reachable, and at
+  least as many boxes as goals. Spare boxes are fine — they make a good red
+  herring.
 - **wide** and **tall** resize the grid (3 to 30 each way). What's there
   stays put; new squares are floor.
 - **The edge is solid.** There's no need to build a wall round the outside —
   walls are only for the inside of a level.
 
 Under the tools, Soko tells you what's wrong with the level as you go — no
-player, boxes and goals that don't match, boxes or goals no player can reach.
+player, more goals than boxes, too few finishes, or boxes, goals or finishes no
+player can reach.
 
 When it's playable:
 
@@ -176,6 +184,7 @@ also paste in levels you find elsewhere, with **paste a level**.
 | `*` | box already on a goal |
 | `@` | a player — as many as you like |
 | `+` | a player standing on a goal |
+| `!` | a finish (this one is Soko's own; other programs won't know it) |
 
 One thing to watch: **floor at the very start or end of a row must be `-`,
 not a space.** Spaces there get trimmed — they look like indentation, or like
@@ -230,7 +239,8 @@ finishes sliding before the next begins.
 
 Around it:
 
-- **`solved`** — what counts as finished.
+- **`won`** — what counts as finished: a box on every goal (`boxesHome`),
+  then every player on a finish. The game and the solver both ask it.
 - **`check`** — what makes a level unplayable in the editor.
 - **`undo`** — puts the last move back.
 
