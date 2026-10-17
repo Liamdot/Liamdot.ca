@@ -310,7 +310,7 @@ Around it:
 
 - **`won`** — what counts as finished: every goal filled (`goalsFilled`),
   then every player on a finish. The game and the solver both ask it.
-- **`stuck`** — every player in a hole, which brings up the "Stuck" card.
+- **`stuck`** — every player in a hole, which brings up undo and restart at the bottom of the board.
 - **`check`** — what makes a level unplayable in the editor.
 - **`undo`** — puts the last move back.
 

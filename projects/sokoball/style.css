@@ -326,6 +326,27 @@ button.level-row:hover,
   transform: translateX(-50%);
 }
 
+/* when every player is stuck in a hole: the two ways out, and nothing else */
+.stuck {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  z-index: 6;
+  display: flex;
+  gap: 8px;
+  transform: translateX(-50%);
+  animation: stuck-in 0.25s ease;
+}
+
+/* readable even if a big level runs under them */
+.stuck .pill:not(.strong) {
+  background: #2b2622;
+}
+
+@keyframes stuck-in {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+}
+
 /* ---- the editor ---- */
 
 .editor {

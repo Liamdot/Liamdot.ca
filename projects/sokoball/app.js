@@ -887,7 +887,7 @@ function pasteLevel() {
 // ===========================================================================
 
 function hideCards() {
-  for (const id of ["solved", "levels", "share"]) $(id).hidden = true;
+  for (const id of ["solved", "levels", "share", "stuck"]) $(id).hidden = true;
 }
 
 let flashTimer = 0;
@@ -914,24 +914,22 @@ function showSolved() {
   card.hidden = false;
 }
 
-// Every player is in a hole. Shares the solved card's place on the board.
+// Every player is in a hole: just the two ways out, quietly, at the bottom.
 function showStuck() {
-  const card = $("solved");
-  card.innerHTML = `
-    <h2>Stuck</h2>
-    <p class="sub">Every player is in a hole.</p>
-    <div class="row">
-      <button class="pill strong" data-go="undo">undo</button>
-      <button class="pill" data-go="again">restart</button>
-    </div>`;
-  card.hidden = false;
+  $("stuck").hidden = false;
 }
+
+$("stuck").addEventListener("click", (e) => {
+  const go = e.target.closest("[data-go]");
+  if (!go) return;
+  if (go.dataset.go === "undo") takeBack();
+  else restart();
+});
 
 $("solved").addEventListener("click", (e) => {
   const go = e.target.closest("[data-go]");
   if (!go) return;
   const what = go.dataset.go;
-  if (what === "undo") takeBack();
   if (what === "again") restart();
   if (what === "editor") setMode("make");
   if (what === "map") fade(() => goToMap());
