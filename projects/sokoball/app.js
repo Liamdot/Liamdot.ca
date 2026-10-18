@@ -1004,7 +1004,7 @@ async function copyText(text) {
 }
 
 function pasteLevel() {
-  const field = $("paste-field");
+  const field = $("paste-box");
   if (field.hidden) {
     field.hidden = false;
     field.value = "";
