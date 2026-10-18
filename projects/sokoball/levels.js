@@ -10,6 +10,18 @@
 // A level is remembered by what it looks like, so changing one starts its
 // record afresh - which is right, since it's a different puzzle now.
 
+/*
+GATE INTRO:
+
+#############
+#.  = $ =  .#
+#####@$ #####
+----# $  !#--
+----##  ###--
+-----####----
+
+*/
+
 const LEVELS = [
   {
     name: "First push",

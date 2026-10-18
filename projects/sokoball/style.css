@@ -245,6 +245,10 @@ button.level-row:hover,
 
 .level-row .name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .level-row .done {
@@ -289,6 +293,19 @@ button.level-row:hover,
 .level-row .tiny:hover {
   border-color: #e9a23b;
   color: #e9a23b;
+}
+
+/* the main thing to do with a level, so it stands out from the rest */
+.level-row .tiny.go {
+  border-color: #e9a23b;
+  background: #e9a23b;
+  color: #2b2622;
+  font-weight: 700;
+}
+
+.level-row .tiny.go:hover {
+  background: #f2b85b;
+  color: #2b2622;
 }
 
 .level-row .tiny.danger:hover,
@@ -560,6 +577,16 @@ button.level-row:hover,
 
   .bar > * {
     flex: none;
+  }
+
+  /* your levels: the name on its own line, the buttons under it */
+  .level-row.mine {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .level-row.mine .name-btn {
+    flex-basis: 100%;
   }
 
   .level-name {

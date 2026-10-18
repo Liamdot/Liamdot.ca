@@ -1105,6 +1105,7 @@ function showLevels() {
     ? save.mine.map((m) => `
       <div class="level-row mine">
         <button class="name-btn" data-play="mine" data-id="${esc(m.id)}"><span class="name">${esc(m.name)}</span>${mark(m.map)}</button>
+        <button class="tiny go" data-play="mine" data-id="${esc(m.id)}">play</button>
         <button class="tiny" data-edit="${esc(m.id)}">edit</button>
         <button class="tiny" data-share="${esc(m.id)}">share</button>
         <button class="tiny danger" data-delete="${esc(m.id)}">delete</button>
