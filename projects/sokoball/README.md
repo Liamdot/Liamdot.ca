@@ -229,18 +229,21 @@ Two traps when you redraw it, both of which I walked into making this one:
 The letters cap the campaign at 26 levels. If it ever needs more, that's a
 change to `parseWorld` in `sokoball.js`.
 
-Rooms you haven't walked into yet are hidden under fog, which lifts as you
-step in. Nothing in the map marks the rooms: they're the open areas between
+Rooms you haven't walked into yet aren't shown at all — just the background.
+Step into one and its squares flip over into view, rippling out from where
+you came in, with its walls and gaps turning alongside. Nothing in the map marks the rooms: they're the open areas between
 gaps, and a gap is a single open square in a wall with wall at least two deep
 on either side of it. So a gap through an ordinary wall splits two rooms, but
 a corridor between two short bits of wall inside a room — like the grate row
 in room 3 — doesn't. If the fog ever splits a room you meant as one, that's
-the rule to look at (`roomsOf` in `sokoball.js`). How the fog looks is
-`drawFog` in `app.js`.
+the rule to look at (`roomsOf` in `sokoball.js`). The flipping is `drawFog`
+in `app.js`: `FLIP_MS` is how long one square takes to turn, and `FLIP_STEP`
+how much later each square further out starts.
 
-The same rooms steer the camera: on the map it frames the room you're in and
-pans to the next one as you step into it. The zoom is set once for the whole
-map, so the biggest room fits with a square of wall round it. That's
+The same rooms steer the camera: on the map it centres on the room you're in
+and pans to the next one as you step into it, stopping at the map's edges.
+The zoom is set once for the whole map, far enough out to see your room and a
+whole room either side of it. That's
 `follow` in `app.js`, and `PAN_MS` is how long a pan takes.
 
 Where you are on the map, where you've pushed things and which rooms you've

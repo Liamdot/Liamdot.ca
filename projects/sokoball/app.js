@@ -143,11 +143,11 @@ function resize() {
   draw();
 }
 
-// On the map, the camera frames the room you're in, and pans across to the
-// next one when you step into it (PAN_MS). In a gap between rooms it stays on
-// the one you came from. The zoom is the same everywhere - enough to fit the
-// biggest room with a square of wall round it - so it never lurches in and
-// out, and the camera stops at the map's edges so there's never empty space
+// On the map, the camera centres on the room you're in, and pans across to
+// the next one when you step into it (PAN_MS). In a gap between rooms it stays
+// on the one you came from. The zoom is the same everywhere - far enough out to
+// see your room and a whole room either side of it, sized by the biggest room
+// on the map - so it never lurches in and out, and the camera stops at the map's edges so there's never empty space
 // past them. A map that fits on screen at that size just sits in the middle.
 const PAN_MS = 420;
 let mapCamera = null;            // what the camera is on: { room, from, to, t0 }, centres in squares
@@ -177,7 +177,8 @@ function roomBoxesOf() {
     across = Math.max(across, b.x1 - b.x0 + 1);
     down = Math.max(down, b.y1 - b.y0 + 1);
   }
-  roomBoxes = { world, boxes, across: across + 2, down: down + 2 };
+  // enough for your room and a whole room on each side of it, walls included
+  roomBoxes = { world, boxes, across: across * 3 + 4, down: down * 3 + 4 };
   return roomBoxes;
 }
 
@@ -374,6 +375,10 @@ function drawGame() {
   }
   for (const e of falling) picture("ball", ...going(e));
 
+  // on the map, the rooms you haven't been to yet are hidden - under the
+  // players, so they never vanish or flip over themselves
+  if (current && current.kind === "world") drawFog(tile, ox, oy);
+
   // a player stuck in a hole sits down in it, a little smaller - shrinking
   // into it over the end of the movement that took it there
   const face = playerPicture(game.facing);
@@ -385,8 +390,6 @@ function drawGame() {
     picture("player", x + (tile - size) / 2, y + (tile - size) / 2, size, face);
   }
 
-  // on the map, the rooms you haven't been to yet are under fog
-  if (current && current.kind === "world") drawFog(tile, ox, oy);
 }
 
 // A grate opening like a pair of trapdoors: it splits down the middle and each
@@ -679,122 +682,112 @@ function rememberMap() {
 
 // ---- the fog ----
 //
-// Rooms on the map you haven't walked into yet are hidden under fog. Stepping
-// into one clears it, fading over FOG_MS. Which rooms you've seen is saved
-// with the map.
+// Rooms on the map you haven't walked into yet aren't there at all - just the
+// background. Step into one and its squares flip over into view, rippling out
+// from where you came in: each starts FLIP_STEP later for each square further
+// away, and takes FLIP_MS to turn. The walls and gaps round a room come with
+// it, turning with the nearest of its squares. Which rooms you've seen is
+// saved with the map; they're just there when you come back.
 
-const FOG_MS = 450;
-const clearing = new Map();      // room -> when its fog started to lift
+const FLIP_MS = 260;
+const FLIP_STEP = 45;
+const BACKGROUND = "#2b2622";    // the stage behind the board
+const turning = new Map();       // room -> { t0, from }: when and where it started to show
 
 function explore(fade) {
-  const room = game.players.length ? world.rooms[game.players[0]] : -1;
+  const at = game.players.length ? game.players[0] : -1;
+  const room = at >= 0 ? world.rooms[at] : -1;
   if (room < 0 || save.world.seen.includes(room)) return;
   save.world.seen.push(room);
-  if (fade) clearing.set(room, performance.now());
+  if (fade) turning.set(room, { t0: performance.now(), from: at });
 }
 
-// How clear each square of the map is, 0 (fogged) to 1, and whether any room
-// is still in the middle of clearing.
-function fogOver(now) {
+// When each square of the map shows: -Infinity for squares that have always
+// been there, a time for ones still to turn over, Infinity for hidden ones.
+function showTimes() {
   const { width, height, rooms, gaps } = world;
-  const seenNow = (room) => {
-    if (room < 0 || !save.world.seen.includes(room)) return 0;
-    const t0 = clearing.get(room);
-    if (t0 === undefined) return 1;
-    const t = Math.min(1, (now - t0) / FOG_MS);
-    if (t >= 1) clearing.delete(room);
-    return t;
-  };
-  const roomClear = new Float32Array(width * height);
-  for (let i = 0; i < roomClear.length; i++) roomClear[i] = seenNow(rooms[i]);
-  // a gap shows once a room beside it does; a wall once anything next to it
-  // (corners included) does, so explored rooms keep their outline
-  const clear = new Float32Array(width * height);
-  const near = (i, diagonals, from) => {
+  const size = width * height;
+  const room = new Float64Array(size).fill(Infinity);
+  for (let i = 0; i < size; i++) {
+    const r = rooms[i];
+    if (r < 0 || !save.world.seen.includes(r)) continue;
+    const t = turning.get(r);
+    if (!t) room[i] = -Infinity;
+    else {
+      const dx = (i % width) - (t.from % width);
+      const dy = Math.floor(i / width) - Math.floor(t.from / width);
+      room[i] = t.t0 + Math.hypot(dx, dy) * FLIP_STEP;
+    }
+  }
+  // a gap shows with the first room beside it; a wall with the first room or
+  // gap beside it, corners included, so a room keeps its outline
+  const earliest = (i, diagonals, from) => {
     const x = i % width;
     const y = (i - x) / width;
-    let best = 0;
+    let best = Infinity;
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
-        if (!dx && !dy) continue;
-        if (!diagonals && dx && dy) continue;
+        if ((!dx && !dy) || (!diagonals && dx && dy)) continue;
         const nx = x + dx;
         const ny = y + dy;
         if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-        best = Math.max(best, from[ny * width + nx]);
+        best = Math.min(best, from[ny * width + nx]);
       }
     }
     return best;
   };
-  for (let i = 0; i < clear.length; i++) {
-    if (rooms[i] >= 0) clear[i] = roomClear[i];
-    else if (gaps[i]) clear[i] = near(i, false, roomClear);
-  }
-  const open = Float32Array.from(clear);
-  for (let i = 0; i < clear.length; i++) {
-    if (rooms[i] < 0 && !gaps[i]) clear[i] = near(i, true, open);
-  }
-  return { clear, fading: clearing.size > 0 };
+  const shown = Float64Array.from(room);
+  for (let i = 0; i < size; i++) if (gaps[i]) shown[i] = earliest(i, false, room);
+  const open = Float64Array.from(shown);
+  for (let i = 0; i < size; i++) if (rooms[i] < 0 && !gaps[i]) shown[i] = earliest(i, true, open);
+  return shown;
 }
 
-// The fog is drawn small - a few pixels a square - and stretched over the
-// board. Anything still hidden is covered completely; the soft edge is on the
-// visible side of the line, so not a sliver of a hidden room shows through.
-const fogCanvas = document.createElement("canvas");
-const FOG_EDGE = 0.45;           // how far the soft edge reaches in, in squares
-const FOG_SOLID = 0.15;          // and how much of that is still solid fog - more
-                                 // than the stretching blurs, so nothing hidden leaks
-let fogLoop = false;
+// Covers whatever hasn't shown yet, and turns over whatever's showing now: the
+// square is copied, blanked, and drawn back squeezed from edge-on to flat,
+// darker while it's still edge-on.
+const flipTile = document.createElement("canvas");
+let flipLoop = false;
 
 function drawFog(tile, ox, oy) {
-  const { width, height } = world;
-  const k = 4;
-  fogCanvas.width = width * k;
-  fogCanvas.height = height * k;
-  const f = fogCanvas.getContext("2d");
-  const { clear, fading } = fogOver(performance.now());
-  const image = f.createImageData(width * k, height * k);
-  for (let cy = 0; cy < height; cy++) {
-    for (let cx = 0; cx < width; cx++) {
-      const own = 1 - clear[cy * width + cx];
-      for (let py = 0; py < k; py++) {
-        for (let px = 0; px < k; px++) {
-          // where this pixel sits in its square, 0 to 1 each way
-          const sx = (px + 0.5) / k;
-          const sy = (py + 0.5) / k;
-          let fog = own;
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const nx = cx + dx;
-              const ny = cy + dy;
-              if ((!dx && !dy) || nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-              const theirs = 1 - clear[ny * width + nx];
-              if (theirs <= fog) continue;
-              const ax = dx < 0 ? sx : dx > 0 ? 1 - sx : 0;
-              const ay = dy < 0 ? sy : dy > 0 ? 1 - sy : 0;
-              const near = Math.min(1, Math.max(0, (FOG_EDGE - Math.hypot(ax, ay)) / (FOG_EDGE - FOG_SOLID)));
-              fog = Math.max(fog, theirs * near);
-            }
-          }
-          const at = (((cy * k + py) * width * k) + cx * k + px) * 4;
-          image.data[at] = 43;
-          image.data[at + 1] = 38;
-          image.data[at + 2] = 34;
-          image.data[at + 3] = Math.round(255 * fog);
-        }
-      }
+  const { width } = world;
+  const now = performance.now();
+  const shown = showTimes();
+  const ratio = window.devicePixelRatio || 1;
+  let busy = false;
+  for (let i = 0; i < shown.length; i++) {
+    const since = now - shown[i];
+    if (since >= FLIP_MS) continue;
+    const x = ox + (i % width) * tile;
+    const y = oy + Math.floor(i / width) * tile;
+    if (since < 0) {
+      // not yet: nothing there. A hair over size, so no seams show between.
+      ctx.fillStyle = BACKGROUND;
+      ctx.fillRect(x - 0.5, y - 0.5, tile + 1, tile + 1);
+      if (shown[i] !== Infinity) busy = true;
+      continue;
     }
+    busy = true;
+    const px = Math.max(1, Math.round(tile * ratio));
+    flipTile.width = px;
+    flipTile.height = px;
+    flipTile.getContext("2d").drawImage(canvas, Math.round(x * ratio), Math.round(y * ratio), px, px, 0, 0, px, px);
+    ctx.fillStyle = BACKGROUND;
+    ctx.fillRect(x - 0.5, y - 0.5, tile + 1, tile + 1);
+    const t = since / FLIP_MS;
+    const across = Math.sin((t * Math.PI) / 2);   // edge-on to flat
+    const w = tile * across;
+    const left = x + (tile - w) / 2;
+    ctx.drawImage(flipTile, left, y, w, tile);
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * (1 - across)})`;
+    ctx.fillRect(left, y, w, tile);
   }
-  f.putImageData(image, 0, 0);
-  ctx.save();
-  ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(fogCanvas, ox, oy, width * tile, height * tile);
-  ctx.restore();
-  // keep drawing while a room is still clearing
-  if (fading && !fogLoop) {
-    fogLoop = true;
+  // once everything's turned, forget when it did
+  if (!busy) turning.clear();
+  else if (!flipLoop) {
+    flipLoop = true;
     requestAnimationFrame(() => {
-      fogLoop = false;
+      flipLoop = false;
       draw();
     });
   }
