@@ -24,7 +24,7 @@ const SAVE_KEY = "sokoball";
 
 const save = {
   solved: {},   // level key -> true, for every level you've solved
-  world: null,  // the map as you left it: { key, player, balls, holes, freed }
+  world: null,  // the map as you left it: { key, player, balls, holes, freed, seen }
   mine: [],     // levels you've kept: { id, name, map }
   draft: null,  // what's in the editor: { id, name, map }
 };
@@ -301,6 +301,9 @@ function drawGame() {
     const size = tile * (1 - sunk);
     picture("player", x + (tile - size) / 2, y + (tile - size) / 2, size, face);
   }
+
+  // on the map, the rooms you haven't been to yet are under fog
+  if (current && current.kind === "world") drawFog(tile, ox, oy);
 }
 
 // A grate opening like a pair of trapdoors: it splits down the middle and each
@@ -540,7 +543,7 @@ function goToMap(at = null) {
   const level = SOKOBALL.worldLevel(world, solved);
   const key = keyOf(WORLD);
   if (!save.world || save.world.key !== key) {
-    save.world = { key, player: world.start, balls: null, holes: null, freed: [] };
+    save.world = { key, player: world.start, balls: null, holes: null, freed: [], seen: [] };
   }
   const saved = save.world;
 
@@ -565,6 +568,8 @@ function goToMap(at = null) {
   const player = at !== null ? at : saved.player;
   const safe = (p) => level.inside[p] && !level.wall[p] && !game.ballAt[p] && !game.holes[p] && !level.grate[p];
   game.players = [safe(player) ? player : world.start];
+  if (!Array.isArray(saved.seen)) saved.seen = [];
+  explore(false);
   rememberMap();
 
   anim = null;
@@ -586,6 +591,129 @@ function rememberMap() {
     if (game.holes[i]) save.world.holes.push(i);
   }
   store();
+}
+
+// ---- the fog ----
+//
+// Rooms on the map you haven't walked into yet are hidden under fog. Stepping
+// into one clears it, fading over FOG_MS. Which rooms you've seen is saved
+// with the map.
+
+const FOG_MS = 450;
+const clearing = new Map();      // room -> when its fog started to lift
+
+function explore(fade) {
+  const room = game.players.length ? world.rooms[game.players[0]] : -1;
+  if (room < 0 || save.world.seen.includes(room)) return;
+  save.world.seen.push(room);
+  if (fade) clearing.set(room, performance.now());
+}
+
+// How clear each square of the map is, 0 (fogged) to 1, and whether any room
+// is still in the middle of clearing.
+function fogOver(now) {
+  const { width, height, rooms, gaps } = world;
+  const seenNow = (room) => {
+    if (room < 0 || !save.world.seen.includes(room)) return 0;
+    const t0 = clearing.get(room);
+    if (t0 === undefined) return 1;
+    const t = Math.min(1, (now - t0) / FOG_MS);
+    if (t >= 1) clearing.delete(room);
+    return t;
+  };
+  const roomClear = new Float32Array(width * height);
+  for (let i = 0; i < roomClear.length; i++) roomClear[i] = seenNow(rooms[i]);
+  // a gap shows once a room beside it does; a wall once anything next to it
+  // (corners included) does, so explored rooms keep their outline
+  const clear = new Float32Array(width * height);
+  const near = (i, diagonals, from) => {
+    const x = i % width;
+    const y = (i - x) / width;
+    let best = 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dy) continue;
+        if (!diagonals && dx && dy) continue;
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        best = Math.max(best, from[ny * width + nx]);
+      }
+    }
+    return best;
+  };
+  for (let i = 0; i < clear.length; i++) {
+    if (rooms[i] >= 0) clear[i] = roomClear[i];
+    else if (gaps[i]) clear[i] = near(i, false, roomClear);
+  }
+  const open = Float32Array.from(clear);
+  for (let i = 0; i < clear.length; i++) {
+    if (rooms[i] < 0 && !gaps[i]) clear[i] = near(i, true, open);
+  }
+  return { clear, fading: clearing.size > 0 };
+}
+
+// The fog is drawn small - a few pixels a square - and stretched over the
+// board. Anything still hidden is covered completely; the soft edge is on the
+// visible side of the line, so not a sliver of a hidden room shows through.
+const fogCanvas = document.createElement("canvas");
+const FOG_EDGE = 0.45;           // how far the soft edge reaches in, in squares
+const FOG_SOLID = 0.15;          // and how much of that is still solid fog - more
+                                 // than the stretching blurs, so nothing hidden leaks
+let fogLoop = false;
+
+function drawFog(tile, ox, oy) {
+  const { width, height } = world;
+  const k = 4;
+  fogCanvas.width = width * k;
+  fogCanvas.height = height * k;
+  const f = fogCanvas.getContext("2d");
+  const { clear, fading } = fogOver(performance.now());
+  const image = f.createImageData(width * k, height * k);
+  for (let cy = 0; cy < height; cy++) {
+    for (let cx = 0; cx < width; cx++) {
+      const own = 1 - clear[cy * width + cx];
+      for (let py = 0; py < k; py++) {
+        for (let px = 0; px < k; px++) {
+          // where this pixel sits in its square, 0 to 1 each way
+          const sx = (px + 0.5) / k;
+          const sy = (py + 0.5) / k;
+          let fog = own;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const nx = cx + dx;
+              const ny = cy + dy;
+              if ((!dx && !dy) || nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+              const theirs = 1 - clear[ny * width + nx];
+              if (theirs <= fog) continue;
+              const ax = dx < 0 ? sx : dx > 0 ? 1 - sx : 0;
+              const ay = dy < 0 ? sy : dy > 0 ? 1 - sy : 0;
+              const near = Math.min(1, Math.max(0, (FOG_EDGE - Math.hypot(ax, ay)) / (FOG_EDGE - FOG_SOLID)));
+              fog = Math.max(fog, theirs * near);
+            }
+          }
+          const at = (((cy * k + py) * width * k) + cx * k + px) * 4;
+          image.data[at] = 43;
+          image.data[at + 1] = 38;
+          image.data[at + 2] = 34;
+          image.data[at + 3] = Math.round(255 * fog);
+        }
+      }
+    }
+  }
+  f.putImageData(image, 0, 0);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(fogCanvas, ox, oy, width * tile, height * tile);
+  ctx.restore();
+  // keep drawing while a room is still clearing
+  if (fading && !fogLoop) {
+    fogLoop = true;
+    requestAnimationFrame(() => {
+      fogLoop = false;
+      draw();
+    });
+  }
 }
 
 function enterDoor() {
@@ -653,6 +781,7 @@ function act(dir) {
   }
   animate(change);
   if (current.kind === "world") {
+    explore(true);
     rememberMap();
     showBar();
     if (SOKOBALL.stuck(game)) {

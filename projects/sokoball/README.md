@@ -229,9 +229,18 @@ Two traps when you redraw it, both of which I walked into making this one:
 The letters cap the campaign at 26 levels. If it ever needs more, that's a
 change to `parseWorld` in `sokoball.js`.
 
-Where you are on the map and where you've pushed things is saved. Change the
-map and everyone's balls go back to where they started (solved levels stay
-solved).
+Rooms you haven't walked into yet are hidden under fog, which lifts as you
+step in. Nothing in the map marks the rooms: they're the open areas between
+gaps, and a gap is a single open square in a wall with wall at least two deep
+on either side of it. So a gap through an ordinary wall splits two rooms, but
+a corridor between two short bits of wall inside a room — like the grate row
+in room 3 — doesn't. If the fog ever splits a room you meant as one, that's
+the rule to look at (`roomsOf` in `sokoball.js`). How the fog looks is
+`drawFog` in `app.js`.
+
+Where you are on the map, where you've pushed things and which rooms you've
+seen are saved. Change the map and everyone's balls go back to where they
+started and the fog comes back (solved levels stay solved).
 
 ### The text format
 

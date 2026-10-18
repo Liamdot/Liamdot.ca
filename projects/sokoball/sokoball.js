@@ -458,6 +458,13 @@ const SOKOBALL = (() => {
   // frees its balls, and you push them out of the way to get on. A ball can be
   // pushed onto a door like anywhere else, and then has to be moved off it
   // again before the door can be used.
+  //
+  // The map is also split into rooms, for the fog over the parts you haven't
+  // been to yet. Nothing marks them: a room is an open area bounded by walls
+  // and gaps, and a gap is a single open square in a wall - wall at least two
+  // squares deep on either side of it, so a gap through a thick wall or a
+  // corridor between two short bits of wall doesn't count. Gaps belong to no
+  // room. rooms[i] is a room number, or -1 for walls and gaps.
 
   function parseWorld(text) {
     const rows = rowsOf(text);
@@ -495,7 +502,54 @@ const SOKOBALL = (() => {
     // everything walkable, as if every ball were free, so the whole map is drawn
     // from the start rather than only the part you can get to yet
     const inside = reach({ width, height, wall }, [start]);
-    return { width, height, wall, hole, grate, doors, locks, balls, start, inside };
+    const { rooms, gaps } = roomsOf(width, height, wall);
+    return { width, height, wall, hole, grate, doors, locks, balls, start, inside, rooms, gaps };
+  }
+
+  function roomsOf(width, height, wall) {
+    const size = width * height;
+    const solid = (x, y) => x < 0 || y < 0 || x >= width || y >= height || wall[y * width + x] === 1;
+    // how many squares of wall in a row, starting at (x, y) and heading (dx, dy)
+    const depth = (x, y, dx, dy) => {
+      let n = 0;
+      while (solid(x, y) && n < 2) {
+        n++;
+        x += dx;
+        y += dy;
+      }
+      return n;
+    };
+    const gaps = new Uint8Array(size);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (solid(x, y)) continue;
+        const across = depth(x - 1, y, -1, 0) >= 2 && depth(x + 1, y, 1, 0) >= 2;
+        const down = depth(x, y - 1, 0, -1) >= 2 && depth(x, y + 1, 0, 1) >= 2;
+        if (across || down) gaps[y * width + x] = 1;
+      }
+    }
+    const rooms = new Int16Array(size).fill(-1);
+    let count = 0;
+    for (let i = 0; i < size; i++) {
+      if (wall[i] || gaps[i] || rooms[i] >= 0) continue;
+      const stack = [i];
+      rooms[i] = count;
+      while (stack.length) {
+        const c = stack.pop();
+        const cx = c % width;
+        for (const [dx, dy] of DIRS) {
+          const nx = cx + dx;
+          const ny = (c - cx) / width + dy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          const n = ny * width + nx;
+          if (wall[n] || gaps[n] || rooms[n] >= 0) continue;
+          rooms[n] = count;
+          stack.push(n);
+        }
+      }
+      count++;
+    }
+    return { rooms, gaps };
   }
 
   // The map as a level to walk round, with the balls of every level in
