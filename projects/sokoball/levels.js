@@ -44,11 +44,14 @@ const LEVELS = [
   {
     name: "Stepping stone",
     map: `
-      #########
-      #   ^   #
-      #@$$^ .!#
-      #   ^   #
-      #########
+      ##############
+      #   ^        #
+      #@$$^ .!     #
+      #   ^        #
+      #            #
+      #            #
+      ##############
+      
     `,
   },
   {
@@ -115,7 +118,8 @@ const LEVELS = [
 // lowercase letter is a ball held in place until the level with that letter is
 // solved. Put a level's balls where they block the way to the next door, and
 // solving it lets you push them aside. The rest is the usual: # wall, space or
-// - floor, @ where you start, $ a ball that's free from the start.
+// - floor, @ where you start, $ a ball that's free from the start, and ^ and
+// = for holes and grates, which work the same as in a level.
 //
 // Two things to watch when you redraw it. Balls can be pushed onto doors, so a
 // door straight in line with a gap is easy to bury: put doors off to one side.
@@ -127,13 +131,13 @@ const LEVELS = [
 
 const WORLD = `
   #######################
-  #     #    #     #    #
-  #  @  a  B #   C c    #
-  #  A  #    b     #  D #
-  #     #    #     #    #
-  ###################d###
-  # H  #     #     #    #
-  #    g  G  f  F  e    #
-  #    #     #     #  E #
+  #     #  B #  C  #    #
+  #  @  a    # ### #  D #
+  #  A  #    b   =^c    #
+  #     #    #   ###    #
+  ################### ###
+  #    #     #  F  #    #
+  # H                   #
+  #    #  G  #     #  E #
   #######################
 `;

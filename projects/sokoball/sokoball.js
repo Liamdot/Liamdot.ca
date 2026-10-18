@@ -452,11 +452,12 @@ const SOKOBALL = (() => {
   //   a to z   a ball that's locked in place until the level with the same
   //            letter is solved - "b" comes free when level B is done
   //
-  // plus #, floor, @ for where you start, and $ for a ball that's free from the
-  // start. Locked balls are what keep the next door shut: solving a level frees
-  // its balls, and you push them out of the way to get on. A ball can be pushed
-  // onto a door like anywhere else, and then has to be moved off it again
-  // before the door can be used.
+  // plus #, floor, @ for where you start, $ for a ball that's free from the
+  // start, and ^ and = for holes and grates, which work just as they do in a
+  // level. Locked balls are what keep the next door shut: solving a level
+  // frees its balls, and you push them out of the way to get on. A ball can be
+  // pushed onto a door like anywhere else, and then has to be moved off it
+  // again before the door can be used.
 
   function parseWorld(text) {
     const rows = rowsOf(text);
@@ -465,6 +466,8 @@ const SOKOBALL = (() => {
     const width = rows[0].length;
     const size = width * height;
     const wall = new Uint8Array(size);
+    const hole = new Uint8Array(size);
+    const grate = new Uint8Array(size);
     const doors = new Map();        // square -> level number, counting from 0
     const locks = new Map();        // level number -> the squares of its locked balls
     const balls = [];
@@ -477,6 +480,8 @@ const SOKOBALL = (() => {
         if (ch === WALL) wall[i] = 1;
         else if (ch === PLAYER) start = i;
         else if (ch === BALL) balls.push(i);
+        else if (ch === HOLE) hole[i] = 1;
+        else if (ch === GRATE) grate[i] = 1;
         else if (ch >= "A" && ch <= "Z") doors.set(i, ch.charCodeAt(0) - 65);
         else if (ch >= "a" && ch <= "z") {
           const n = ch.charCodeAt(0) - 97;
@@ -490,7 +495,7 @@ const SOKOBALL = (() => {
     // everything walkable, as if every ball were free, so the whole map is drawn
     // from the start rather than only the part you can get to yet
     const inside = reach({ width, height, wall }, [start]);
-    return { width, height, wall, doors, locks, balls, start, inside };
+    return { width, height, wall, hole, grate, doors, locks, balls, start, inside };
   }
 
   // The map as a level to walk round, with the balls of every level in
@@ -514,7 +519,7 @@ const SOKOBALL = (() => {
     for (const i of world.doors.keys()) finish[i] = 1;
     return {
       width: world.width, height: world.height, wall, locked, finish, balls,
-      goal: new Uint8Array(size), hole: new Uint8Array(size), grate: new Uint8Array(size), players: [world.start],
+      goal: new Uint8Array(size), hole: world.hole, grate: world.grate, players: [world.start],
       inside: world.inside, doors: world.doors,
     };
   }

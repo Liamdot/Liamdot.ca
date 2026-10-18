@@ -24,7 +24,7 @@ const SAVE_KEY = "sokoball";
 
 const save = {
   solved: {},   // level key -> true, for every level you've solved
-  world: null,  // the map as you left it: { key, player, balls, freed }
+  world: null,  // the map as you left it: { key, player, balls, holes, freed }
   mine: [],     // levels you've kept: { id, name, map }
   draft: null,  // what's in the editor: { id, name, map }
 };
@@ -540,7 +540,7 @@ function goToMap(at = null) {
   const level = SOKOBALL.worldLevel(world, solved);
   const key = keyOf(WORLD);
   if (!save.world || save.world.key !== key) {
-    save.world = { key, player: world.start, balls: null, freed: [] };
+    save.world = { key, player: world.start, balls: null, holes: null, freed: [] };
   }
   const saved = save.world;
 
@@ -556,9 +556,15 @@ function goToMap(at = null) {
       if (!saved.freed.includes(n)) for (const i of world.locks.get(n) || []) game.ballAt[i] = 1;
     }
   }
+  // and the holes still open, if any have been filled
+  if (saved.holes && saved.holes.every((h) => world.hole[h])) {
+    game.holes.fill(0);
+    for (const h of saved.holes) game.holes[h] = 1;
+  }
   saved.freed = [...solved];
   const player = at !== null ? at : saved.player;
-  game.players = [level.inside[player] && !level.wall[player] && !game.ballAt[player] ? player : world.start];
+  const safe = (p) => level.inside[p] && !level.wall[p] && !game.ballAt[p] && !game.holes[p] && !level.grate[p];
+  game.players = [safe(player) ? player : world.start];
   rememberMap();
 
   anim = null;
@@ -568,11 +574,17 @@ function goToMap(at = null) {
   draw();
 }
 
+// Only ever a map you can carry on from: stuck in a hole or gone through a
+// grate isn't saved, so a reload puts you back before it happened.
 function rememberMap() {
-  if (!current || current.kind !== "world") return;
+  if (!current || current.kind !== "world" || SOKOBALL.stuck(game)) return;
   save.world.player = game.players[0];
   save.world.balls = [];
-  for (let i = 0; i < game.ballAt.length; i++) if (game.ballAt[i]) save.world.balls.push(i);
+  save.world.holes = [];
+  for (let i = 0; i < game.ballAt.length; i++) {
+    if (game.ballAt[i]) save.world.balls.push(i);
+    if (game.holes[i]) save.world.holes.push(i);
+  }
   store();
 }
 
@@ -643,6 +655,10 @@ function act(dir) {
   if (current.kind === "world") {
     rememberMap();
     showBar();
+    if (SOKOBALL.stuck(game)) {
+      letGoOfEverything();
+      finishTimer = setTimeout(() => { if (SOKOBALL.stuck(game)) showStuck(); }, anim.ms + 40);
+    }
     return;
   }
   showBar();
@@ -690,6 +706,7 @@ function restart() {
   if (current.kind === "world") {
     rewound();
     save.world.balls = null;
+    save.world.holes = null;
     goToMap(world.start);
     return;
   }
