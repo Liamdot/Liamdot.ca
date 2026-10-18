@@ -238,6 +238,11 @@ in room 3 — doesn't. If the fog ever splits a room you meant as one, that's
 the rule to look at (`roomsOf` in `sokoball.js`). How the fog looks is
 `drawFog` in `app.js`.
 
+The same rooms steer the camera: on the map it frames the room you're in and
+pans to the next one as you step into it. The zoom is set once for the whole
+map, so the biggest room fits with a square of wall round it. That's
+`follow` in `app.js`, and `PAN_MS` is how long a pan takes.
+
 Where you are on the map, where you've pushed things and which rooms you've
 seen are saved. Change the map and everyone's balls go back to where they
 started and the fog comes back (solved levels stay solved).

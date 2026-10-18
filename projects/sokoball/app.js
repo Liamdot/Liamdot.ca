@@ -143,6 +143,88 @@ function resize() {
   draw();
 }
 
+// On the map, the camera frames the room you're in, and pans across to the
+// next one when you step into it (PAN_MS). In a gap between rooms it stays on
+// the one you came from. The zoom is the same everywhere - enough to fit the
+// biggest room with a square of wall round it - so it never lurches in and
+// out, and the camera stops at the map's edges so there's never empty space
+// past them. A map that fits on screen at that size just sits in the middle.
+const PAN_MS = 420;
+let mapCamera = null;            // what the camera is on: { room, from, to, t0 }, centres in squares
+let panLoop = false;
+
+// Each room's middle and size, in squares.
+let roomBoxes = null;
+function roomBoxesOf() {
+  if (roomBoxes && roomBoxes.world === world) return roomBoxes;
+  const boxes = new Map();
+  for (let i = 0; i < world.rooms.length; i++) {
+    const room = world.rooms[i];
+    if (room < 0) continue;
+    const x = i % world.width;
+    const y = Math.floor(i / world.width);
+    const b = boxes.get(room) || { x0: x, x1: x, y0: y, y1: y };
+    b.x0 = Math.min(b.x0, x);
+    b.x1 = Math.max(b.x1, x);
+    b.y0 = Math.min(b.y0, y);
+    b.y1 = Math.max(b.y1, y);
+    boxes.set(room, b);
+  }
+  let across = 1;
+  let down = 1;
+  for (const b of boxes.values()) {
+    b.middle = [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2];
+    across = Math.max(across, b.x1 - b.x0 + 1);
+    down = Math.max(down, b.y1 - b.y0 + 1);
+  }
+  roomBoxes = { world, boxes, across: across + 2, down: down + 2 };
+  return roomBoxes;
+}
+
+function follow(level, fit) {
+  const pad = 14;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  const { boxes, across, down } = roomBoxesOf();
+  const tile = Math.max(fit, Math.min(72, Math.floor(Math.min((w - pad * 2) / across, (h - pad * 2) / down))));
+
+  // which room to look at: the one the player's in, or the last one
+  const now = performance.now();
+  const room = game.players.length ? world.rooms[game.players[0]] : -1;
+  if (room >= 0 && boxes.has(room) && (!mapCamera || mapCamera.room !== room)) {
+    const to = boxes.get(room).middle;
+    // the first look is straight there; after that, pan from wherever it is now
+    mapCamera = mapCamera
+      ? { room, from: cameraAt(now), to, t0: now }
+      : { room, from: to, to, t0: now - PAN_MS };
+  }
+  const [cx, cy] = mapCamera ? cameraAt(now) : [level.width / 2, level.height / 2];
+  if (mapCamera && now - mapCamera.t0 < PAN_MS && !panLoop) {
+    panLoop = true;
+    requestAnimationFrame(() => {
+      panLoop = false;
+      draw();
+    });
+  }
+
+  // the room in the middle - unless that would leave a gap past the edge of
+  // a map too big for the screen, in which case it stops at the edge
+  const place = (squares, span, c) => {
+    const centred = span / 2 - (c + 0.5) * tile;
+    if (squares * tile <= span - pad * 2) return Math.round(centred);
+    return Math.round(Math.min(pad, Math.max(span - squares * tile - pad, centred)));
+  };
+  return { tile, ox: place(level.width, w, cx), oy: place(level.height, h, cy) };
+}
+
+// Where the camera is right now, partway through a pan if it's panning.
+function cameraAt(now) {
+  const { from, to, t0 } = mapCamera;
+  let t = Math.min(1, Math.max(0, (now - t0) / PAN_MS));
+  t = t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+  return [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
+}
+
 // The biggest square tile that fits the whole level on screen, and where the
 // top-left corner of it goes.
 function layout(width, height) {
@@ -184,7 +266,7 @@ function draw() {
 
 function drawGame() {
   const { level, ballAt } = game;
-  const { tile, ox, oy } = layout(level.width, level.height);
+  let { tile, ox, oy } = layout(level.width, level.height);
   const at = (i) => [ox + (i % level.width) * tile, oy + Math.floor(i / level.width) * tile];
 
   // How far through its own movement each piece is, eased so it settles.
@@ -221,6 +303,7 @@ function drawGame() {
     }
     return { xy: at(cell), t: 1 };
   };
+  if (current && current.kind === "world") ({ tile, ox, oy } = follow(level, tile));
   const clamp = (v) => Math.min(1, Math.max(0, v));
   const since = (e) => now - anim.t0 - e.start;
 
@@ -549,6 +632,7 @@ function goToMap(at = null) {
 
   clearTimeout(finishTimer);
   current = { kind: "world", name: "Map" };
+  mapCamera = null;                          // arriving: no pan, straight to the room
   game = SOKOBALL.start(level);
   // the balls where you left them, if they still make sense on this map -
   // plus any freed since, which start where they were locked
