@@ -211,7 +211,7 @@ as a level, with two extra kinds of character:
 | character | means |
 |---|---|
 | `A` to `Z` | the door to a level — `A` is the first in `LEVELS`, `B` the second |
-| `a` to `z` | a ball locked in place until the level with the same letter is solved |
+| `a` to `z` | a ball locked in place until the level with the same letter, and every level before it, is solved |
 | `#` `@` `$` | wall, where you start, and a ball that's free from the start |
 
 The idea is that each level's balls sit in the gaps between rooms, so the way

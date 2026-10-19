@@ -611,6 +611,15 @@ function solvedLevels() {
   return new Set(LEVELS.map((lv, n) => (save.solved[keyOf(lv.map)] ? n : -1)).filter((n) => n >= 0));
 }
 
+// Which lock letters have come free: a lock opens once its level and every
+// level before it are solved, so a gate out of a room full of doors stays shut
+// until the whole room is done, whatever order you play it in.
+function freedLocks(solved) {
+  const freed = new Set();
+  for (let n = 0; n < LEVELS.length && solved.has(n); n++) freed.add(n);
+  return freed;
+}
+
 function doorOf(n) {
   for (const [i, m] of world.doors) if (m === n) return i;
   return null;
@@ -625,8 +634,8 @@ function doorHere() {
 
 // Back to the map, standing on square `at` if given, or wherever you were.
 function goToMap(at = null) {
-  const solved = solvedLevels();
-  const level = SOKOBALL.worldLevel(world, solved);
+  const freed = freedLocks(solvedLevels());
+  const level = SOKOBALL.worldLevel(world, freed);
   const key = keyOf(WORLD);
   if (!save.world || save.world.key !== key) {
     save.world = { key, player: world.start, balls: null, holes: null, freed: [], seen: [] };
@@ -642,7 +651,7 @@ function goToMap(at = null) {
   if (saved.balls && saved.balls.every((b) => level.inside[b] && !level.wall[b])) {
     game.ballAt.fill(0);
     for (const b of saved.balls) game.ballAt[b] = 1;
-    for (const n of solved) {
+    for (const n of freed) {
       if (!saved.freed.includes(n)) for (const i of world.locks.get(n) || []) game.ballAt[i] = 1;
     }
   }
@@ -651,7 +660,7 @@ function goToMap(at = null) {
     game.holes.fill(0);
     for (const h of saved.holes) game.holes[h] = 1;
   }
-  saved.freed = [...solved];
+  saved.freed = [...freed];
   const player = at !== null ? at : saved.player;
   const safe = (p) => level.inside[p] && !level.wall[p] && !game.ballAt[p] && !game.holes[p] && !level.grate[p];
   game.players = [safe(player) ? player : world.start];

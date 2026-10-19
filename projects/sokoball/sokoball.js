@@ -450,7 +450,8 @@ const SOKOBALL = (() => {
   //
   //   A to Z   the door to a level: A is the first in levels.js, B the second...
   //   a to z   a ball that's locked in place until the level with the same
-  //            letter is solved - "b" comes free when level B is done
+  //            letter, and every level before it, is solved - "e" comes free
+  //            once A to E are all done, in any order
   //
   // plus #, floor, @ for where you start, $ for a ball that's free from the
   // start, and ^ and = for holes and grates, which work just as they do in a
@@ -552,10 +553,10 @@ const SOKOBALL = (() => {
     return { rooms, gaps };
   }
 
-  // The map as a level to walk round, with the balls of every level in
-  // `solved` (a Set of level numbers) let loose. Locked balls stand as walls.
+  // The map as a level to walk round, with the balls of every lock in `freed`
+  // (a Set of level numbers) let loose. Locked balls stand as walls.
   // Doors go in `finish` too, though nothing about moving treats them differently.
-  function worldLevel(world, solved) {
+  function worldLevel(world, freed) {
     const size = world.width * world.height;
     const wall = world.wall.slice();
     const locked = new Uint8Array(size);
@@ -563,7 +564,7 @@ const SOKOBALL = (() => {
     const balls = world.balls.slice();
     for (const [n, squares] of world.locks) {
       for (const i of squares) {
-        if (solved.has(n)) balls.push(i);
+        if (freed.has(n)) balls.push(i);
         else {
           wall[i] = 1;
           locked[i] = 1;

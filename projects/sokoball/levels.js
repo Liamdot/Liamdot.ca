@@ -20,9 +20,13 @@ GATE INTRO:
 ----##  ###--
 -----####----
 
+
+
+
 */
 
 const LEVELS = [
+  // The start room: the basics.
   {
     name: "First push",
     map: `
@@ -75,6 +79,7 @@ const LEVELS = [
       #######
     `,
   },
+  // The second room: harder.
   {
     name: "Island",
     map: `
@@ -111,13 +116,74 @@ const LEVELS = [
       ###########
     `,
   },
+  // The third room, past the hole and the grate on the map: grates.
+  {
+    name: "Grateful",
+    map: `
+      ##########
+      #=  # ^  #
+      #!=   @^ #
+      #=  ##^ ^#
+      ####### ##
+      ----### ##
+      ----#^@^^#
+      ----###@##
+      ------###-
+      ----------
+    `,
+  },
+  {
+    name: "Grates Intro",
+    map: `
+      ##############
+      #       =    #
+      # ! @   =   .#
+      #       =    #
+      #### #########
+      -#   ###  #---
+      -#   ###  #---
+      -## ####  #---
+      --# ####$$##--
+      --#        #--
+      --#  ###   #--
+      --##########--
+    `,
+  },
+  {
+    name: "Grates 2",
+    map: `
+      #############
+      #.  = $ =  .#
+      #####@$ #####
+      ----# $  !#--
+      ----##  ###--
+      -----####----
+    `,
+  },
+  {
+    name: "5-Pin Bowling",
+    map: `
+      --#######--
+      --#.....#--
+      --#     #--
+      --#     #--
+      --#=====#--
+      ###=   =###
+      #    $    #
+      # #$$$$$# #
+      #   ###   #
+      #   @ !   #
+      ###########
+    `,
+  },
 ];
 
 // The map. Walk onto a door and press Enter to play its level. Doors are
-// capital letters - A is the first level above, B the second - and each
-// lowercase letter is a ball held in place until the level with that letter is
-// solved. Put a level's balls where they block the way to the next door, and
-// solving it lets you push them aside. The rest is the usual: # wall, space or
+// capital letters - A is the first level above, B the second - and a room can
+// have as many as you like. Each lowercase letter is a ball held in place until
+// the level with that letter, and every level before it, is solved: put "e" in
+// the way out of a room holding doors A to E, and it opens once the whole room
+// is done, in whatever order. Solving them lets you push the balls aside. The rest is the usual: # wall, space or
 // - floor, @ where you start, $ a ball that's free from the start, and ^ and
 // = for holes and grates, which work the same as in a level.
 //
@@ -131,13 +197,13 @@ const LEVELS = [
 
 const WORLD = `
   #######################
-  #     #  B #  C  #    #
-  #  @  a    # ### #  D #
-  #  A  #    b   =^c    #
-  #     #    #   ###    #
+  # A B # F G#     #I  J#
+  #     e    # ### #    #
+  # C@D #    h   =^h    #
+  #  E  #  H # ### #K  L#
   ################### ###
-  #    #     #  F  #    #
-  # H                   #
-  #    #  G  #     #  E #
+  #    #     #     #    #
+  #                     #
+  #    #     #     #    #
   #######################
 `;
