@@ -251,7 +251,7 @@ that level counts as solved — the door goes green, and if it was the last one
 a lock was waiting on, the balls come free. It's not in the info panel, but
 the site's code is public, so anyone who reads `app.js` can find it. The word
 is `MAGIC` near the top of section 8 in `app.js`; change it, or delete
-`spell` and `openSesame`, before you'd rather it wasn't there.
+`spell` and `openSesame` if you'd rather it wasn't there.
 
 Where you are on the map, where you've pushed things and which rooms you've
 seen are saved. Change the map and everyone's balls go back to where they
