@@ -42,8 +42,9 @@ def check_text(text, allowed, what):
 
 def rewrite_levels(source, levels, world):
     """The levels.js text with its LEVELS list and WORLD map replaced. Comment
-    lines just above a level stay with it, matched by name; everything else in
-    the file is left as it was."""
+    lines just above a level stay with it, matched by the name it had (`was`),
+    so renaming a level keeps them; everything else in the file is left as it
+    was."""
     start = source.index("const LEVELS = [")
     end = source.index("];", start) + 2
     old = source[start:end]
@@ -54,8 +55,9 @@ def rewrite_levels(source, levels, world):
     blocks = []
     for level in levels:
         name = json.dumps(level["name"], ensure_ascii=False)
+        was = json.dumps(level.get("was") or level["name"], ensure_ascii=False)
         rows = "".join(f"      {row}\n" for row in level["rows"])
-        blocks.append(f"{notes.get(name, '')}  {{\n    name: {name},\n    map: `\n{rows}    `,\n  }},")
+        blocks.append(f"{notes.get(was, '')}  {{\n    name: {name},\n    map: `\n{rows}    `,\n  }},")
     source = source[:start] + "const LEVELS = [\n" + "\n".join(blocks) + "\n];" + source[end:]
 
     start = source.index("const WORLD = `")
@@ -96,7 +98,8 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
                 name = str(level["name"]).strip()
                 if not name or len(name) > 60 or "\n" in name:
                     raise ValueError(f"level {n + 1}'s name is missing or too long")
-                levels.append({"name": name, "rows": check_text(level["map"], LEVEL_CHARS, f"{name}")})
+                was = str(level.get("was") or "")[:60]
+                levels.append({"name": name, "was": was, "rows": check_text(level["map"], LEVEL_CHARS, f"{name}")})
             if not levels or len(levels) > 26:
                 raise ValueError("there must be between 1 and 26 levels")
             world = check_text(data["world"], MAP_CHARS, "the map")

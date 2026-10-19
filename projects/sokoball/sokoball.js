@@ -465,7 +465,9 @@ const SOKOBALL = (() => {
   // and gaps, and a gap is a single open square in a wall - wall at least two
   // squares deep on either side of it, so a gap through a thick wall or a
   // corridor between two short bits of wall doesn't count. Gaps belong to no
-  // room. rooms[i] is a room number, or -1 for walls and gaps.
+  // room. Several gaps in a row make a corridor through solid wall, and a
+  // corridor is a room of its own. rooms[i] is a room number, or -1 for walls
+  // and gaps.
 
   function parseWorld(text) {
     const rows = rowsOf(text);
@@ -503,8 +505,8 @@ const SOKOBALL = (() => {
     // everything walkable, as if every ball were free, so the whole map is drawn
     // from the start rather than only the part you can get to yet
     const inside = reach({ width, height, wall }, [start]);
-    const { rooms, gaps } = roomsOf(width, height, wall);
-    return { width, height, wall, hole, grate, doors, locks, balls, start, inside, rooms, gaps };
+    const { rooms, gaps, corridors } = roomsOf(width, height, wall);
+    return { width, height, wall, hole, grate, doors, locks, balls, start, inside, rooms, gaps, corridors };
   }
 
   function roomsOf(width, height, wall) {
@@ -529,28 +531,47 @@ const SOKOBALL = (() => {
         if (across || down) gaps[y * width + x] = 1;
       }
     }
+    // every square joined to `from` that `fits`, numbered `room`
     const rooms = new Int16Array(size).fill(-1);
-    let count = 0;
-    for (let i = 0; i < size; i++) {
-      if (wall[i] || gaps[i] || rooms[i] >= 0) continue;
-      const stack = [i];
-      rooms[i] = count;
-      while (stack.length) {
-        const c = stack.pop();
+    const fill = (from, fits, room) => {
+      const found = [from];
+      rooms[from] = room;
+      for (let k = 0; k < found.length; k++) {
+        const c = found[k];
         const cx = c % width;
         for (const [dx, dy] of DIRS) {
           const nx = cx + dx;
           const ny = (c - cx) / width + dy;
           if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
           const n = ny * width + nx;
-          if (wall[n] || gaps[n] || rooms[n] >= 0) continue;
-          rooms[n] = count;
-          stack.push(n);
+          if (rooms[n] >= 0 || !fits(n)) continue;
+          rooms[n] = room;
+          found.push(n);
         }
+      }
+      return found;
+    };
+    let count = 0;
+    for (let i = 0; i < size; i++) {
+      if (!wall[i] && !gaps[i] && rooms[i] < 0) fill(i, (n) => !wall[n] && !gaps[n], count++);
+    }
+    // A run of gaps side by side is a corridor through solid wall, not a gap:
+    // it's a room of its own. corridors[i] marks its squares.
+    const corridors = new Uint8Array(size);
+    for (let i = 0; i < size; i++) {
+      if (!gaps[i] || rooms[i] >= 0) continue;
+      const run = fill(i, (n) => gaps[n] === 1, count);
+      if (run.length < 2) {
+        rooms[i] = -1;                   // just a gap
+        continue;
+      }
+      for (const n of run) {
+        gaps[n] = 0;
+        corridors[n] = 1;
       }
       count++;
     }
-    return { rooms, gaps };
+    return { rooms, gaps, corridors };
   }
 
   // The map as a level to walk round, with the balls of every lock in `freed`

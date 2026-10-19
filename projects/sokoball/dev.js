@@ -32,8 +32,10 @@
 
   // ---- writing levels.js ----
 
+  // `was` is each level's name as levels.js has it now, so the comment above
+  // a level stays with it even if it's renamed
   function campaign() {
-    return { levels: LEVELS.map(({ name, map }) => ({ name, map: tidy(map) })), world: tidy(WORLD) };
+    return { levels: LEVELS.map(({ name, map }) => ({ name, was: name, map: tidy(map) })), world: tidy(WORLD) };
   }
 
   async function send(next, after) {
@@ -208,7 +210,7 @@
     const next = campaign();
     const i = draft.campaign;
     if (!next.levels[i]) return;
-    next.levels[i] = { name: draft.name.trim() || next.levels[i].name, map: draftText() };
+    next.levels[i] = { ...next.levels[i], name: draft.name.trim() || next.levels[i].name, map: draftText() };
     send(next, "make");
   }
 

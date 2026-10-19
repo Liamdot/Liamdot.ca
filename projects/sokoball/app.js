@@ -717,7 +717,7 @@ function explore(fade) {
 // When each square of the map shows: -Infinity for squares that have always
 // been there, a time for ones still to turn over, Infinity for hidden ones.
 function showTimes() {
-  const { width, height, rooms, gaps } = world;
+  const { width, height, rooms, gaps, corridors } = world;
   const size = width * height;
   const room = new Float64Array(size).fill(Infinity);
   for (let i = 0; i < size; i++) {
@@ -750,6 +750,10 @@ function showTimes() {
   };
   const shown = Float64Array.from(room);
   for (let i = 0; i < size; i++) if (gaps[i]) shown[i] = earliest(i, false, room);
+  // a corridor shows when you walk into it, but its ends show with the room
+  // beside them, so you can see the way in - and anything blocking it
+  const roomsOnly = Float64Array.from(room, (t, i) => (corridors[i] ? Infinity : t));
+  for (let i = 0; i < size; i++) if (corridors[i]) shown[i] = Math.min(room[i], earliest(i, false, roomsOnly));
   const open = Float64Array.from(shown);
   for (let i = 0; i < size; i++) if (rooms[i] < 0 && !gaps[i]) shown[i] = earliest(i, true, open);
   return shown;

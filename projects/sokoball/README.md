@@ -262,7 +262,9 @@ you came in, with its walls and gaps turning alongside. Nothing in the map marks
 gaps, and a gap is a single open square in a wall with wall at least two deep
 on either side of it. So a gap through an ordinary wall splits two rooms, but
 a corridor between two short bits of wall inside a room — like the grate row
-in room 3 — doesn't. If the fog ever splits a room you meant as one, that's
+in room 3 — doesn't. Several gaps in a row make a corridor through solid wall,
+and a corridor is a room of its own: its ends show with the room beside them,
+and the rest when you walk in. If the fog ever splits a room you meant as one, that's
 the rule to look at (`roomsOf` in `sokoball.js`). The flipping is `drawFog`
 in `app.js`: `FLIP_MS` is how long one square takes to turn, and `FLIP_STEP`
 how much later each square further out starts.
