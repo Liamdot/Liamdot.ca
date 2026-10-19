@@ -115,21 +115,6 @@ const LEVELS = [
   },
   // The third room, past the hole and the grate on the map: grates.
   {
-    name: "Grateful",
-    map: `
-      ##########
-      #=  # ^  #
-      #!=   @^ #
-      #=  ##^ ^#
-      ####### ##
-      ----### ##
-      ----#^@^^#
-      ----###@##
-      ------###-
-      ----------
-    `,
-  },
-  {
     name: "Grates Intro",
     map: `
       ##############
@@ -173,6 +158,22 @@ const LEVELS = [
       ###########
     `,
   },
+  // The fourth room, down from the third: more than one player.
+  {
+    name: "Grateful",
+    map: `
+      ##########
+      #=  # ^  #
+      #!=   @^ #
+      #=  ##^ ^#
+      ####### ##
+      ----### ##
+      ----#^@^^#
+      ----###@##
+      ------###-
+      ----------
+    `,
+  },
 ];
 
 // The map. Walk onto a door and press Enter to play its level. Doors are
@@ -197,10 +198,10 @@ const WORLD = `
   # A B # F G#      #I  J#
   #     e    #  ### #    #
   # C@D #    h    =^h    #
-  #  E  #  H #  ### #K  L#
-  ####################l###
-  #    #     #     #    #
-  #                     #
-  #    #     #     #    #
-  #######################
+  #  E  #  H #  ### #K   #
+  ####################k###
+  #    #     #     #    ##
+  #                    L##
+  #    #     #     #    ##
+  ########################
 `;
