@@ -1468,10 +1468,49 @@ window.addEventListener("keyup", (e) => {
   if (KEYS[e.code]) letGo(`key-${e.code}:${KEYS[e.code]}`);
 });
 
+// Typing the magic word while standing on a door on the map counts its level
+// as solved - for skipping ahead while you test. Once the first two letters
+// are in (neither does anything in the game), the keys after them only spell,
+// as long as they keep spelling it: otherwise the S would walk you off the door
+// and the E would open the level. A wrong letter, or a pause, starts it over.
+const MAGIC = "opensesame";
+let spelled = "";
+let spellTimer = 0;
+
+function spell(e) {
+  const letter = e.key.length === 1 ? e.key.toLowerCase() : "";
+  const next = spelled + letter;
+  clearTimeout(spellTimer);
+  if (!letter || !MAGIC.startsWith(next)) {
+    spelled = letter === MAGIC[0] ? letter : "";
+    return false;
+  }
+  spelled = next;
+  spellTimer = setTimeout(() => { spelled = ""; }, 2000);
+  if (spelled === MAGIC) {
+    spelled = "";
+    openSesame();
+  }
+  return spelled.length > 2 || next === MAGIC;   // swallow the key once it's clearly spelling
+}
+
+function openSesame() {
+  const n = doorHere();
+  if (n === null) return;
+  save.solved[keyOf(LEVELS[n].map)] = true;
+  store();
+  goToMap(game.players[0]);                    // redrawn, with anything it frees let loose
+  flash(`${n + 1}. ${LEVELS[n].name} marked as solved.`);
+}
+
 window.addEventListener("keydown", (e) => {
   const focused = document.activeElement;
   if (focused && focused.closest && focused.closest("input, textarea, select")) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (mode === "play" && current && current.kind === "world" && !e.repeat && spell(e)) {
+    e.preventDefault();
+    return;
+  }
 
   if (e.key === "Escape") {
     // closes whatever card is open, or failing that leaves the level for the map
