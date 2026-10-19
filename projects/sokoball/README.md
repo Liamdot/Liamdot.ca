@@ -49,6 +49,7 @@ projects/sokoball/
   assets.js     which picture is drawn for what   <- edit this for your art
   levels.js     the built-in levels, and the map  <- edit this for levels
   app.js        everything on screen: drawing, input, editor, sharing
+  dev.js        the developer tools, only on your own computer
   assets/
     dev/        the developer art - plain on purpose, always kept
     mine/       your art goes here
@@ -184,6 +185,32 @@ When it's playable:
   rather than making a copy.
 
 What's in the editor is saved as you go, so closing the tab loses nothing.
+
+### The developer tools
+
+When the game is open from your own computer — `localhost`, through
+`python3 serve.py` — there's a **dev** button in the bar. It only appears
+there, never on the live site. It opens the campaign:
+
+- every level in order, with **▲ ▼** to move one, **edit** to open it in the
+  editor, and **remove** (asks twice);
+- **add a level**, from the editor or from My levels — it goes on the end,
+  without a door yet;
+- **edit the map**, which opens the map in the editor with its own tools:
+  wall, floor, start, ball, hole, grate, and **door** and **lock** for the
+  level picked under them. A level only has one door, so painting it moves it.
+  Underneath, it lists any level still without a door.
+
+Editing a level adds **save to campaign** to the editor, and editing the map
+adds **save map**; **done** puts back whatever you had in the editor before.
+Every save is written straight into `levels.js` and the page reloads with it,
+so it's in your next commit like any other change. Moving or removing a level
+re-letters its door and lock on the map to match. Comments above a level in
+`levels.js` stay with it, and so does everything else in the file.
+
+The saving is done by `serve.py`, which only accepts it from this computer. If
+the **dev** button complains it couldn't save, restart `serve.py` — an older
+copy still running won't know how. The tools themselves are `dev.js`.
 
 ### Making one a built-in level
 

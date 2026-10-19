@@ -494,6 +494,33 @@ button.level-row:hover,
   resize: vertical;
 }
 
+/* ---- the developer tools (dev.js), only on your own computer ---- */
+
+.swatch-door { background: #d3cabd; border: 2px solid #9a8f84; border-radius: 4px !important; }
+.swatch-lock { background: #a39a8f; border: 2px solid #7d746b; border-radius: 50% !important; }
+
+.dev-note {
+  color: #e0705c;
+  font-size: 0.75rem;
+  font-style: normal;
+}
+
+.dev-level {
+  grid-column: 1 / -1;
+}
+
+.dev-level select,
+.dev-add select {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1.5px solid #4a423b;
+  border-radius: 8px;
+  background: #1f1b18;
+  color: #f1ede4;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
 /* ---- the d-pad, for phones ---- */
 
 /* Only where there are fingers. Asked of the browser live rather than decided

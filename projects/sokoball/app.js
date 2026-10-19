@@ -534,6 +534,9 @@ function drawDraft() {
     if (ch === SOKOBALL.FINISH) picture("finish", x, y, tile);
     if (ch === SOKOBALL.BALL) picture("ball", x, y, tile);
     if (ch === SOKOBALL.PLAYER || ch === SOKOBALL.PLAYER_ON_GOAL) picture("player", x, y, tile);
+    // the map, being edited (see dev.js): doors and locked balls
+    if (draft.world && ch >= "A" && ch <= "Z") drawDoor(ch.charCodeAt(0) - 65, x, y, tile);
+    if (draft.world && ch >= "a" && ch <= "z") picture("ballLocked", x, y, tile);
   }
 
   drawEdge(width, height, tile, ox, oy, (i) => cells[i] !== SOKOBALL.WALL);
@@ -1006,17 +1009,23 @@ function draftText() {
   return SOKOBALL.writeRows(rows);
 }
 
+// A draft can also be the map, or a level from the campaign, while you're
+// working on them with the developer tools (dev.js) - which it is is kept too.
 function storeDraft() {
-  save.draft = { id: draft.id, name: draft.name, map: draftText() };
+  save.draft = { id: draft.id, name: draft.name, map: draftText(), world: Boolean(draft.world), campaign: draft.campaign ?? null };
   store();
 }
 
 // What painting one square with the current tool turns it into. Everything
 // replaces what was there - a goal and a hole are holes, so nothing can start
-// in one. Each player painted is another player.
+// in one. Each player painted is another player. On the map there's one start
+// and one door per level, so painting either moves it.
 function paint(i, with_) {
   const next = with_;
   if (next === draft.cells[i]) return false;
+  if (draft.world && (next === SOKOBALL.PLAYER || (next >= "A" && next <= "Z"))) {
+    for (let k = 0; k < draft.cells.length; k++) if (draft.cells[k] === next) draft.cells[k] = SOKOBALL.FLOOR;
+  }
   draft.cells[i] = next;
   return true;
 }
@@ -1056,8 +1065,13 @@ function draftLevel() {
 }
 
 function showProblems() {
-  const { problems } = draftLevel();
   const note = $("problems");
+  if (window.SOKOBALL_DEV) window.SOKOBALL_DEV.refresh();
+  if (draft.world) {
+    window.SOKOBALL_DEV.showMapProblems(note);
+    return;
+  }
+  const { problems } = draftLevel();
   if (problems.length) {
     note.className = "problems bad";
     note.innerHTML = `<ul>${problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`;
@@ -1535,7 +1549,7 @@ window.addEventListener("keydown", (e) => {
     } else if (e.key === "r") {
       restart();
     }
-  } else {
+  } else if (!draft.world) {
     const tools = [SOKOBALL.WALL, SOKOBALL.FLOOR, SOKOBALL.GOAL, SOKOBALL.HOLE, SOKOBALL.GRATE, SOKOBALL.BALL, SOKOBALL.PLAYER, SOKOBALL.FINISH];
     const n = Number(e.key);
     if (n >= 1 && n <= tools.length) chooseTool(tools[n - 1]);
