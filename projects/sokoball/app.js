@@ -1610,8 +1610,8 @@ window.addEventListener("keyup", (e) => {
   if (KEYS[e.code]) letGo(`key-${e.code}:${KEYS[e.code]}`);
 });
 
-// Typing the magic word while standing on a door on the map counts its level
-// as solved - for skipping ahead while you test. Once the first two letters
+// Typing the magic word while standing on a door on the map counts its level,
+// and every level before it, as solved - for skipping ahead while you test. Once the first two letters
 // are in (neither does anything in the game), the keys after them only spell,
 // as long as they keep spelling it: otherwise the S would walk you off the door
 // and the E would open the level. A wrong letter, or a pause, starts it over.
@@ -1636,13 +1636,15 @@ function spell(e) {
   return spelled.length > 2 || next === MAGIC;   // swallow the key once it's clearly spelling
 }
 
+// Counts that level and every one before it as solved, so the gates they hold
+// shut come free too.
 function openSesame() {
   const n = doorHere();
   if (n === null) return;
-  save.solved[keyOf(LEVELS[n].map)] = true;
+  for (let k = 0; k <= n; k++) save.solved[keyOf(LEVELS[k].map)] = true;
   store();
   goToMap(game.players[0]);                    // redrawn, with anything it frees let loose
-  flash(`${n + 1}. ${LEVELS[n].name} marked as solved.`);
+  flash(n === 0 ? `1. ${LEVELS[0].name} marked as solved.` : `Levels 1 to ${n + 1} marked as solved.`);
 }
 
 // anything pressed stops the solution playing itself
