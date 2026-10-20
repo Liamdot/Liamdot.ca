@@ -171,8 +171,9 @@ Press **make**. You get a grid and eleven tools:
   players to fill every goal with one player left over to reach the finish. Spare balls are fine — they make a good red
   herring. Balls and goals are optional: with no goals, the finishes are open
   from the start and the level is just about getting there.
-- **wide** and **tall** resize the grid (3 to 30 each way). What's there
-  stays put; new squares are floor.
+- The **+** and **−** on each side of the level grow and shrink it on that
+  side, a row or column at a time (3 to 30 each way). What's there stays put;
+  new squares are floor. The size shows under the name.
 - **The edge is solid.** There's no need to build a wall round the outside —
   walls are only for the inside of a level.
 
@@ -193,6 +194,9 @@ When it's playable:
   the page freezing. On a really big or open level it may give up and say the
   puzzle is too large to check — that doesn't mean it's broken, just that
   you'll have to test it yourself.
+
+  Once it's found a way, **show solution** plays it, a move at a time. Press
+  anything to stop it there and carry on yourself.
 - **test** plays it. **back to editor** comes back.
 - **save to my levels** saves it to *My levels* (under **my levels** in
   play mode), in this browser. Editing a saved level and saving again updates it

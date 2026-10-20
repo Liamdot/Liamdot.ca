@@ -228,9 +228,10 @@ function cameraAt(now) {
 }
 
 // The biggest square tile that fits the whole level on screen, and where the
-// top-left corner of it goes.
-function layout(width, height) {
-  const pad = 14;
+// top-left corner of it goes. The editor leaves more room round the edge, for
+// the buttons that grow and shrink the level.
+const EDIT_PAD = 46;
+function layout(width, height, pad = 14) {
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
   const tile = Math.max(8, Math.min(72, Math.floor(Math.min((w - pad * 2) / width, (h - pad * 2) / height))));
@@ -524,7 +525,8 @@ function drawEdge(width, height, tile, ox, oy, isFloor) {
 
 function drawDraft() {
   const { width, height, cells } = draft;
-  const { tile, ox, oy } = layout(width, height);
+  const { tile, ox, oy } = layout(width, height, EDIT_PAD);
+  placeGrowButtons(tile, ox, oy);
 
   for (let i = 0; i < cells.length; i++) {
     const ch = cells[i];
@@ -1102,20 +1104,54 @@ function edited() {
   draw();
 }
 
-// Squares are kept where they are when the size changes; new ones are floor.
-function resizeDraft(width, height) {
-  width = Math.max(3, Math.min(30, Math.round(width) || draft.width));
-  height = Math.max(3, Math.min(30, Math.round(height) || draft.height));
-  const cells = [];
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      cells.push(x < draft.width && y < draft.height ? draft.cells[y * draft.width + x] : SOKOBALL.FLOOR);
+// Growing or shrinking the level by one row or column on one side: + adds
+// floor there, - takes the edge row or column away. Everything else stays where
+// it is. Levels go from 3 to 30 each way; the map can be bigger.
+function growDraft(side, change) {
+  const across = side === "left" || side === "right";
+  const most = draft.world ? 60 : 30;
+  const width = draft.width + (across ? change : 0);
+  const height = draft.height + (across ? 0 : change);
+  const size = across ? width : height;      // the way it's changing
+  if ((change < 0 && size < 3) || size > most) return;
+  // where each old square ends up: shifted over if the left or top moved
+  const dx = side === "left" ? change : 0;
+  const dy = side === "top" ? change : 0;
+  const cells = new Array(width * height).fill(SOKOBALL.FLOOR);
+  for (let y = 0; y < draft.height; y++) {
+    for (let x = 0; x < draft.width; x++) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx >= 0 && ny >= 0 && nx < width && ny < height) cells[ny * width + nx] = draft.cells[y * draft.width + x];
     }
   }
   Object.assign(draft, { width, height, cells });
-  $("draft-w").value = width;
-  $("draft-h").value = height;
+  showSize();
   edited();
+}
+
+function showSize() {
+  $("draft-size").textContent = `${draft.width} \u00d7 ${draft.height}`;
+}
+
+// The + and - buttons sit just outside each side of the level.
+function placeGrowButtons(tile, ox, oy) {
+  const grow = $("grow");
+  grow.hidden = mode !== "make";
+  if (grow.hidden) return;
+  const w = draft.width * tile;
+  const h = draft.height * tile;
+  const at = {
+    top: [ox + w / 2, oy - 22],
+    bottom: [ox + w / 2, oy + h + 22],
+    left: [ox - 22, oy + h / 2],
+    right: [ox + w + 22, oy + h / 2],
+  };
+  for (const side of grow.children) {
+    const [x, y] = at[side.dataset.side];
+    side.style.left = `${x}px`;
+    side.style.top = `${y}px`;
+  }
 }
 
 // The draft as a level, and anything stopping it being played.
@@ -1131,6 +1167,8 @@ function draftLevel() {
 function showProblems() {
   const note = $("problems");
   if (window.SOKOBALL_DEV) window.SOKOBALL_DEV.refresh();
+  // once check has found a way, it can be shown
+  $("solution-btn").hidden = !(verdict && verdict.path) || Boolean(draft.world);
   if (draft.world) {
     window.SOKOBALL_DEV.showMapProblems(note);
     return;
@@ -1173,7 +1211,7 @@ function checkDraft() {
   const report = (result) => {
     stopChecking();
     verdict = {
-      solved: { good: true, text: `The puzzle is solvable. The shortest solution takes ${result.moves} move${result.moves === 1 ? "" : "s"}.` },
+      solved: { good: true, path: result.path, text: `The puzzle is solvable. The shortest solution takes ${result.moves} move${result.moves === 1 ? "" : "s"}.` },
       impossible: { good: false, text: "The puzzle is not solvable." },
       unknown: { good: true, text: "The puzzle is too large to check. Test it to make sure it can be solved." },
     }[result.result] || { good: false, text: "The puzzle could not be checked." };
@@ -1208,14 +1246,15 @@ function showMode(next) {
   mode = next;
   hideCards();
   $("editor").hidden = mode !== "make";
+  $("grow").hidden = mode !== "make";
   $("dpad").hidden = mode !== "play";
   canvas.classList.toggle("painting", mode === "make");
   if (mode === "make") {
     $("draft-name").value = draft.name;
-    $("draft-w").value = draft.width;
-    $("draft-h").value = draft.height;
+    showSize();
     showProblems();
   }
+  stopSolution();
   showBar();
   // the board has changed size with the editor opening or closing
   requestAnimationFrame(resize);
@@ -1236,6 +1275,32 @@ function testDraft() {
   }
   showMode("play");
   play({ kind: "test", name: draft.name || "Untitled level", map: draftText() });
+}
+
+// Plays the solution check found, a move at a time, as a test of the level.
+// Pressing anything - a key, the board, a button - stops it, and you carry on
+// from there yourself.
+const SOLUTION_STEP = 260;       // ms between moves
+let solutionTimer = 0;
+
+function showSolution() {
+  const path = verdict && verdict.path;
+  if (!path) return;
+  testDraft();
+  if (!current || current.kind !== "test") return;
+  const moves = path.slice();
+  solutionTimer = setInterval(() => {
+    if (!moves.length || mode !== "play" || !current || current.kind !== "test") {
+      stopSolution();
+      return;
+    }
+    act(moves.shift());
+  }, SOLUTION_STEP);
+}
+
+function stopSolution() {
+  clearInterval(solutionTimer);
+  solutionTimer = 0;
 }
 
 function keepDraft() {
@@ -1335,8 +1400,7 @@ function pasteLevel() {
   }
   draft = draftFrom(map, fromLink ? fromLink.name : draft.name, null);
   $("draft-name").value = draft.name;
-  $("draft-w").value = draft.width;
-  $("draft-h").value = draft.height;
+  showSize();
   edited();
   flash("Level pasted into the editor.");
 }
@@ -1581,6 +1645,11 @@ function openSesame() {
   flash(`${n + 1}. ${LEVELS[n].name} marked as solved.`);
 }
 
+// anything pressed stops the solution playing itself
+for (const type of ["keydown", "pointerdown"]) {
+  window.addEventListener(type, () => { if (solutionTimer) stopSolution(); }, true);
+}
+
 window.addEventListener("keydown", (e) => {
   const focused = document.activeElement;
   if (focused && focused.closest && focused.closest("input, textarea, select")) return;
@@ -1625,7 +1694,7 @@ window.addEventListener("keydown", (e) => {
 // which square of the draft is under the pointer
 function squareAt(e) {
   const rect = canvas.getBoundingClientRect();
-  const { tile, ox, oy } = layout(draft.width, draft.height);
+  const { tile, ox, oy } = layout(draft.width, draft.height, EDIT_PAD);
   const x = Math.floor((e.clientX - rect.left - ox) / tile);
   const y = Math.floor((e.clientY - rect.top - oy) / tile);
   if (x < 0 || y < 0 || x >= draft.width || y >= draft.height) return -1;
@@ -1749,8 +1818,11 @@ $("draft-name").addEventListener("input", (e) => {
   draft.name = e.target.value;
   storeDraft();
 });
-$("draft-w").addEventListener("change", (e) => resizeDraft(Number(e.target.value), draft.height));
-$("draft-h").addEventListener("change", (e) => resizeDraft(draft.width, Number(e.target.value)));
+$("grow").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-change]");
+  if (btn) growDraft(btn.closest("[data-side]").dataset.side, Number(btn.dataset.change));
+});
+$("solution-btn").addEventListener("click", showSolution);
 
 $("test-btn").addEventListener("click", testDraft);
 $("check-btn").addEventListener("click", checkDraft);
@@ -1781,8 +1853,7 @@ $("new-btn").addEventListener("click", (e) => {
   e.target.textContent = "start again";
   draft = draftFrom(STARTER);
   $("draft-name").value = "";
-  $("draft-w").value = draft.width;
-  $("draft-h").value = draft.height;
+  showSize();
   edited();
 });
 

@@ -749,7 +749,7 @@ const SOKOBALL = (() => {
   // =========================================================================
   //
   // Tries every sequence of moves, shortest first, until the level is won -
-  // so if it finds a way, it's the shortest way.
+  // so if it finds a way, it's the shortest way, and `path` is its moves.
   //
   // It knows nothing about the rules. It just calls moveAll, the same as the
   // game does, and remembers which arrangements of players and balls it has
@@ -777,8 +777,18 @@ const SOKOBALL = (() => {
       if (level.hole[i]) startHoles.push(i);
       if (level.cracked[i]) startCracked.push(i);
     }
-    const first = { players: level.players.slice(), balls: sorted(level.balls), holes: startHoles, cracked: startCracked };
-    if (won(level, first.players, first.holes)) return { result: "solved", moves: 0, searched: 0 };
+    // Each position keeps a little note of the move that got there and the
+    // note before it - just those, not the whole position - so once the level
+    // is won the moves can be read back, without keeping every position ever
+    // seen in memory.
+    const first = { players: level.players.slice(), balls: sorted(level.balls), holes: startHoles, cracked: startCracked, trail: null };
+    if (won(level, first.players, first.holes)) return { result: "solved", moves: 0, searched: 0, path: [] };
+    const NAMES = ["up", "right", "down", "left"];
+    const pathOf = (trail) => {
+      const path = [];
+      for (let t = trail; t; t = t.before) path.unshift(NAMES[t.dir]);
+      return path;
+    };
 
     const seen = new Set([keyOf(first)]);
     let frontier = [first];
@@ -824,9 +834,10 @@ const SOKOBALL = (() => {
           if (seen.has(key)) continue;
           seen.add(key);
 
-          if (won(level, players, holes)) return { result: "solved", moves, searched };
+          const trail = { before: state.trail, dir: d };
+          if (won(level, players, holes)) return { result: "solved", moves, searched, path: pathOf(trail) };
           if (++searched >= budget) return { result: "unknown", searched };
-          next.push({ players, balls, holes, cracked });
+          next.push({ players, balls, holes, cracked, trail });
         }
       }
       frontier = next;

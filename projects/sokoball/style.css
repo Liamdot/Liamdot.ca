@@ -468,10 +468,47 @@ button.level-row:hover,
   outline: none;
 }
 
-.size {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: 1fr 1fr;
+.size-note {
+  margin: 0;
+  color: #a39a8f;
+  font-size: 0.75rem;
+}
+
+.size-note span {
+  color: #f1ede4;
+  font-variant-numeric: tabular-nums;
+}
+
+/* the + and - just outside each side of the level, in the editor */
+.grow-side {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+  transform: translate(-50%, -50%);
+}
+
+.grow-side.down {
+  flex-direction: column;
+}
+
+.grow-side button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1.5px solid #4a423b;
+  border-radius: 50%;
+  background: #2b2622;
+  color: #e3dccf;
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.grow-side button:hover {
+  border-color: #e9a23b;
+  color: #e9a23b;
 }
 
 .problems {
