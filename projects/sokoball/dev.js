@@ -306,7 +306,7 @@
     devButtons.querySelector('[data-dev-editor="save-map"]').hidden = !onMap;
     // map tools on the map, level tools on a level
     if (onMap && !/^[#@$^=A-Za-z ]$/.test(tool)) chooseTool(SOKOBALL.WALL);
-    if (!onMap && /^[A-Za-z]$/.test(tool)) chooseTool(SOKOBALL.WALL);
+    if (!onMap && /^[A-Za-z]$/.test(tool) && tool !== SOKOBALL.PLATE && tool !== SOKOBALL.GATE) chooseTool(SOKOBALL.WALL);
   }
 
   // What's missing or wrong on the map: nothing here stops it being saved

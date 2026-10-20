@@ -418,6 +418,9 @@ button.level-row:hover,
 .swatch-floor { background: #e9e2d3; }
 .swatch-goal { background: #2a2420; border: 3px solid #c8553d; border-radius: 50% !important; }
 .swatch-grate { background: repeating-linear-gradient(90deg, #9a8f84 0 3px, #1a1613 3px 6px); }
+.swatch-cracked { background: #e9e2d3 url("assets/dev/cracked.svg") center / 100% no-repeat; }
+.swatch-plate { background: #4f8a9a; border: 2px solid #3b6b78; border-radius: 50% !important; }
+.swatch-gate { background: repeating-linear-gradient(90deg, #3b6b78 0 3px, #b9cfd4 3px 6px); }
 .swatch-hole { background: #2a2420; border: 3px solid #9a8f84; border-radius: 50% !important; }
 .swatch-ball { background: #c98a43; border: 2px solid #9b6530; border-radius: 50% !important; }
 .swatch-player { background: #2f6f9f; border-radius: 50% !important; }

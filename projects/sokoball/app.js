@@ -68,13 +68,14 @@ function keyOf(map) {
 // doesn't have - or that fails to load - comes from the developer set instead.
 // That's what lets you replace the art one picture at a time.
 
-const PICTURES = ["floor", "wall", "goal", "goalFilled", "hole", "holeFilled", "grate", "grateOpen", "ball", "player", "finish", "finishOpen",
+const PICTURES = ["floor", "wall", "goal", "goalFilled", "hole", "holeFilled", "grate", "grateOpen", "cracked", "plate", "platePressed", "gate", "gateOpen", "ball", "player", "finish", "finishOpen",
   "door", "doorDone", "ballLocked", "playerUp", "playerDown", "playerLeft", "playerRight"];
 
 // what to draw until a picture has loaded, or if there's no picture at all
 const STAND_INS = {
   floor: "#e9e2d3", wall: "#5b5049", goal: "#c8553d", goalFilled: "#79b36f",
-  hole: "#3a322d", holeFilled: "#b98a5a", grate: "#6b6158", grateOpen: "#1a1613", ball: "#c98a43", player: "#2f6f9f",
+  hole: "#3a322d", holeFilled: "#b98a5a", grate: "#6b6158", grateOpen: "#1a1613",
+  cracked: "#cfc4b2", plate: "#4f8a9a", platePressed: "#3b6b78", gate: "#3b6b78", gateOpen: "#b9cfd4", ball: "#c98a43", player: "#2f6f9f",
   finish: "#bdb4a7", finishOpen: "#3fa85e",
   door: "#cfc5b4", doorDone: "#a9d39b", ballLocked: "#a39a8f",
 };
@@ -346,16 +347,23 @@ function drawGame() {
   const open = SOKOBALL.finishOpen(game);
   // on the map, locked balls stand in for walls, and doors for finishes
   const locked = (i) => level.locked && level.locked[i];
+  const gatesOpen = SOKOBALL.gatesOpen(level, game.players, ballAt);
   for (let i = 0; i < ballAt.length; i++) {
     const [x, y] = at(i);
     if (level.wall[i] && !locked(i)) picture("wall", x, y, tile);
     else if (level.inside[i]) {
       picture("floor", x, y, tile);
-      // a goal or hole: open, or filled in with a ball
-      if (level.goal[i] || level.hole[i]) {
+      // a goal or hole: open, or filled in with a ball - including one that
+      // was cracked floor until it gave way
+      const crumbled = level.cracked[i] && !game.cracked[i];
+      if (level.goal[i] || level.hole[i] || crumbled) {
         const gaping = game.holes[i] || landing.has(i);
         picture(level.goal[i] ? (gaping ? "goal" : "goalFilled") : (gaping ? "hole" : "holeFilled"), x, y, tile);
-      }
+      } else if (game.cracked[i]) picture("cracked", x, y, tile);
+      // plates down while something's on them; gates open while every plate
+      // is down, or while something's standing in them
+      if (level.plates.includes(i)) picture(ballAt[i] || game.players.includes(i) ? "platePressed" : "plate", x, y, tile);
+      if (level.gate[i]) picture(gatesOpen || ballAt[i] || game.players.includes(i) ? "gateOpen" : "gate", x, y, tile);
       if (level.grate[i]) {
         if (trapdoors.has(i)) drawTrapdoor(trapdoors.get(i), x, y, tile);
         else picture("grate", x, y, tile);
@@ -530,6 +538,9 @@ function drawDraft() {
     if (ch === SOKOBALL.GOAL) picture("goal", x, y, tile);
     if (ch === SOKOBALL.HOLE) picture("hole", x, y, tile);
     if (ch === SOKOBALL.GRATE) picture("grate", x, y, tile);
+    if (ch === SOKOBALL.CRACKED) picture("cracked", x, y, tile);
+    if (ch === SOKOBALL.PLATE) picture("plate", x, y, tile);
+    if (ch === SOKOBALL.GATE) picture("gate", x, y, tile);
     if (ch === SOKOBALL.BALL_ON_GOAL || ch === SOKOBALL.PLAYER_ON_GOAL) picture("goalFilled", x, y, tile);
     if (ch === SOKOBALL.FINISH) picture("finish", x, y, tile);
     if (ch === SOKOBALL.BALL) picture("ball", x, y, tile);
@@ -1554,9 +1565,11 @@ window.addEventListener("keydown", (e) => {
       restart();
     }
   } else if (!draft.world) {
-    const tools = [SOKOBALL.WALL, SOKOBALL.FLOOR, SOKOBALL.GOAL, SOKOBALL.HOLE, SOKOBALL.GRATE, SOKOBALL.BALL, SOKOBALL.PLAYER, SOKOBALL.FINISH];
-    const n = Number(e.key);
-    if (n >= 1 && n <= tools.length) chooseTool(tools[n - 1]);
+    const tools = [SOKOBALL.WALL, SOKOBALL.FLOOR, SOKOBALL.GOAL, SOKOBALL.HOLE, SOKOBALL.GRATE,
+      SOKOBALL.CRACKED, SOKOBALL.PLATE, SOKOBALL.GATE, SOKOBALL.BALL, SOKOBALL.PLAYER, SOKOBALL.FINISH];
+    // 1 to 9, then 0 and -, as along the top of a keyboard
+    const n = "1234567890-=".indexOf(e.key);
+    if (n >= 0 && n < tools.length) chooseTool(tools[n]);
   }
 });
 

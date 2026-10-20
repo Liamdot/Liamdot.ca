@@ -34,6 +34,11 @@ const ART = {
       holeFilled: "assets/dev/hole-filled.svg",
       grate: "assets/dev/grate.svg",
       grateOpen: "assets/dev/grate-open.svg",
+      cracked: "assets/dev/cracked.svg",
+      plate: "assets/dev/plate.svg",
+      platePressed: "assets/dev/plate-pressed.svg",
+      gate: "assets/dev/gate.svg",
+      gateOpen: "assets/dev/gate-open.svg",
       ball: "assets/dev/ball.svg",
       player: "assets/dev/player.svg",
       finish: "assets/dev/finish.svg",
@@ -53,6 +58,11 @@ const ART = {
       // hole: "assets/mine/hole.png",                (a plain hole, only in the way)
       // holeFilled: "assets/mine/hole-filled.png",   (one a ball has dropped into)
       // grate: "assets/mine/grate.png",              (roll across it or fall through)
+      // cracked: "assets/mine/cracked.png",          (floor that gives way; drawn over the floor)
+      // plate: "assets/mine/plate.png",              (a pressure plate, up)
+      // platePressed: "assets/mine/plate-pressed.png",  (and weighed down)
+      // gate: "assets/mine/gate.png",                (shut)
+      // gateOpen: "assets/mine/gate-open.png",       (open: drawn over the floor, walkable)
       // grateOpen: "assets/mine/grate-open.png",     (the drop under it; the grate swings open into it)
       // ball: "assets/mine/ball.png",
       // player: "assets/mine/player.png",

@@ -94,6 +94,9 @@ picture in the game as soon as it's done.
 | `hole` | a plain hole, only in the way | same |
 | `holeFilled` | a plain hole a ball has dropped into | it's floor now, so it should look walkable |
 | `grate` | a grate: roll across it, or fall through | drawn on top of the floor |
+| `cracked` | cracked floor | drawn over the floor, so just the cracks |
+| `plate` / `platePressed` | a pressure plate, up and weighed down | |
+| `gate` / `gateOpen` | a gate, shut and open | open is drawn over the floor, and walkable |
 | `grateOpen` | the drop under a grate, shown while it's open | when something falls through, the grate splits down the middle and each half swings down into this on a hinge at its outer edge |
 | `ball` | a ball | |
 | `player` | the player | every player uses it |
@@ -146,13 +149,21 @@ to `"dev"`.
 
 ### In the game
 
-Press **make**. You get a grid and eight tools:
+Press **make**. You get a grid and eleven tools:
 
-- **wall**, **floor**, **goal**, **hole**, **grate**, **ball**, **player**,
-  **finish** — click to paint, drag to paint a run. Players go down one click
-  at a time, as many as you like. Right-click paints floor, which is how you
-  rub things out.
-- Keys **1–8** pick the tools.
+- **wall**, **floor**, **goal**, **hole**, **grate**, **cracked**, **plate**,
+  **gate**, **ball**, **player**, **finish** — click to paint, drag to paint a
+  run. Players go down one click at a time, as many as you like. Right-click
+  paints floor, which is how you rub things out.
+- Keys **1–9**, **0** and **-** pick the tools, in that order.
+- **Cracked floor** holds whatever's on it, but gives way into a plain hole
+  once something leaves it — stepping off, pushed off, or rolling across. It
+  goes once the move is over, so a player right behind another still has
+  something to step on.
+- **Plates and gates**: every gate in a level is open while every plate is
+  weighed down, by a ball or a player, and as solid as a wall otherwise. A
+  gate won't shut on something standing in it. All the plates work all the
+  gates — there's one set per level.
 - A level needs at least one finish a player can reach, and enough balls and
   players to fill every goal with one player left over to reach the finish. Spare balls are fine — they make a good red
   herring. Balls and goals are optional: with no goals, the finishes are open
@@ -298,6 +309,9 @@ also paste in levels you find elsewhere, with **paste a level**.
 | `.` | goal — a hole that has to be filled |
 | `^` | a plain hole (Sokoball's own) |
 | `=` | a grate (Sokoball's own too) |
+| `~` | cracked floor |
+| `o` | a pressure plate |
+| `x` | a gate |
 | `$` | ball |
 | `*` | a goal that starts filled (a "box on a goal" anywhere else) |
 | `@` | a player — as many as you like |
