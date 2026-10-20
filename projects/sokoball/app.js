@@ -24,7 +24,7 @@ const SAVE_KEY = "sokoball";
 
 const save = {
   solved: {},   // level key -> true, for every level you've solved
-  world: null,  // the map as you left it: { key, player, balls, holes, freed, seen }
+  world: null,  // the map as you left it: { key, player, balls, holes, cracked, freed, seen }
   mine: [],     // levels you've kept: { id, name, map }
   draft: null,  // what's in the editor: { id, name, map }
 };
@@ -539,8 +539,8 @@ function drawDraft() {
     if (ch === SOKOBALL.HOLE) picture("hole", x, y, tile);
     if (ch === SOKOBALL.GRATE) picture("grate", x, y, tile);
     if (ch === SOKOBALL.CRACKED) picture("cracked", x, y, tile);
-    if (ch === SOKOBALL.PLATE) picture("plate", x, y, tile);
-    if (ch === SOKOBALL.GATE) picture("gate", x, y, tile);
+    if (ch === (draft.world ? SOKOBALL.MAP_PLATE : SOKOBALL.PLATE)) picture("plate", x, y, tile);
+    if (ch === (draft.world ? SOKOBALL.MAP_GATE : SOKOBALL.GATE)) picture("gate", x, y, tile);
     if (ch === SOKOBALL.BALL_ON_GOAL || ch === SOKOBALL.PLAYER_ON_GOAL) picture("goalFilled", x, y, tile);
     if (ch === SOKOBALL.FINISH) picture("finish", x, y, tile);
     if (ch === SOKOBALL.BALL) picture("ball", x, y, tile);
@@ -669,10 +669,15 @@ function goToMap(at = null) {
       if (!saved.freed.includes(n)) for (const i of world.locks.get(n) || []) game.ballAt[i] = 1;
     }
   }
-  // and the holes still open, if any have been filled
-  if (saved.holes && saved.holes.every((h) => world.hole[h])) {
+  // and the holes still open, if any have been filled - including ones that
+  // were cracked floor - and the cracked floor still in one piece
+  if (saved.holes && saved.holes.every((h) => world.hole[h] || world.cracked[h])) {
     game.holes.fill(0);
     for (const h of saved.holes) game.holes[h] = 1;
+  }
+  if (saved.cracked && saved.cracked.every((c) => world.cracked[c])) {
+    game.cracked.fill(0);
+    for (const c of saved.cracked) game.cracked[c] = 1;
   }
   saved.freed = [...freed];
   const player = at !== null ? at : saved.player;
@@ -696,9 +701,11 @@ function rememberMap() {
   save.world.player = game.players[0];
   save.world.balls = [];
   save.world.holes = [];
+  save.world.cracked = [];
   for (let i = 0; i < game.ballAt.length; i++) {
     if (game.ballAt[i]) save.world.balls.push(i);
     if (game.holes[i]) save.world.holes.push(i);
+    if (game.cracked[i]) save.world.cracked.push(i);
   }
   store();
 }
@@ -940,6 +947,7 @@ function restart() {
     rewound();
     save.world.balls = null;
     save.world.holes = null;
+    save.world.cracked = null;
     goToMap(world.start);
     return;
   }

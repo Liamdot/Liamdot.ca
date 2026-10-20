@@ -213,6 +213,30 @@ const LEVELS = [
       ------###-
     `,
   },
+  {
+    name: "Test Chamber 1",
+    map: `
+      ##########
+      #   ##   #
+      # o  x ! #
+      #   ##   #
+      # $ ######
+      #    @#---
+      #######---
+    `,
+  },
+  {
+    name: "Test Chamber 1+",
+    map: `
+      ##########
+      #   ##   #
+      # o x  ! #
+      #   ##   #
+      # $ #### #
+      #    @##.#
+      ##########
+    `,
+  },
 ];
 
 // The map. Walk onto a door and press Enter to play its level. Doors are
@@ -221,8 +245,10 @@ const LEVELS = [
 // the level with that letter, and every level before it, is solved: put "e" in
 // the way out of a room holding doors A to E, and it opens once the whole room
 // is done, in whatever order. Solving them lets you push the balls aside. The rest is the usual: # wall, space or
-// - floor, @ where you start, $ a ball that's free from the start, and ^ and
-// = for holes and grates, which work the same as in a level.
+// - floor, @ where you start, $ a ball that's free from the start, and ^, =
+// and ~ for holes, grates and cracked floor, which work the same as in a
+// level. Plates and gates do too, but here they're % and &, because the small
+// letters are locks.
 //
 // Two things to watch when you redraw it. Balls can be pushed onto doors, so a
 // door straight in line with a gap is easy to bury: put doors off to one side.
@@ -235,17 +261,24 @@ const LEVELS = [
 const WORLD = `
   ########################
   # A B # F G#      #I  J#
-  #     e    #  ### #    #
-  # C@D #    h    =^h    #
-  #  E  #  H #  ### #K   #
+  #  @  e    #  ### #    #
+  #     #    h    =^h    #
+  #C D E#  H #  ### #K   #
   ####################k###
-  #    #     #######L  M##
+  #P   #     #######L  M##
   #           ^^^  o    ##
-  #    #     #######N  O##
-  ## ###### ##############
-  #     #     #          #
-  #     #     #          #
-  #                      #
-  #     #     #          #
-  ########################
+  #   Q#     #######N  O##
+  ###q##### ##############
+  #       #      #--------
+  #              #--------
+  #       #      #--------
+  #       #      #--------
+  ################--------
+  #-----------------------
+  ------------------------
+  ------------------------
+  ------------------------
+  ------------------------
+  ------------------------
+  ------------------------
 `;

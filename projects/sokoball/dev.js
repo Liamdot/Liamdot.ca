@@ -11,8 +11,8 @@
 //                        edit or remove, a way to add more, and the map
 //   editing a level      the usual editor, plus "save to campaign"
 //   editing the map      the editor with the map's own tools - start, doors and
-//                        locks for each level, balls, holes and grates - and
-//                        "save map"
+//                        locks for each level, balls, holes, grates, cracked
+//                        floor, plates and gates - and "save map"
 //
 // Moving or removing a level re-letters its door and lock on the map to match.
 
@@ -251,6 +251,9 @@
       <button class="tool" data-tool="$" title="A ball free from the start"><span class="swatch-ball"></span>ball</button>
       <button class="tool" data-tool="^" title="Hole"><span class="swatch-hole"></span>hole</button>
       <button class="tool" data-tool="=" title="Grate"><span class="swatch-grate"></span>grate</button>
+      <button class="tool" data-tool="~" title="Cracked floor"><span class="swatch-cracked"></span>cracked</button>
+      <button class="tool" data-tool="%" title="Plate: every gate on the map opens while every plate is down"><span class="swatch-plate"></span>plate</button>
+      <button class="tool" data-tool="&amp;" title="Gate"><span class="swatch-gate"></span>gate</button>
       <button class="tool" data-map="door" title="The door to the level below"><span class="swatch-door"></span>door</button>
       <button class="tool" data-map="lock" title="A ball locked until the level below and every one before it are solved"><span class="swatch-lock"></span>lock</button>
       <label class="field dev-level">for level <select id="dev-map-level"></select></label>
@@ -311,7 +314,7 @@
     devButtons.querySelector('[data-dev-editor="save-level"]').hidden = !onLevel;
     devButtons.querySelector('[data-dev-editor="save-map"]').hidden = !onMap;
     // map tools on the map, level tools on a level
-    if (onMap && !/^[#@$^=A-Za-z ]$/.test(tool)) chooseTool(SOKOBALL.WALL);
+    if (onMap && !/^[#@$^=~%&A-Za-z ]$/.test(tool)) chooseTool(SOKOBALL.WALL);
     if (!onMap && /^[A-Za-z]$/.test(tool) && tool !== SOKOBALL.PLATE && tool !== SOKOBALL.GATE) chooseTool(SOKOBALL.WALL);
   }
 
@@ -328,6 +331,7 @@
     }
     const found = new Set(parsed.doors.values());
     const notes = [];
+    if (parsed.gate.some((g) => g) && !parsed.plates.length) notes.push("The map has gates but no plates to open them.");
     LEVELS.forEach((lv, i) => { if (!found.has(i)) notes.push(`No door yet for ${i + 1}. ${lv.name}.`); });
     for (const n of found) if (n >= LEVELS.length) notes.push(`Door ${letter(n)} is for a level that doesn't exist.`);
     for (const n of parsed.locks.keys()) if (n >= LEVELS.length) notes.push(`Lock ${letter(n, true)} waits on a level that doesn't exist.`);

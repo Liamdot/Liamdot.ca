@@ -72,6 +72,8 @@ const SOKOBALL = (() => {
   const CRACKED = "~";
   const PLATE = "o";
   const GATE = "x";
+  const MAP_PLATE = "%";                     // on the map, where o and x are locks
+  const MAP_GATE = "&";
 
   const KNOWN = new Set([WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE, GRATE, CRACKED, PLATE, GATE]);
 
@@ -511,8 +513,10 @@ const SOKOBALL = (() => {
   //            once A to E are all done, in any order
   //
   // plus #, floor, @ for where you start, $ for a ball that's free from the
-  // start, and ^ and = for holes and grates, which work just as they do in a
-  // level. Locked balls are what keep the next door shut: solving a level
+  // start, and ^, = and ~ for holes, grates and cracked floor, which work just
+  // as they do in a level. Plates and gates work as they do in a level too -
+  // every plate down opens every gate - but on the map they're % and &, since
+  // the small letters are taken by locks. Locked balls are what keep the next door shut: solving a level
   // frees its balls, and you push them out of the way to get on. A ball can be
   // pushed onto a door like anywhere else, and then has to be moved off it
   // again before the door can be used.
@@ -535,6 +539,9 @@ const SOKOBALL = (() => {
     const wall = new Uint8Array(size);
     const hole = new Uint8Array(size);
     const grate = new Uint8Array(size);
+    const cracked = new Uint8Array(size);
+    const gate = new Uint8Array(size);
+    const plates = [];
     const doors = new Map();        // square -> level number, counting from 0
     const locks = new Map();        // level number -> the squares of its locked balls
     const balls = [];
@@ -549,6 +556,9 @@ const SOKOBALL = (() => {
         else if (ch === BALL) balls.push(i);
         else if (ch === HOLE) hole[i] = 1;
         else if (ch === GRATE) grate[i] = 1;
+        else if (ch === CRACKED) cracked[i] = 1;
+        else if (ch === MAP_GATE) gate[i] = 1;
+        else if (ch === MAP_PLATE) plates.push(i);
         else if (ch >= "A" && ch <= "Z") doors.set(i, ch.charCodeAt(0) - 65);
         else if (ch >= "a" && ch <= "z") {
           const n = ch.charCodeAt(0) - 97;
@@ -563,7 +573,7 @@ const SOKOBALL = (() => {
     // from the start rather than only the part you can get to yet
     const inside = reach({ width, height, wall }, [start]);
     const { rooms, gaps, corridors } = roomsOf(width, height, wall);
-    return { width, height, wall, hole, grate, doors, locks, balls, start, inside, rooms, gaps, corridors };
+    return { width, height, wall, hole, grate, cracked, gate, plates, doors, locks, balls, start, inside, rooms, gaps, corridors };
   }
 
   function roomsOf(width, height, wall) {
@@ -653,7 +663,7 @@ const SOKOBALL = (() => {
     return {
       width: world.width, height: world.height, wall, locked, finish, balls,
       goal: new Uint8Array(size), hole: world.hole, grate: world.grate, players: [world.start],
-      cracked: new Uint8Array(size), gate: new Uint8Array(size), plates: [],
+      cracked: world.cracked, gate: world.gate, plates: world.plates,
       inside: world.inside, doors: world.doors,
     };
   }
@@ -779,6 +789,7 @@ const SOKOBALL = (() => {
 
   return {
     WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE, GRATE, CRACKED, PLATE, GATE,
+    MAP_PLATE, MAP_GATE,
     rowsOf, writeRows, parse, toText, check, start, move, undo, solved, stuck, finishOpen, encode, decode, solve,
     parseWorld, worldLevel, gatesOpen,
   };

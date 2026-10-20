@@ -251,6 +251,8 @@ as a level, with two extra kinds of character:
 | `A` to `Z` | the door to a level — `A` is the first in `LEVELS`, `B` the second |
 | `a` to `z` | a ball locked in place until the level with the same letter, and every level before it, is solved |
 | `#` `@` `$` | wall, where you start, and a ball that's free from the start |
+| `^` `=` `~` | hole, grate and cracked floor, as in a level |
+| `%` `&` | a plate and a gate — in a level they're `o` and `x`, but on the map small letters are locks |
 
 The idea is that each level's balls sit in the gaps between rooms, so the way
 to the next door stays shut until you've solved the level before it. Once a
