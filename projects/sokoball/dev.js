@@ -45,11 +45,17 @@
         headers: { "Content-Type": "application/json", "X-Sokoball-Dev": "1" },
         body: JSON.stringify(next),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        // the server answered, so it's running: it said what was wrong, or it's
+        // one from before it knew how to save
+        const why = res.status === 400 ? await res.text() : "the server doesn't know how - restart python3 serve.py";
+        flash(`Couldn't save to levels.js: ${why}`);
+        return;
+      }
       sessionStorage.setItem(AFTER, after);
       location.reload();
     } catch (e) {
-      flash(`Couldn't save to levels.js: ${e.message || e}. Is the site running with python3 serve.py, restarted since it learned to save?`);
+      flash("Couldn't save to levels.js: the site needs to be running with python3 serve.py.");
     }
   }
 
