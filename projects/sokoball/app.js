@@ -949,22 +949,18 @@ function takeBack() {
   draw();
 }
 
-// On the map, restart puts every ball back where it started and you back at
-// the beginning - the way out if a ball ends up somewhere it blocks you.
+// Restart puts everything back how it started - on the map, every ball and you
+// back at the beginning, the way out if a ball ends up somewhere it blocks
+// you. It goes in the history like a move, so undo takes it back.
 function restart() {
-  if (!current || !game) return;
-  if (current.kind === "world") {
-    rewound();
-    save.world.balls = null;
-    save.world.holes = null;
-    save.world.cracked = null;
-    save.world.history = null;
-    goToMap(world.start);
-    return;
-  }
-  if (!game.history.length) return;
+  if (!current || !game || !SOKOBALL.restart(game)) return;
+  clearTimeout(finishTimer);
+  game.done = false;
+  hideCards();
   rewound();
-  play(current);
+  rememberMap();
+  showBar();
+  draw();
 }
 
 // Campaign levels and your own go straight back to the map. A shared level or

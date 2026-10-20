@@ -455,12 +455,49 @@ const SOKOBALL = (() => {
     return change;
   }
 
+  // Everything about where a game is, as plain lists, so it can be put back -
+  // and saved, for the map.
+  const listOf = (cells) => {
+    const list = [];
+    for (let i = 0; i < cells.length; i++) if (cells[i]) list.push(i);
+    return list;
+  };
+  function snapshot(game) {
+    return {
+      players: game.players.slice(), balls: listOf(game.ballAt), holes: listOf(game.holes),
+      cracked: listOf(game.cracked), facing: game.facing,
+    };
+  }
+  function restore(game, was) {
+    for (const [cells, list] of [[game.ballAt, was.balls], [game.holes, was.holes], [game.cracked, was.cracked]]) {
+      cells.fill(0);
+      for (const i of list) cells[i] = 1;
+    }
+    game.players = was.players.slice();
+    game.facing = was.facing;
+  }
+
+  // Back to how the level started - kept in the history like a move, so undo
+  // can take a restart back too. Nothing happens if it's already at the start.
+  function restart(game) {
+    const fresh = snapshot(start(game.level));
+    const now = snapshot(game);
+    if (["players", "balls", "holes", "cracked"].every((k) => now[k].join() === fresh[k].join())) return false;
+    game.history.push({ restart: now, facing: fresh.facing });
+    restore(game, fresh);
+    return true;
+  }
+
   // Puts the last move back - a ball that fell in climbs back out, and its
   // hole opens again; anything that fell through a grate comes back up; cracked
-  // floor that gave way is back in one piece.
+  // floor that gave way is back in one piece. A restart is put back whole.
   function undo(game) {
     const last = game.history.pop();
     if (!last) return false;
+    if (last.restart) {
+      restore(game, last.restart);
+      return true;
+    }
     for (const c of last.crumbled || []) {
       game.holes[c] = 0;
       game.cracked[c] = 1;
@@ -800,7 +837,7 @@ const SOKOBALL = (() => {
   return {
     WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE, GRATE, CRACKED, PLATE, GATE,
     BALL_ON_CRACKED, PLAYER_ON_CRACKED, BALL_ON_PLATE, PLAYER_ON_PLATE, MAP_PLATE, MAP_GATE,
-    rowsOf, writeRows, parse, toText, check, start, move, undo, solved, stuck, finishOpen, encode, decode, solve,
+    rowsOf, writeRows, parse, toText, check, start, move, undo, restart, solved, stuck, finishOpen, encode, decode, solve,
     parseWorld, worldLevel, gatesOpen,
   };
 })();
