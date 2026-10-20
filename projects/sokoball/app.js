@@ -24,7 +24,7 @@ const SAVE_KEY = "sokoball";
 
 const save = {
   solved: {},   // level key -> true, for every level you've solved
-  world: null,  // the map as you left it: { key, player, balls, holes, cracked, freed, seen }
+  world: null,  // the map as you left it: { key, player, balls, holes, cracked, freed, seen, history }
   mine: [],     // levels you've kept: { id, name, map }
   draft: null,  // what's in the editor: { id, name, map }
 };
@@ -686,6 +686,9 @@ function goToMap(at = null) {
   const player = at !== null ? at : saved.player;
   const safe = (p) => level.inside[p] && !level.wall[p] && !game.ballAt[p] && !game.holes[p] && !level.grate[p];
   game.players = [safe(player) ? player : world.start];
+  // and the moves that got it there, so undo carries on where it left off -
+  // across playing a level, and across a reload
+  if (Array.isArray(saved.history) && game.players[0] === player) game.history = saved.history;
   if (!Array.isArray(saved.seen)) saved.seen = [];
   explore(false);
   rememberMap();
@@ -710,8 +713,12 @@ function rememberMap() {
     if (game.holes[i]) save.world.holes.push(i);
     if (game.cracked[i]) save.world.cracked.push(i);
   }
+  save.world.history = game.history.slice(-MAP_UNDO);
+  game.history = save.world.history;
   store();
 }
+
+const MAP_UNDO = 300;            // moves on the map that undo can take back
 
 // ---- the fog ----
 //
@@ -951,6 +958,7 @@ function restart() {
     save.world.balls = null;
     save.world.holes = null;
     save.world.cracked = null;
+    save.world.history = null;
     goToMap(world.start);
     return;
   }
