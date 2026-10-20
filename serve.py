@@ -28,7 +28,7 @@ SOKOBALL_SAVE = "/__dev/sokoball"
 
 # Every character a Sokoball level can have - keep it in step with KNOWN in
 # projects/sokoball/sokoball.js, or new kinds of square can't be saved
-LEVEL_CHARS = set("# -_.$*@+!^=~ox")
+LEVEL_CHARS = set("# -_.$*@+!^=~ox?:[]")
 MAP_CHARS = set("# -_@$^=~%&") | set(string.ascii_letters)
 LOCAL = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
 

@@ -16,6 +16,8 @@
 //   -  floor         +  player on goal  *  ball on goal   !  finish
 //   ^  hole          =  grate           ~  cracked floor
 //   o  plate         x  gate
+//   ?  ball on cracked floor            :  player on cracked floor
+//   [  ball on a plate                  ]  player on a plate
 //
 // Goals and holes are both holes in the floor. A ball pushed or rolled into
 // one drops in and is gone, and the hole becomes floor anyone can walk on. A
@@ -72,10 +74,16 @@ const SOKOBALL = (() => {
   const CRACKED = "~";
   const PLATE = "o";
   const GATE = "x";
+  // something starting on cracked floor or a plate
+  const BALL_ON_CRACKED = "?";
+  const PLAYER_ON_CRACKED = ":";
+  const BALL_ON_PLATE = "[";
+  const PLAYER_ON_PLATE = "]";
   const MAP_PLATE = "%";                     // on the map, where o and x are locks
   const MAP_GATE = "&";
 
-  const KNOWN = new Set([WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE, GRATE, CRACKED, PLATE, GATE]);
+  const KNOWN = new Set([WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE, GRATE, CRACKED, PLATE, GATE,
+    BALL_ON_CRACKED, PLAYER_ON_CRACKED, BALL_ON_PLATE, PLAYER_ON_PLATE]);
 
   // Turns the text of a level into rows of single characters, all the same
   // length, with floor as a space. Blank lines either side go, and so does
@@ -152,11 +160,11 @@ const SOKOBALL = (() => {
         if (ch === GOAL || ch === BALL_ON_GOAL || ch === PLAYER_ON_GOAL) goal[i] = 1;
         if (ch === GOAL || ch === HOLE) hole[i] = 1;
         if (ch === GRATE) grate[i] = 1;
-        if (ch === CRACKED) cracked[i] = 1;
+        if (ch === CRACKED || ch === BALL_ON_CRACKED || ch === PLAYER_ON_CRACKED) cracked[i] = 1;
         if (ch === GATE) gate[i] = 1;
-        if (ch === PLATE) plates.push(i);
-        if (ch === BALL) balls.push(i);
-        if (ch === PLAYER || ch === PLAYER_ON_GOAL) players.push(i);
+        if (ch === PLATE || ch === BALL_ON_PLATE || ch === PLAYER_ON_PLATE) plates.push(i);
+        if (ch === BALL || ch === BALL_ON_CRACKED || ch === BALL_ON_PLATE) balls.push(i);
+        if (ch === PLAYER || ch === PLAYER_ON_GOAL || ch === PLAYER_ON_CRACKED || ch === PLAYER_ON_PLATE) players.push(i);
       }
     }
 
@@ -176,9 +184,11 @@ const SOKOBALL = (() => {
       for (let x = 0; x < level.width; x++) {
         const i = y * level.width + x;
         if (level.wall[i]) row += WALL;
-        else if (onPlayer[i]) row += level.goal[i] ? PLAYER_ON_GOAL : PLAYER;
-        else if (holes[i]) row += level.goal[i] ? GOAL : HOLE;
-        else if (onBall[i]) row += BALL;
+        else if (onPlayer[i]) {
+          row += level.goal[i] ? PLAYER_ON_GOAL : level.cracked[i] ? PLAYER_ON_CRACKED
+            : level.plates.includes(i) ? PLAYER_ON_PLATE : PLAYER;
+        } else if (holes[i]) row += level.goal[i] ? GOAL : HOLE;
+        else if (onBall[i]) row += level.cracked[i] ? BALL_ON_CRACKED : level.plates.includes(i) ? BALL_ON_PLATE : BALL;
         else if (level.grate[i]) row += GRATE;
         else if (level.gate[i]) row += GATE;
         else if (level.plates.includes(i)) row += PLATE;
@@ -789,7 +799,7 @@ const SOKOBALL = (() => {
 
   return {
     WALL, FLOOR, GOAL, BALL, BALL_ON_GOAL, PLAYER, PLAYER_ON_GOAL, FINISH, HOLE, GRATE, CRACKED, PLATE, GATE,
-    MAP_PLATE, MAP_GATE,
+    BALL_ON_CRACKED, PLAYER_ON_CRACKED, BALL_ON_PLATE, PLAYER_ON_PLATE, MAP_PLATE, MAP_GATE,
     rowsOf, writeRows, parse, toText, check, start, move, undo, solved, stuck, finishOpen, encode, decode, solve,
     parseWorld, worldLevel, gatesOpen,
   };

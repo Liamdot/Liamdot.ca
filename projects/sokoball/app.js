@@ -538,9 +538,12 @@ function drawDraft() {
     if (ch === SOKOBALL.GOAL) picture("goal", x, y, tile);
     if (ch === SOKOBALL.HOLE) picture("hole", x, y, tile);
     if (ch === SOKOBALL.GRATE) picture("grate", x, y, tile);
-    if (ch === SOKOBALL.CRACKED) picture("cracked", x, y, tile);
-    if (ch === (draft.world ? SOKOBALL.MAP_PLATE : SOKOBALL.PLATE)) picture("plate", x, y, tile);
+    // something stacked on cracked floor or a plate: what's underneath first
+    const [under, top] = draft.world ? [ch, null] : layersOf(ch);
+    if (under === SOKOBALL.CRACKED) picture("cracked", x, y, tile);
+    if (under === (draft.world ? SOKOBALL.MAP_PLATE : SOKOBALL.PLATE)) picture(top ? "platePressed" : "plate", x, y, tile);
     if (ch === (draft.world ? SOKOBALL.MAP_GATE : SOKOBALL.GATE)) picture("gate", x, y, tile);
+    if (top && under !== SOKOBALL.FLOOR) picture(top === SOKOBALL.BALL ? "ball" : "player", x, y, tile);
     if (ch === SOKOBALL.BALL_ON_GOAL || ch === SOKOBALL.PLAYER_ON_GOAL) picture("goalFilled", x, y, tile);
     if (ch === SOKOBALL.FINISH) picture("finish", x, y, tile);
     if (ch === SOKOBALL.BALL) picture("ball", x, y, tile);
@@ -1039,12 +1042,46 @@ function storeDraft() {
   store();
 }
 
-// What painting one square with the current tool turns it into. Everything
-// replaces what was there - a goal and a hole are holes, so nothing can start
-// in one. Each player painted is another player. On the map there's one start
-// and one door per level, so painting either moves it.
+// Squares that can have a ball or a player starting on them, and the one
+// character for each pair: [underneath, on top] -> character.
+const STACKS = [
+  [SOKOBALL.CRACKED, SOKOBALL.BALL, SOKOBALL.BALL_ON_CRACKED],
+  [SOKOBALL.CRACKED, SOKOBALL.PLAYER, SOKOBALL.PLAYER_ON_CRACKED],
+  [SOKOBALL.PLATE, SOKOBALL.BALL, SOKOBALL.BALL_ON_PLATE],
+  [SOKOBALL.PLATE, SOKOBALL.PLAYER, SOKOBALL.PLAYER_ON_PLATE],
+];
+const ON_TOP = [SOKOBALL.BALL, SOKOBALL.PLAYER];
+const UNDERNEATH = [SOKOBALL.CRACKED, SOKOBALL.PLATE];
+
+// A square of the editor as what's underneath and what's on top of it.
+function layersOf(ch) {
+  const stack = STACKS.find(([, , c]) => c === ch);
+  if (stack) return [stack[0], stack[1]];
+  if (ON_TOP.includes(ch)) return [SOKOBALL.FLOOR, ch];
+  return [ch, null];
+}
+
+// The character for a square with `under` underneath and `top` on it.
+function stacked(under, top) {
+  if (!top) return under;
+  const stack = STACKS.find(([u, t]) => u === under && t === top);
+  return stack ? stack[2] : top;
+}
+
+// What painting one square with the current tool turns it into. A ball or a
+// player goes on top of cracked floor or a plate, and cracked floor or a plate
+// goes in underneath a ball or a player, so they can start on one. Everything
+// else replaces what was there - a goal and a hole are holes, so nothing can
+// start in one. Floor clears a square. Each player painted is another player.
+// On the map there's one start and one door per level, so painting either
+// moves it.
 function paint(i, with_) {
-  const next = with_;
+  let next = with_;
+  if (!draft.world) {
+    const [under, top] = layersOf(draft.cells[i]);
+    if (ON_TOP.includes(with_) && UNDERNEATH.includes(under)) next = stacked(under, with_);
+    if (UNDERNEATH.includes(with_) && top) next = stacked(with_, top);
+  }
   if (next === draft.cells[i]) return false;
   if (draft.world && (next === SOKOBALL.PLAYER || (next >= "A" && next <= "Z"))) {
     for (let k = 0; k < draft.cells.length; k++) if (draft.cells[k] === next) draft.cells[k] = SOKOBALL.FLOOR;

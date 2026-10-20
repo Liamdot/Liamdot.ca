@@ -160,6 +160,9 @@ Press **make**. You get a grid and eleven tools:
   once something leaves it — stepping off, pushed off, or rolling across. It
   goes once the move is over, so a player right behind another still has
   something to step on.
+- **Stacking**: paint a ball or a player onto cracked floor or a plate and it
+  goes on top, rather than replacing it; paint cracked floor or a plate onto a
+  ball or a player and it goes underneath. Floor clears the square.
 - **Plates and gates**: every gate in a level is open while every plate is
   weighed down, by a ball or a player, and as solid as a wall otherwise. A
   gate won't shut on something standing in it. All the plates work all the
@@ -314,6 +317,8 @@ also paste in levels you find elsewhere, with **paste a level**.
 | `~` | cracked floor |
 | `o` | a pressure plate |
 | `x` | a gate |
+| `?` `:` | a ball, or a player, starting on cracked floor |
+| `[` `]` | a ball, or a player, starting on a plate |
 | `$` | ball |
 | `*` | a goal that starts filled (a "box on a goal" anywhere else) |
 | `@` | a player — as many as you like |
