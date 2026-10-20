@@ -15,13 +15,27 @@
 
 /* ---- the bar across the top ---- */
 
+/* Always one line, at any width: a second line would take its height from the
+   board, and the board would jump whenever a button came or went. A long
+   level name gets cut short instead, and on a really narrow screen the bar
+   scrolls sideways. */
 .bar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
+  flex-wrap: nowrap;
+  gap: 14px;
   align-items: center;
+  overflow-x: auto;
   padding: 8px 14px;
   border-bottom: 1px solid #3d3631;
+  scrollbar-width: none;
+}
+
+.bar::-webkit-scrollbar {
+  display: none;
+}
+
+.bar > * {
+  flex: none;
 }
 
 .modes {
@@ -48,12 +62,17 @@
 }
 
 .level-name {
+  flex: 0 1 auto;
+  min-width: 3rem;
+  overflow: hidden;
   color: #f1ede4;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .spacer {
-  flex: 1;
+  flex: 1 1 0;
 }
 
 .pill {
@@ -594,21 +613,6 @@ button.level-row:hover,
 }
 
 @media (max-width: 560px) {
-  /* the bar keeps to one line and scrolls, so the board keeps its height */
-  .bar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .bar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .bar > * {
-    flex: none;
-  }
-
   /* your levels: the name on its own line, the buttons under it */
   .level-row.mine {
     flex-wrap: wrap;
@@ -621,8 +625,5 @@ button.level-row:hover,
 
   .level-name {
     max-width: 9rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 }
