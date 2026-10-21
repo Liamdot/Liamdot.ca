@@ -427,7 +427,7 @@ button.level-row:hover,
 }
 
 /* little samples of each, in the developer art's colours */
-.tool span {
+.tool span:not(.tool-name) {
   width: 16px;
   height: 16px;
   border-radius: 3px;
