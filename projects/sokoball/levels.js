@@ -46,16 +46,6 @@ const LEVELS = [
     `,
   },
   {
-    name: "Stepping stone",
-    map: `
-      ##########
-      #    ^  .#
-      #@$$$^ ! #
-      #    ^  .#
-      ##########
-    `,
-  },
-  {
     name: "Corner shop",
     map: `
       #######
@@ -91,15 +81,21 @@ const LEVELS = [
     `,
   },
   {
-    name: "Store room",
+    name: "Newton",
     map: `
-      --######
-      ###   !#
-      #. $## #
-      # $  . #
-      #.$ #  #
-      ##  @ ##
-      -######-
+      #####
+      # . #
+      # . #
+      #   #
+      #   #
+      #.  #
+      # $ #
+      ##$##
+      ##$##
+      #   #
+      #@ !#
+      #   #
+      #####
     `,
   },
   {
@@ -412,11 +408,11 @@ const LEVELS = [
 // stay solved).
 
 const WORLD = `
-  ########################
-  # ! ! # ! !#      #!  !#
-  #  @  *    #  ### #    #
-  #     #    *    =^*    #
-  #! ! !#  ! #  ### #!   #
+  -#######################
+  -#! ! # !  #      #!  !#
+  -# @  *    #  ### #    #
+  -#    #    *    =^*    #
+  -# ! !#! ! #  ### #!   #
   ####################*###
   #!! !#     #######!  !##
   #           ^^^  *    ##
@@ -439,38 +435,37 @@ const WORLD = `
 const DOORS = [
   [2, 1, 1],  // First push
   [4, 1, 2],  // Long Way Around
-  [1, 4, 3],  // Stepping stone
-  [3, 4, 4],  // Corner shop
-  [5, 4, 5],  // BOGO
-  [8, 1, 6],  // Island
-  [10, 1, 7],  // Store room
-  [9, 4, 8],  // Bowling
-  [19, 1, 9],  // The Grate Journey
-  [22, 1, 10],  // Split Grate
-  [19, 4, 11],  // 5-Pin Bowling
-  [18, 6, 12],  // Sacrifice
-  [21, 6, 13],  // Seeing Double
-  [18, 8, 14],  // Fling
-  [21, 8, 15],  // Three Musketeers
-  [1, 6, 16],  // Test Chamber 1
-  [2, 6, 17],  // Test Chamber 1+
-  [4, 6, 18],  // Please Hold
-  [1, 8, 19],  // Gridlock
-  [4, 8, 20],  // Escape the Room
-  [11, 10, 21],  // Holy Hallway
-  [9, 13, 22],  // Herd Ringer
-  [15, 13, 23],  // There and Back Again
-  [7, 16, 24],  // Blockade
-  [11, 16, 25],  // Doorstop
-  [7, 18, 26],  // Juggle
+  [3, 4, 3],  // Corner shop
+  [5, 4, 4],  // BOGO
+  [8, 1, 5],  // Island
+  [7, 4, 6],  // Newton
+  [9, 4, 7],  // Bowling
+  [19, 1, 8],  // The Grate Journey
+  [22, 1, 9],  // Split Grate
+  [19, 4, 10],  // 5-Pin Bowling
+  [18, 6, 11],  // Sacrifice
+  [21, 6, 12],  // Seeing Double
+  [18, 8, 13],  // Fling
+  [21, 8, 14],  // Three Musketeers
+  [1, 6, 15],  // Test Chamber 1
+  [2, 6, 16],  // Test Chamber 1+
+  [4, 6, 17],  // Please Hold
+  [1, 8, 18],  // Gridlock
+  [4, 8, 19],  // Escape the Room
+  [11, 10, 20],  // Holy Hallway
+  [9, 13, 21],  // Herd Ringer
+  [15, 13, 22],  // There and Back Again
+  [7, 16, 23],  // Blockade
+  [11, 16, 24],  // Doorstop
+  [7, 18, 25],  // Juggle
 ];
 
 const LOCKS = [
-  [6, 2, 5],  // BOGO
-  [11, 3, 8],  // Bowling
-  [18, 3, 8],  // Bowling
-  [20, 5, 11],  // 5-Pin Bowling
-  [17, 7, 15],  // Three Musketeers
-  [3, 9, 20],  // Escape the Room
-  [7, 11, 23],  // There and Back Again
+  [6, 2, 4],  // BOGO
+  [11, 3, 7],  // Bowling
+  [18, 3, 7],  // Bowling
+  [20, 5, 10],  // 5-Pin Bowling
+  [17, 7, 14],  // Three Musketeers
+  [3, 9, 19],  // Escape the Room
+  [7, 11, 22],  // There and Back Again
 ];
