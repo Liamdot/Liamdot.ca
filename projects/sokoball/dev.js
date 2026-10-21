@@ -14,7 +14,7 @@
 //                        locks for each level, balls, holes, grates, cracked
 //                        floor, plates and gates - and "save map"
 //
-// Moving or removing a level re-letters its door and lock on the map to match.
+// Moving or removing a level renumbers its door and lock on the map to match.
 
 (() => {
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
@@ -28,22 +28,24 @@
     return t.content.firstElementChild;
   };
   const tidy = (map) => SOKOBALL.writeRows(SOKOBALL.rowsOf(map));
-  const letter = (n, lower) => String.fromCharCode((lower ? 97 : 65) + n);
 
   // ---- writing levels.js ----
 
   // `was` is each level's name as levels.js has it now, so the comment above
-  // a level stays with it even if it's renamed
+  // a level stays with it even if it's renamed. The map is the game's own,
+  // with a character for each level's door and lock; it's only split into
+  // levels.js's ! and * and their lists on the way out.
   function campaign() {
-    return { levels: LEVELS.map(({ name, map }) => ({ name, was: name, map: tidy(map) })), world: tidy(WORLD) };
+    return { levels: LEVELS.map(({ name, map }) => ({ name, was: name, map: tidy(map) })), world: WORLD_MAP };
   }
 
   async function send(next, after) {
+    const { text, doors, locks } = SOKOBALL.splitWorld(next.world);
     try {
       const res = await fetch(SAVE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Sokoball-Dev": "1" },
-        body: JSON.stringify(next),
+        body: JSON.stringify({ levels: next.levels, world: text, doors, locks }),
       });
       if (!res.ok) {
         // the server answered, so it's running: it said what was wrong, or it's
@@ -59,43 +61,40 @@
     }
   }
 
-  // Doors and locks on the map are letters for levels by position, so moving or
-  // removing a level has to re-letter them. `to(n)` is where level n ends up, or
+  // Doors and locks on the map are for levels by position, so moving or
+  // removing a level has to renumber them. `to(n)` is where level n ends up, or
   // null if it's gone. A gone level's door goes with it; its lock passes to the
   // level before it, so the way on still waits for the same levels.
-  function reletter(world, to) {
-    return world.replace(/[A-Za-z]/g, (ch) => {
-      const lower = ch >= "a";
-      const n = ch.toLowerCase().charCodeAt(0) - 97;
-      let m = to(n);
-      if (m === null && lower) {
-        for (let k = n - 1; k >= 0 && m === null; k--) m = to(k);
+  function renumber(world, to) {
+    return Array.from(world, (ch) => {
+      const door = SOKOBALL.doorNumber(ch);
+      const lock = SOKOBALL.lockNumber(ch);
+      if (door < 0 && lock < 0) return ch;
+      let m = to(Math.max(door, lock));
+      if (m === null && lock >= 0) {
+        for (let k = lock - 1; k >= 0 && m === null; k--) m = to(k);
       }
-      return m === null ? " " : letter(m, lower);
-    });
+      return m === null ? " " : door >= 0 ? SOKOBALL.doorChar(m) : SOKOBALL.lockChar(m);
+    }).join("");
   }
 
   function move(i, j) {
     const next = campaign();
     if (j < 0 || j >= next.levels.length) return;
     [next.levels[i], next.levels[j]] = [next.levels[j], next.levels[i]];
-    next.world = reletter(next.world, (n) => (n === i ? j : n === j ? i : n));
+    next.world = renumber(next.world, (n) => (n === i ? j : n === j ? i : n));
     send(next, "campaign");
   }
 
   function remove(i) {
     const next = campaign();
     next.levels.splice(i, 1);
-    next.world = reletter(next.world, (n) => (n === i ? null : n > i ? n - 1 : n));
+    next.world = renumber(next.world, (n) => (n === i ? null : n > i ? n - 1 : n));
     send(next, "campaign");
   }
 
   function add(level) {
     const next = campaign();
-    if (next.levels.length >= 26) {
-      flash("The map's letters only go up to 26 levels.");
-      return;
-    }
     next.levels.push({ name: level.name || `Level ${next.levels.length + 1}`, map: tidy(level.map) });
     send(next, "campaign");
   }
@@ -200,7 +199,7 @@
 
   function editMap() {
     stash();
-    draft = draftFrom(WORLD, "The map", null);
+    draft = draftFrom(WORLD_MAP, "The map", null);
     draft.world = true;
     verdict = null;
     storeDraft();
@@ -264,7 +263,7 @@
 
   function pickMapTool() {
     const n = Number(levelPick.value);
-    chooseTool(letter(n, lockTool === "lock"));
+    chooseTool(lockTool === "lock" ? SOKOBALL.lockChar(n) : SOKOBALL.doorChar(n));
     for (const b of mapTools.querySelectorAll("[data-map]")) b.classList.toggle("on", b.dataset.map === lockTool);
   }
 
@@ -314,9 +313,9 @@
     devButtons.querySelector('[data-dev-editor="save-level"]').hidden = !onLevel;
     devButtons.querySelector('[data-dev-editor="save-map"]').hidden = !onMap;
     // map tools on the map, level tools on a level
-    const plateOrGate = SOKOBALL.PLATES.includes(tool) || SOKOBALL.GATES.includes(tool);
-    if (onMap && (!/^[#@$^=~%&A-Za-z ]$/.test(tool) || plateOrGate)) chooseTool(SOKOBALL.WALL);
-    if (!onMap && /^[A-Za-z]$/.test(tool) && !plateOrGate) chooseTool(SOKOBALL.WALL);
+    const doorOrLock = SOKOBALL.doorNumber(tool) >= 0 || SOKOBALL.lockNumber(tool) >= 0;
+    if (onMap && !/^[#@$^=~%& ]$/.test(tool) && !doorOrLock) chooseTool(SOKOBALL.WALL);
+    if (!onMap && doorOrLock) chooseTool(SOKOBALL.WALL);
   }
 
   // What's missing or wrong on the map: nothing here stops it being saved
@@ -334,8 +333,8 @@
     const notes = [];
     if (parsed.gate.some((g) => g) && !parsed.plates.length) notes.push("The map has gates but no plates to open them.");
     LEVELS.forEach((lv, i) => { if (!found.has(i)) notes.push(`No door yet for ${i + 1}. ${lv.name}.`); });
-    for (const n of found) if (n >= LEVELS.length) notes.push(`Door ${letter(n)} is for a level that doesn't exist.`);
-    for (const n of parsed.locks.keys()) if (n >= LEVELS.length) notes.push(`Lock ${letter(n, true)} waits on a level that doesn't exist.`);
+    for (const n of found) if (n >= LEVELS.length) notes.push(`A door is for level ${n + 1}, which doesn't exist.`);
+    for (const n of parsed.locks.keys()) if (n >= LEVELS.length) notes.push(`A lock waits on level ${n + 1}, which doesn't exist.`);
     if (notes.length) {
       note.className = "problems bad";
       note.innerHTML = `<ul>${notes.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`;

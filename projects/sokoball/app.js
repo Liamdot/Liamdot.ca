@@ -565,8 +565,8 @@ function drawDraft() {
     if (ch === SOKOBALL.BALL) picture("ball", x, y, tile);
     if (ch === SOKOBALL.PLAYER || ch === SOKOBALL.PLAYER_ON_GOAL) picture("player", x, y, tile);
     // the map, being edited (see dev.js): doors and locked balls
-    if (draft.world && ch >= "A" && ch <= "Z") drawDoor(ch.charCodeAt(0) - 65, x, y, tile);
-    if (draft.world && ch >= "a" && ch <= "z") picture("ballLocked", x, y, tile);
+    if (draft.world && SOKOBALL.doorNumber(ch) >= 0) drawDoor(SOKOBALL.doorNumber(ch), x, y, tile);
+    if (draft.world && SOKOBALL.lockNumber(ch) >= 0) picture("ballLocked", x, y, tile);
   }
 
   drawEdge(width, height, tile, ox, oy, (i) => cells[i] !== SOKOBALL.WALL);
@@ -640,6 +640,11 @@ function animate(change) {
 
 let world = null;        // from SOKOBALL.parseWorld
 
+// the map with its doors and locks put in, from levels.js - which may still
+// have a map from before DOORS and LOCKS, with letters for them
+const WORLD_MAP = SOKOBALL.joinWorld(WORLD, typeof DOORS === "undefined" ? [] : DOORS,
+  typeof LOCKS === "undefined" ? [] : LOCKS);
+
 function solvedLevels() {
   return new Set(LEVELS.map((lv, n) => (save.solved[keyOf(lv.map)] ? n : -1)).filter((n) => n >= 0));
 }
@@ -669,7 +674,15 @@ function doorHere() {
 function goToMap(at = null) {
   const freed = freedLocks(solvedLevels());
   const level = SOKOBALL.worldLevel(world, freed);
-  const key = keyOf(WORLD);
+  // keyed with the first 26 levels' doors and locks as the letters they used
+  // to be, so a map saved before they had characters of their own still is
+  const key = keyOf(Array.from(WORLD_MAP, (ch) => {
+    const door = SOKOBALL.doorNumber(ch);
+    const lock = SOKOBALL.lockNumber(ch);
+    if (door >= 0 && door < 26) return String.fromCharCode(65 + door);
+    if (lock >= 0 && lock < 26) return String.fromCharCode(97 + lock);
+    return ch;
+  }).join(""));
   if (!save.world || save.world.key !== key) {
     save.world = { key, player: world.start, balls: null, holes: null, freed: [], seen: [] };
   }
@@ -1104,7 +1117,7 @@ function paint(i, with_) {
     if (UNDERNEATH.includes(with_) && top) next = stacked(with_, top);
   }
   if (next === draft.cells[i]) return false;
-  if (draft.world && (next === SOKOBALL.PLAYER || (next >= "A" && next <= "Z"))) {
+  if (draft.world && (next === SOKOBALL.PLAYER || SOKOBALL.doorNumber(next) >= 0)) {
     for (let k = 0; k < draft.cells.length; k++) if (draft.cells[k] === next) draft.cells[k] = SOKOBALL.FLOOR;
   }
   draft.cells[i] = next;
@@ -1934,8 +1947,12 @@ window.addEventListener("hashchange", () => {
 
 load();
 loadArt();
-world = SOKOBALL.parseWorld(WORLD);
-draft = save.draft ? draftFrom(save.draft.map, save.draft.name, save.draft.id) : draftFrom(STARTER);
+world = SOKOBALL.parseWorld(WORLD_MAP);
+// (a map being edited from before doors and locks had characters of their own
+// has letters for them)
+draft = save.draft
+  ? draftFrom(save.draft.world ? SOKOBALL.joinWorld(save.draft.map) : save.draft.map, save.draft.name, save.draft.id)
+  : draftFrom(STARTER);
 
 const shared = levelFromLink(location.hash);
 showMode("play");

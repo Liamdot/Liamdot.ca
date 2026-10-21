@@ -15,7 +15,6 @@ import http.server
 import json
 import os
 import re
-import string
 import sys
 import tempfile
 from pathlib import Path
@@ -29,7 +28,8 @@ SOKOBALL_SAVE = "/__dev/sokoball"
 # Every character a Sokoball level can have - keep it in step with KNOWN in
 # projects/sokoball/sokoball.js, or new kinds of square can't be saved
 LEVEL_CHARS = set("# -_.$*@+!^=~ox?:[]rRgG()<>")
-MAP_CHARS = set("# -_@$^=~%&") | set(string.ascii_letters)
+MAP_CHARS = set("# -_@$^=~%&!*")
+MAX_LEVELS = 500
 LOCAL = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
 
 
@@ -42,11 +42,32 @@ def check_text(text, allowed, what):
     return [row for row in text.split("\n")]
 
 
-def rewrite_levels(source, levels, world):
-    """The levels.js text with its LEVELS list and WORLD map replaced. Comment
-    lines just above a level stay with it, matched by the name it had (`was`),
-    so renaming a level keeps them; everything else in the file is left as it
-    was."""
+def check_places(places, what):
+    """A list of [column, row, level] - where each door or lock is on the map,
+    and which level it's for, counting from 1."""
+    if not isinstance(places, list) or len(places) > 5000:
+        raise ValueError(f"the map's {what} are missing")
+    for place in places:
+        if (not isinstance(place, list) or len(place) != 3
+                or not all(isinstance(n, int) and not isinstance(n, bool) and 0 <= n <= 1000 for n in place)):
+            raise ValueError(f"the map's {what} aren't [column, row, level]")
+    return places
+
+
+def write_places(name, places, levels):
+    """DOORS or LOCKS, one to a line with its level's name beside it."""
+    lines = []
+    for x, y, n in places:
+        title = levels[n - 1]["name"] if 1 <= n <= len(levels) else "no such level"
+        lines.append(f"  [{x}, {y}, {n}],  // {title}\n")
+    return f"const {name} = [\n" + "".join(lines) + "];"
+
+
+def rewrite_levels(source, levels, world, doors, locks):
+    """The levels.js text with its LEVELS list, WORLD map, and the DOORS and
+    LOCKS beside it replaced. Comment lines just above a level stay with it,
+    matched by the name it had (`was`), so renaming a level keeps them;
+    everything else in the file is left as it was."""
     start = source.index("const LEVELS = [")
     end = source.index("];", start) + 2
     old = source[start:end]
@@ -65,7 +86,21 @@ def rewrite_levels(source, levels, world):
     start = source.index("const WORLD = `")
     end = source.index("`;", start) + 2
     rows = "".join(f"  {row}\n" for row in world)
-    return source[:start] + "const WORLD = `\n" + rows + "`;" + source[end:]
+    source = source[:start] + "const WORLD = `\n" + rows + "`;" + source[end:]
+
+    # DOORS and LOCKS go straight after the map - replaced where they are, or
+    # added there the first time
+    after = source.index("`;", source.index("const WORLD = `")) + 2
+    for name, places in (("DOORS", doors), ("LOCKS", locks)):
+        block = write_places(name, places, levels)
+        start = source.find(f"const {name} = [")
+        if start >= 0:
+            end = source.index("];", start) + 2
+            source = source[:start] + block + source[end:]
+        else:
+            source = source[:after] + "\n\n" + block + source[after:]
+        after = source.index("];", source.index(f"const {name} = [")) + 2
+    return source
 
 
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
@@ -102,10 +137,12 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
                     raise ValueError(f"level {n + 1}'s name is missing or too long")
                 was = str(level.get("was") or "")[:60]
                 levels.append({"name": name, "was": was, "rows": check_text(level["map"], LEVEL_CHARS, f"{name}")})
-            if not levels or len(levels) > 26:
-                raise ValueError("there must be between 1 and 26 levels")
+            if not levels or len(levels) > MAX_LEVELS:
+                raise ValueError(f"there must be between 1 and {MAX_LEVELS} levels")
             world = check_text(data["world"], MAP_CHARS, "the map")
-            text = rewrite_levels(SOKOBALL_LEVELS.read_text(encoding="utf-8"), levels, world)
+            doors = check_places(data["doors"], "doors")
+            locks = check_places(data["locks"], "locks")
+            text = rewrite_levels(SOKOBALL_LEVELS.read_text(encoding="utf-8"), levels, world, doors, locks)
         except (KeyError, TypeError, ValueError) as e:
             return self.reply(400, f"Not saved: {e}")
         # written to a spare file first, then swapped in, so a half-written

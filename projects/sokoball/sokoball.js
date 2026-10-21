@@ -87,6 +87,10 @@ const SOKOBALL = (() => {
   const PLAYER_ON_PLATE = "]";
   const MAP_PLATE = "%";                     // on the map, where o and x are locks
   const MAP_GATE = "&";
+  // Doors and locked balls on the map, as levels.js writes them: which level
+  // each is for is listed beside the map (DOORS and LOCKS), by its square.
+  const MAP_DOOR = "!";
+  const MAP_LOCK = "*";
   // Plates and gates come in colours, each its own set: red plates open only
   // red gates. Blue is the first and plainest; the lists below go blue, red,
   // green, and a square's colour is its place in them counting from 1.
@@ -579,19 +583,21 @@ const SOKOBALL = (() => {
   // =========================================================================
   //
   // The campaign is played from a map you walk round. It's the same kind of
-  // text as a level, with two more kinds of character:
+  // text as a level, with two more kinds of square:
   //
-  //   A to Z   the door to a level: A is the first in levels.js, B the second...
-  //   a to z   a ball that's locked in place until the level with the same
-  //            letter, and every level before it, is solved - "e" comes free
-  //            once A to E are all done, in any order
+  //   doors    the door to a level
+  //   locks    a ball that's locked in place until its level, and every level
+  //            before it, is solved - level 5's lock comes free once levels 1
+  //            to 5 are all done, in any order
   //
-  // plus #, floor, @ for where you start, $ for a ball that's free from the
+  // In levels.js they're ! and *, with lists beside the map saying which level
+  // each is for; in the game, each level's door and lock are characters of
+  // their own (see joinWorld). Then there's #, floor, @ for where you start, $ for a ball that's free from the
   // start, and ^, = and ~ for holes, grates and cracked floor, which work just
   // as they do in a level. Plates and gates work as they do in a level too -
-  // every plate down opens every gate - but on the map they're % and &, since
-  // the small letters are taken by locks. Locked balls are what keep the next door shut: solving a level
-  // frees its balls, and you push them out of the way to get on. A ball can be
+  // every plate down opens every gate - but on the map they're % and &.
+  // Locked balls are what keep the next door shut: solving a level frees its
+  // balls, and you push them out of the way to get on. A ball can be
   // pushed onto a door like anywhere else, and then has to be moved off it
   // again before the door can be used.
   //
@@ -603,6 +609,57 @@ const SOKOBALL = (() => {
   // room. Several gaps in a row make a corridor through solid wall, and a
   // corridor is a room of its own. rooms[i] is a room number, or -1 for walls
   // and gaps.
+
+  // Inside the game, each door and each lock is a character of its own - level
+  // n's door, level n's lock - from a stretch of Unicode kept for private use,
+  // so the map is still one character a square, however many levels there are.
+  const DOOR_BASE = 0xe000;
+  const LOCK_BASE = 0xe800;
+  const doorChar = (n) => String.fromCharCode(DOOR_BASE + n);
+  const lockChar = (n) => String.fromCharCode(LOCK_BASE + n);
+  const doorNumber = (ch) => (ch >= doorChar(0) && ch < lockChar(0) ? ch.charCodeAt(0) - DOOR_BASE : -1);
+  const lockNumber = (ch) => (ch >= lockChar(0) && ch < lockChar(0x800) ? ch.charCodeAt(0) - LOCK_BASE : -1);
+
+  // The map as levels.js has it - ! for doors and * for locks, with lists of
+  // [column, row, level] (columns and rows from 0, levels from 1) saying
+  // which level each is for - turned into the game's own map. A map from
+  // before, with doors as capital letters and locks as small ones, works too.
+  function joinWorld(text, doors = [], locks = []) {
+    const rows = rowsOf(text).map((row) => row.split(""));
+    const put = (list, mark, char) => {
+      for (const [x, y, n] of list) if (rows[y] && rows[y][x] === mark) rows[y][x] = char(n - 1);
+    };
+    put(doors, MAP_DOOR, doorChar);
+    put(locks, MAP_LOCK, lockChar);
+    for (const row of rows) {
+      for (let x = 0; x < row.length; x++) {
+        const ch = row[x];
+        if (ch >= "A" && ch <= "Z") row[x] = doorChar(ch.charCodeAt(0) - 65);
+        else if (ch >= "a" && ch <= "z") row[x] = lockChar(ch.charCodeAt(0) - 97);
+        else if (ch === MAP_DOOR || ch === MAP_LOCK) row[x] = FLOOR;     // listed for no level
+      }
+    }
+    return writeRows(rows);
+  }
+
+  // And back: the map as levels.js writes it, and its lists.
+  function splitWorld(map) {
+    const doors = [];
+    const locks = [];
+    const rows = rowsOf(map).map((row, y) => row.split("").map((ch, x) => {
+      if (doorNumber(ch) >= 0) {
+        doors.push([x, y, doorNumber(ch) + 1]);
+        return MAP_DOOR;
+      }
+      if (lockNumber(ch) >= 0) {
+        locks.push([x, y, lockNumber(ch) + 1]);
+        return MAP_LOCK;
+      }
+      return ch;
+    }));
+    const byLevel = (a, b) => a[2] - b[2] || a[1] - b[1] || a[0] - b[0];
+    return { text: writeRows(rows), doors: doors.sort(byLevel), locks: locks.sort(byLevel) };
+  }
 
   function parseWorld(text) {
     const rows = rowsOf(text);
@@ -637,9 +694,9 @@ const SOKOBALL = (() => {
           plate[i] = 1;
           plates.push(i);
         }
-        else if (ch >= "A" && ch <= "Z") doors.set(i, ch.charCodeAt(0) - 65);
-        else if (ch >= "a" && ch <= "z") {
-          const n = ch.charCodeAt(0) - 97;
+        else if (doorNumber(ch) >= 0) doors.set(i, doorNumber(ch));
+        else if (lockNumber(ch) >= 0) {
+          const n = lockNumber(ch);
           if (!locks.has(n)) locks.set(n, []);
           locks.get(n).push(i);
         } else if (ch !== FLOOR) throw new Error(`Unknown character "${ch}" on row ${y + 1} of the map.`);
@@ -881,6 +938,7 @@ const SOKOBALL = (() => {
     BALL_ON_CRACKED, PLAYER_ON_CRACKED, BALL_ON_PLATE, PLAYER_ON_PLATE, MAP_PLATE, MAP_GATE,
     COLOURS, PLATES, GATES, BALLS_ON_PLATES, PLAYERS_ON_PLATES,
     rowsOf, writeRows, parse, toText, check, start, move, undo, restart, solved, stuck, finishOpen, encode, decode, solve,
+    MAP_DOOR, MAP_LOCK, doorChar, lockChar, doorNumber, lockNumber, joinWorld, splitWorld,
     parseWorld, worldLevel, gatesOpen,
   };
 })();

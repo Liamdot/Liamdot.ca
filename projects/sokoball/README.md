@@ -226,7 +226,7 @@ Editing a level adds **save to campaign** to the editor, and editing the map
 adds **save map**; **done** puts back whatever you had in the editor before.
 Every save is written straight into `levels.js` and the page reloads with it,
 so it's in your next commit like any other change. Moving or removing a level
-re-letters its door and lock on the map to match. Comments above a level in
+renumbers its door and lock on the map to match. Comments above a level in
 `levels.js` stay with it, and so does everything else in the file.
 
 The saving is done by `serve.py`, which only accepts it from this computer. If
@@ -248,8 +248,8 @@ copy still running won't know how. The tools themselves are `dev.js`.
    },
    ```
 3. Paste the text between the backticks. Indentation doesn't matter.
-4. Give it a door on the map (next section). Its letter is its place in the
-   list: the first level is `A`, the ninth is `I`.
+4. Give it a door on the map (next section). It's known by its place in the
+   list: the first level is 1, the ninth is 9.
 
 ### The map
 
@@ -258,11 +258,18 @@ as a level, with two extra kinds of character:
 
 | character | means |
 |---|---|
-| `A` to `Z` | the door to a level — `A` is the first in `LEVELS`, `B` the second |
-| `a` to `z` | a ball locked in place until the level with the same letter, and every level before it, is solved |
+| `!` | the door to a level |
+| `*` | a ball locked in place until its level, and every level before it, is solved |
 | `#` `@` `$` | wall, where you start, and a ball that's free from the start |
 | `^` `=` `~` | hole, grate and cracked floor, as in a level |
-| `%` `&` | a plate and a gate — in a level they're `o` and `x`, but on the map small letters are locks |
+| `%` `&` | a plate and a gate — `o` and `x` in a level |
+
+Which level each door and lock is for is in `DOORS` and `LOCKS`, just under
+the map: one `[column, row, level]` each, columns and rows counted from 0 at
+the map's top left and levels from 1, with the level's name beside it. The dev
+tools write these for you, so there's rarely a reason to touch them by hand.
+(A map from before, with doors as capital letters and locks as small ones,
+still loads.)
 
 The idea is that each level's balls sit in the gaps between rooms, so the way
 to the next door stays shut until you've solved the level before it. Once a
@@ -275,9 +282,6 @@ Two traps when you redraw it, both of which I walked into making this one:
   easy to bury under the ball that came through it. Put doors off to one side
   of any gap.
 - **Every gap needs its ball.** An open gap, even one square, is a way round.
-
-The letters cap the campaign at 26 levels. If it ever needs more, that's a
-change to `parseWorld` in `sokoball.js`.
 
 Rooms you haven't walked into yet aren't shown at all — just the background.
 Step into one and its squares flip over into view, rippling out from where
