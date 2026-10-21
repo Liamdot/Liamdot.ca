@@ -733,7 +733,6 @@ const MAP_UNDO = 300;            // moves on the map that undo can take back
 
 const FLIP_MS = 260;
 const FLIP_STEP = 45;
-const BACKGROUND = "#2b2622";    // the stage behind the board
 const turning = new Map();       // room -> { t0, from }: when and where it started to show
 
 function explore(fade) {
@@ -807,9 +806,10 @@ function drawFog(tile, ox, oy) {
     const x = ox + (i % width) * tile;
     const y = oy + Math.floor(i / width) * tile;
     if (since < 0) {
-      // not yet: nothing there. A hair over size, so no seams show between.
-      ctx.fillStyle = BACKGROUND;
-      ctx.fillRect(x - 0.5, y - 0.5, tile + 1, tile + 1);
+      // not yet: nothing there. Cut out of the board rather than painted over,
+      // so the page shows through - paint would take on undo's grey flash and
+      // show the shape of the map. A hair over size, so no seams show between.
+      ctx.clearRect(x - 0.5, y - 0.5, tile + 1, tile + 1);
       if (shown[i] !== Infinity) busy = true;
       continue;
     }
@@ -818,8 +818,7 @@ function drawFog(tile, ox, oy) {
     flipTile.width = px;
     flipTile.height = px;
     flipTile.getContext("2d").drawImage(canvas, Math.round(x * ratio), Math.round(y * ratio), px, px, 0, 0, px, px);
-    ctx.fillStyle = BACKGROUND;
-    ctx.fillRect(x - 0.5, y - 0.5, tile + 1, tile + 1);
+    ctx.clearRect(x - 0.5, y - 0.5, tile + 1, tile + 1);
     const t = since / FLIP_MS;
     const across = Math.sin((t * Math.PI) / 2);   // edge-on to flat
     const w = tile * across;
