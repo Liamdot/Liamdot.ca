@@ -238,6 +238,57 @@ const LEVELS = [
     `,
   },
   {
+    name: "Please Hold",
+    map: `
+      ##########
+      #     ####
+      #  $     #
+      #     #  #
+      #     # ##
+      #xxxxx# ##
+      #=====# ##
+      #     # ##
+      # $o@ # ##
+      #       ##
+      #!   #  ##
+      ##===#####
+      -# . #####
+      -#####----
+    `,
+  },
+  {
+    name: "Gridlock",
+    map: `
+      #############
+      #@ x x x#####
+      # x = x #= =#
+      #x = x x# ] #
+      # = x = #= =#
+      #x x = x#####
+      # x = x #####
+      #x x x !#####
+      #############
+    `,
+  },
+  {
+    name: "Escape the Room",
+    map: `
+      #########
+      ###    ##
+      ##o  $$ #
+      #       #
+      #  @    #
+      #     .##
+      ##    ###
+      ##x######
+      # $     #
+      # .   ! #
+      # .     #
+      #       #
+      #########
+    `,
+  },
+  {
     name: "Holy Hallway",
     map: `
       #############
@@ -248,14 +299,27 @@ const LEVELS = [
     `,
   },
   {
+    name: "Herd Ringer",
+    map: `
+      #######
+      #. #  #
+      # @# @#
+      #  #  #
+      #~~#~~#
+      #$ #  #
+      #  # !#
+      #######
+    `,
+  },
+  {
     name: "There and Back Again",
     map: `
       ##########
       #   ~#####
-      #   ~$ .##
-      # $ ~#####
-      #@  ~$ .##
-      # $ =#####
+      #   ?$ .##
+      #   $#####
+      # @ ~$ .##
+      #   =#####
       #   ~  $.#
       #### #####
       ---# #----
@@ -264,18 +328,80 @@ const LEVELS = [
       ---###----
     `,
   },
+  {
+    name: "Blockade",
+    map: `
+      #########
+      #       #
+      #@   $$$#
+      #       #
+      #####ooo#
+      ----#   #
+      ----#   #
+      ----# x #
+      ----#x!x#
+      ----#####
+    `,
+  },
+  {
+    name: "Doorstop",
+    map: `
+      ##########
+      ######.###
+      #     ^ ##
+      # $$    ##
+      # @     ##
+      #      =##
+      #===##==##
+      #   #.  ##
+      #   ##~  #
+      #   ^   !#
+      # @      #
+      ##########
+    `,
+  },
+  {
+    name: "Juggle",
+    map: `
+      ######----------
+      #! = ########---
+      #=== =      #---
+      #    =    . #---
+      #    =      #---
+      #    =####~####-
+      #    =#       #-
+      ##.##=#^##=##^##
+      #.   =    =    #
+      #    =    =    #
+      # $  =    =    #
+      #    =    =    #
+      #    =~~~~=    #
+      #xxxx=xxxx=    #
+      #    =    =    #
+      #    = $$ =  o #
+      #    =    =    #
+      # @  = @  = @  #
+      #    =    =    #
+      ############$=##
+      ----------# $ #-
+      ----------#####-
+    `,
+  },
 ];
 
-// The map. Walk onto a door and press Enter to play its level. Doors are
-// capital letters - A is the first level above, B the second - and a room can
-// have as many as you like. Each lowercase letter is a ball held in place until
-// the level with that letter, and every level before it, is solved: put "e" in
-// the way out of a room holding doors A to E, and it opens once the whole room
-// is done, in whatever order. Solving them lets you push the balls aside. The rest is the usual: # wall, space or
-// - floor, @ where you start, $ a ball that's free from the start, and ^, =
-// and ~ for holes, grates and cracked floor, which work the same as in a
-// level. Plates and gates do too, but here they're % and &, because the small
-// letters are locks.
+// The map. Walk onto a door and press Enter to play its level. Doors are !,
+// and a room can have as many as you like. Each * is a ball held in place
+// until its level, and every level before it, is solved: put level 5's lock in
+// the way out of a room holding the doors to levels 1 to 5, and it opens once
+// the whole room is done, in whatever order. Solving them lets you push the
+// balls aside. Which level each door and lock is for is in DOORS and LOCKS,
+// under the map: [column, row, level], with columns and rows counted from 0
+// at the top left of the map and levels from 1. The dev tools keep them up to
+// date - easiest is to place doors and locks with those. The rest is the
+// usual: # wall, space or - floor, @ where you start, $ a ball that's free
+// from the start, and ^, = and ~ for holes, grates and cracked floor, which
+// work the same as in a level. Plates and gates do too, but here they're %
+// and &.
 //
 // Two things to watch when you redraw it. Balls can be pushed onto doors, so a
 // door straight in line with a gap is easy to bury: put doors off to one side.
@@ -287,25 +413,64 @@ const LEVELS = [
 
 const WORLD = `
   ########################
-  # A B # F G#      #I  J#
-  #     e    #  ### #    #
-  #     #    h    =^h    #
-  #C D E#  H #  ### #K   #
-  ####################k###
-  #P   #     #######L  M##
-  #       @   ^^^  o    ##
-  #   Q#     #######N  O##
-  ###$##### ##############
-  #      #   R   #--------
-  #  % % $       #--------
-  #      #       ##-------
-  #      #      ~S#-------
+  # ! ! # ! !#      #!  !#
+  #  @  *    #  ### #    #
+  #     #    *    =^*    #
+  #! ! !#  ! #  ### #!   #
+  ####################*###
+  #!! !#     #######!  !##
+  #           ^^^  *    ##
+  #!  !#     #######!  !##
+  ###*##### ##############
+  #      #   ! ###--------
+  #  % % *     ####-------
+  #      #     ~  #-------
+  #      # !   ~ !#-------
   ###&#############-------
   --# #         #---------
-  --# #         #---------
+  --# #  !   !  #---------
   --#           #---------
-  --###         #---------
+  --###  !      #---------
   ----#         #---------
   ----###########---------
   ------------------------
 `;
+
+const DOORS = [
+  [2, 1, 1],  // First push
+  [4, 1, 2],  // Long Way Around
+  [1, 4, 3],  // Stepping stone
+  [3, 4, 4],  // Corner shop
+  [5, 4, 5],  // BOGO
+  [8, 1, 6],  // Island
+  [10, 1, 7],  // Store room
+  [9, 4, 8],  // Bowling
+  [19, 1, 9],  // The Grate Journey
+  [22, 1, 10],  // Split Grate
+  [19, 4, 11],  // 5-Pin Bowling
+  [18, 6, 12],  // Sacrifice
+  [21, 6, 13],  // Seeing Double
+  [18, 8, 14],  // Fling
+  [21, 8, 15],  // Three Musketeers
+  [1, 6, 16],  // Test Chamber 1
+  [2, 6, 17],  // Test Chamber 1+
+  [4, 6, 18],  // Please Hold
+  [1, 8, 19],  // Gridlock
+  [4, 8, 20],  // Escape the Room
+  [11, 10, 21],  // Holy Hallway
+  [9, 13, 22],  // Herd Ringer
+  [15, 13, 23],  // There and Back Again
+  [7, 16, 24],  // Blockade
+  [11, 16, 25],  // Doorstop
+  [7, 18, 26],  // Juggle
+];
+
+const LOCKS = [
+  [6, 2, 5],  // BOGO
+  [11, 3, 8],  // Bowling
+  [18, 3, 8],  // Bowling
+  [20, 5, 11],  // 5-Pin Bowling
+  [17, 7, 15],  // Three Musketeers
+  [3, 9, 20],  // Escape the Room
+  [7, 11, 23],  // There and Back Again
+];
