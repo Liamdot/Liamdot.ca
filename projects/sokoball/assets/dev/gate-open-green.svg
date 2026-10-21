@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- developer art: a green gate, open - sunk into the floor, so just its frame
+       shows and anything can go through. Drawn over the floor. -->
+  <rect x="5" y="5" width="54" height="54" rx="4" fill="none" stroke="#5e9a4f" stroke-width="3" stroke-dasharray="8 6"/>
+</svg>

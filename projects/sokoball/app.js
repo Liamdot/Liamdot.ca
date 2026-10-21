@@ -68,7 +68,8 @@ function keyOf(map) {
 // doesn't have - or that fails to load - comes from the developer set instead.
 // That's what lets you replace the art one picture at a time.
 
-const PICTURES = ["floor", "wall", "goal", "goalFilled", "hole", "holeFilled", "grate", "grateOpen", "cracked", "plate", "platePressed", "gate", "gateOpen", "ball", "player", "finish", "finishOpen",
+const PICTURES = ["floor", "wall", "goal", "goalFilled", "hole", "holeFilled", "grate", "grateOpen", "cracked", "plate", "platePressed", "gate", "gateOpen",
+  "plateRed", "platePressedRed", "gateRed", "gateOpenRed", "plateGreen", "platePressedGreen", "gateGreen", "gateOpenGreen", "ball", "player", "finish", "finishOpen",
   "door", "doorDone", "ballLocked", "playerUp", "playerDown", "playerLeft", "playerRight"];
 
 // what to draw until a picture has loaded, or if there's no picture at all
@@ -76,9 +77,15 @@ const STAND_INS = {
   floor: "#e9e2d3", wall: "#5b5049", goal: "#c8553d", goalFilled: "#79b36f",
   hole: "#3a322d", holeFilled: "#b98a5a", grate: "#6b6158", grateOpen: "#1a1613",
   cracked: "#cfc4b2", plate: "#4f8a9a", platePressed: "#3b6b78", gate: "#3b6b78", gateOpen: "#b9cfd4", ball: "#c98a43", player: "#2f6f9f",
+  plateRed: "#b5524a", platePressedRed: "#8e3d37", gateRed: "#8e3d37", gateOpenRed: "#e8c3be",
+  plateGreen: "#5e9a4f", platePressedGreen: "#48793c", gateGreen: "#48793c", gateOpenGreen: "#c4dcbc",
   finish: "#bdb4a7", finishOpen: "#3fa85e",
   door: "#cfc5b4", doorDone: "#a9d39b", ballLocked: "#a39a8f",
 };
+
+// what goes on the end of a plate or gate picture's name for each colour,
+// counting from 1: blue's are the plain ones
+const TINT = ["", "", "Red", "Green"];
 
 const art = {};
 
@@ -362,9 +369,14 @@ function drawGame() {
         picture(level.goal[i] ? (gaping ? "goal" : "goalFilled") : (gaping ? "hole" : "holeFilled"), x, y, tile);
       } else if (game.cracked[i]) picture("cracked", x, y, tile);
       // plates down while something's on them; gates open while every plate
-      // is down, or while something's standing in them
-      if (level.plates.includes(i)) picture(ballAt[i] || game.players.includes(i) ? "platePressed" : "plate", x, y, tile);
-      if (level.gate[i]) picture(gatesOpen || ballAt[i] || game.players.includes(i) ? "gateOpen" : "gate", x, y, tile);
+      // of their colour is down, or while something's standing in them
+      if (level.plate[i]) {
+        picture((ballAt[i] || game.players.includes(i) ? "platePressed" : "plate") + TINT[level.plate[i]], x, y, tile);
+      }
+      if (level.gate[i]) {
+        const through = gatesOpen[level.gate[i]] || ballAt[i] || game.players.includes(i);
+        picture((through ? "gateOpen" : "gate") + TINT[level.gate[i]], x, y, tile);
+      }
       if (level.grate[i]) {
         if (trapdoors.has(i)) drawTrapdoor(trapdoors.get(i), x, y, tile);
         else picture("grate", x, y, tile);
@@ -543,8 +555,10 @@ function drawDraft() {
     // something stacked on cracked floor or a plate: what's underneath first
     const [under, top] = draft.world ? [ch, null] : layersOf(ch);
     if (under === SOKOBALL.CRACKED) picture("cracked", x, y, tile);
-    if (under === (draft.world ? SOKOBALL.MAP_PLATE : SOKOBALL.PLATE)) picture(top ? "platePressed" : "plate", x, y, tile);
-    if (ch === (draft.world ? SOKOBALL.MAP_GATE : SOKOBALL.GATE)) picture("gate", x, y, tile);
+    const plate = draft.world ? Number(ch === SOKOBALL.MAP_PLATE) : SOKOBALL.PLATES.indexOf(under) + 1;
+    const gate = draft.world ? Number(ch === SOKOBALL.MAP_GATE) : SOKOBALL.GATES.indexOf(ch) + 1;
+    if (plate) picture((top ? "platePressed" : "plate") + TINT[plate], x, y, tile);
+    if (gate) picture("gate" + TINT[gate], x, y, tile);
     if (top && under !== SOKOBALL.FLOOR) picture(top === SOKOBALL.BALL ? "ball" : "player", x, y, tile);
     if (ch === SOKOBALL.BALL_ON_GOAL || ch === SOKOBALL.PLAYER_ON_GOAL) picture("goalFilled", x, y, tile);
     if (ch === SOKOBALL.FINISH) picture("finish", x, y, tile);
@@ -1052,11 +1066,13 @@ function storeDraft() {
 const STACKS = [
   [SOKOBALL.CRACKED, SOKOBALL.BALL, SOKOBALL.BALL_ON_CRACKED],
   [SOKOBALL.CRACKED, SOKOBALL.PLAYER, SOKOBALL.PLAYER_ON_CRACKED],
-  [SOKOBALL.PLATE, SOKOBALL.BALL, SOKOBALL.BALL_ON_PLATE],
-  [SOKOBALL.PLATE, SOKOBALL.PLAYER, SOKOBALL.PLAYER_ON_PLATE],
+  ...SOKOBALL.PLATES.flatMap((plate, n) => [
+    [plate, SOKOBALL.BALL, SOKOBALL.BALLS_ON_PLATES[n]],
+    [plate, SOKOBALL.PLAYER, SOKOBALL.PLAYERS_ON_PLATES[n]],
+  ]),
 ];
 const ON_TOP = [SOKOBALL.BALL, SOKOBALL.PLAYER];
-const UNDERNEATH = [SOKOBALL.CRACKED, SOKOBALL.PLATE];
+const UNDERNEATH = [SOKOBALL.CRACKED, ...SOKOBALL.PLATES];
 
 // A square of the editor as what's underneath and what's on top of it.
 function layersOf(ch) {
@@ -1761,7 +1777,21 @@ canvas.addEventListener("contextmenu", (e) => {
   if (mode === "make") e.preventDefault();
 });
 
+// Plates and gates have one tool each for all three colours: choosing the one
+// that's already on moves it to the next colour, blue, red, green and round.
 function chooseTool(next) {
+  for (const list of [SOKOBALL.PLATES, SOKOBALL.GATES]) {
+    if (!list.includes(next)) continue;
+    const btn = document.querySelector(`#tools .tool[data-colours="${list === SOKOBALL.PLATES ? "plate" : "gate"}"]`);
+    if (!btn) continue;
+    // from the keyboard or a click alike: on again, the next colour; picked up
+    // fresh, whichever colour it was last
+    next = list.includes(tool) ? list[(list.indexOf(tool) + 1) % list.length] : btn.dataset.tool;
+    const colour = SOKOBALL.COLOURS[list.indexOf(next)];
+    btn.dataset.tool = next;
+    btn.dataset.colour = colour;
+    btn.querySelector(".tool-name").textContent = colour === "blue" ? btn.dataset.colours : `${colour} ${btn.dataset.colours}`;
+  }
   tool = next;
   for (const btn of document.querySelectorAll(".tool")) btn.classList.toggle("on", btn.dataset.tool === tool);
 }

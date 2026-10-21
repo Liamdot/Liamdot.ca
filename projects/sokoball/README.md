@@ -97,6 +97,7 @@ picture in the game as soon as it's done.
 | `cracked` | cracked floor | drawn over the floor, so just the cracks |
 | `plate` / `platePressed` | a pressure plate, up and weighed down | |
 | `gate` / `gateOpen` | a gate, shut and open | open is drawn over the floor, and walkable |
+| `plateRed`, `platePressedRed`, `gateRed`, `gateOpenRed` | the same four, red | and again ending `Green` for green |
 | `grateOpen` | the drop under a grate, shown while it's open | when something falls through, the grate splits down the middle and each half swings down into this on a hinge at its outer edge |
 | `ball` | a ball | |
 | `player` | the player | every player uses it |
@@ -163,10 +164,12 @@ Press **make**. You get a grid and eleven tools:
 - **Stacking**: paint a ball or a player onto cracked floor or a plate and it
   goes on top, rather than replacing it; paint cracked floor or a plate onto a
   ball or a player and it goes underneath. Floor clears the square.
-- **Plates and gates**: every gate in a level is open while every plate is
+- **Plates and gates**: a gate is open while every plate of its colour is
   weighed down, by a ball or a player, and as solid as a wall otherwise. A
-  gate won't shut on something standing in it. All the plates work all the
-  gates — there's one set per level.
+  gate won't shut on something standing in it. They come in blue, red and
+  green, and each colour is a set of its own: red plates open red gates and
+  nothing else. Click the plate or gate tool again (or press 7 or 8 again) to
+  change its colour.
 - A level needs at least one finish a player can reach, and enough balls and
   players to fill every goal with one player left over to reach the finish. Spare balls are fine — they make a good red
   herring. Balls and goals are optional: with no goals, the finishes are open
@@ -321,8 +324,12 @@ also paste in levels you find elsewhere, with **paste a level**.
 | `~` | cracked floor |
 | `o` | a pressure plate |
 | `x` | a gate |
+| `r` `R` | a red plate and a red gate |
+| `g` `G` | a green plate and a green gate |
 | `?` `:` | a ball, or a player, starting on cracked floor |
 | `[` `]` | a ball, or a player, starting on a plate |
+| `(` `)` | a ball, or a player, starting on a red plate |
+| `<` `>` | a ball, or a player, starting on a green plate |
 | `$` | ball |
 | `*` | a goal that starts filled (a "box on a goal" anywhere else) |
 | `@` | a player — as many as you like |

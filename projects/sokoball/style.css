@@ -440,6 +440,10 @@ button.level-row:hover,
 .swatch-cracked { background: #e9e2d3 url("assets/dev/cracked.svg") center / 100% no-repeat; }
 .swatch-plate { background: #4f8a9a; border: 2px solid #3b6b78; border-radius: 50% !important; }
 .swatch-gate { background: repeating-linear-gradient(90deg, #3b6b78 0 3px, #b9cfd4 3px 6px); }
+[data-colour="red"] .swatch-plate { background: #b5524a; border-color: #8e3d37; }
+[data-colour="red"] .swatch-gate { background: repeating-linear-gradient(90deg, #8e3d37 0 3px, #e8c3be 3px 6px); }
+[data-colour="green"] .swatch-plate { background: #5e9a4f; border-color: #48793c; }
+[data-colour="green"] .swatch-gate { background: repeating-linear-gradient(90deg, #48793c 0 3px, #c4dcbc 3px 6px); }
 .swatch-hole { background: #2a2420; border: 3px solid #9a8f84; border-radius: 50% !important; }
 .swatch-ball { background: #c98a43; border: 2px solid #9b6530; border-radius: 50% !important; }
 .swatch-player { background: #2f6f9f; border-radius: 50% !important; }

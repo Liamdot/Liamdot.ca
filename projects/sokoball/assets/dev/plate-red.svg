@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- developer art: a red pressure plate, up - nothing on it. The gates open
+       while every plate is weighed down. Drawn over the floor. -->
+  <rect x="11" y="13" width="42" height="42" rx="7" fill="#8e3d37"/>
+  <rect x="11" y="9" width="42" height="42" rx="7" fill="#b5524a" stroke="#8e3d37" stroke-width="2"/>
+</svg>

@@ -39,6 +39,14 @@ const ART = {
       platePressed: "assets/dev/plate-pressed.svg",
       gate: "assets/dev/gate.svg",
       gateOpen: "assets/dev/gate-open.svg",
+      plateRed: "assets/dev/plate-red.svg",
+      platePressedRed: "assets/dev/plate-pressed-red.svg",
+      gateRed: "assets/dev/gate-red.svg",
+      gateOpenRed: "assets/dev/gate-open-red.svg",
+      plateGreen: "assets/dev/plate-green.svg",
+      platePressedGreen: "assets/dev/plate-pressed-green.svg",
+      gateGreen: "assets/dev/gate-green.svg",
+      gateOpenGreen: "assets/dev/gate-open-green.svg",
       ball: "assets/dev/ball.svg",
       player: "assets/dev/player.svg",
       finish: "assets/dev/finish.svg",
@@ -63,6 +71,8 @@ const ART = {
       // platePressed: "assets/mine/plate-pressed.png",  (and weighed down)
       // gate: "assets/mine/gate.png",                (shut)
       // gateOpen: "assets/mine/gate-open.png",       (open: drawn over the floor, walkable)
+      //   ...and the same four again ending in Red and Green (plateRed,
+      //   gateOpenGreen, ...) for the red and green sets
       // grateOpen: "assets/mine/grate-open.png",     (the drop under it; the grate swings open into it)
       // ball: "assets/mine/ball.png",
       // player: "assets/mine/player.png",

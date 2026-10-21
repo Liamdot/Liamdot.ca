@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sokoball - Liamdot</title>
   <link rel="icon" href="../../logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../style.css?v=76">
-  <link rel="stylesheet" href="../../game.css?v=76">
-  <link rel="stylesheet" href="style.css?v=76">
+  <link rel="stylesheet" href="../../style.css?v=77">
+  <link rel="stylesheet" href="../../game.css?v=77">
+  <link rel="stylesheet" href="style.css?v=77">
 </head>
 <body class="game-page">
   <nav class="topbar">
@@ -47,7 +47,7 @@
         <li>Goals and holes are holes in the floor. A ball pushed or rolled into one drops in and fills it, and then it's floor you can walk on</li>
         <li>A player who walks into an open hole is stuck in it. Walking into a stuck player, or pushing a ball that's touching them, knocks them out. If every player is stuck, undo or restart</li>
         <li>Cracked floor holds you, but gives way into a hole once you step off it - or anything else leaves it</li>
-        <li>Gates are shut until every plate is weighed down, by a ball or a player</li>
+        <li>Gates are shut until every plate of their colour is weighed down, by a ball or a player</li>
         <li>Grates can only be crossed rolling. Walk onto one, push a ball onto one, or end a roll on one, and it falls through. If every player is stuck or gone, undo or restart</li>
         <li>Goals, with the red rim, are the ones that have to be filled. Plain holes are just in the way, and filling one costs a ball</li>
         <li>Pushing a ball into another works like a Newton's cradle: the ball you push stays put, and the last ball in the row rolls until it hits something or drops into a hole. If the last in the row is a player stuck in a hole, they get knocked out instead</li>
@@ -76,6 +76,7 @@
 
       <h3>Updates</h3>
       <ul>
+        <li><strong>v0.18</strong> &ndash; red and green plates and gates, each colour on its own</li>
         <li><strong>v0.17</strong> &ndash; cracked floor, and plates that open gates, in the editor</li>
         <li><strong>v0.16</strong> &ndash; the basics share the first room and the harder ones the second, with four new grate levels past the puzzle on the map. A room's way out opens once every level in it is solved</li>
         <li><strong>v0.15</strong> &ndash; a new map, with fog over the rooms you haven't been to yet, and a view that follows you from room to room</li>
@@ -148,8 +149,8 @@
           <button class="tool" data-tool="^" title="Hole: only in the way (4)"><span class="swatch-hole"></span>hole</button>
           <button class="tool" data-tool="=" title="Grate: roll across it or fall through (5)"><span class="swatch-grate"></span>grate</button>
           <button class="tool" data-tool="~" title="Cracked floor: gives way once something leaves it (6)"><span class="swatch-cracked"></span>cracked</button>
-          <button class="tool" data-tool="o" title="Plate: the gates open while every plate is weighed down (7)"><span class="swatch-plate"></span>plate</button>
-          <button class="tool" data-tool="x" title="Gate: shut until every plate is weighed down (8)"><span class="swatch-gate"></span>gate</button>
+          <button class="tool" data-tool="o" data-colours="plate" data-colour="blue" title="Plate: gates of its colour open while every plate of that colour is weighed down. Click again (or 7) to change colour"><span class="swatch-plate"></span><span class="tool-name">plate</span></button>
+          <button class="tool" data-tool="x" data-colours="gate" data-colour="blue" title="Gate: shut until every plate of its colour is weighed down. Click again (or 8) to change colour"><span class="swatch-gate"></span><span class="tool-name">gate</span></button>
           <button class="tool" data-tool="$" title="Ball (9)"><span class="swatch-ball"></span>ball</button>
           <button class="tool" data-tool="@" title="Player (0)"><span class="swatch-player"></span>player</button>
           <button class="tool" data-tool="!" title="Finish (-)"><span class="swatch-finish"></span>finish</button>
@@ -188,11 +189,11 @@
     </div>
   </main>
 
-  <script src="../../nav.js?v=76"></script>
-  <script src="sokoball.js?v=76"></script>
-  <script src="assets.js?v=76"></script>
-  <script src="levels.js?v=76"></script>
-  <script src="app.js?v=76"></script>
-  <script src="dev.js?v=76"></script>
+  <script src="../../nav.js?v=77"></script>
+  <script src="sokoball.js?v=77"></script>
+  <script src="assets.js?v=77"></script>
+  <script src="levels.js?v=77"></script>
+  <script src="app.js?v=77"></script>
+  <script src="dev.js?v=77"></script>
 </body>
 </html>
